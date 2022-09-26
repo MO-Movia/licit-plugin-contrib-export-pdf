@@ -21,7 +21,7 @@ export class ExportPDF {
       fileName = time;
     }
 
-    const data = view.dom;
+    const data = this.getContainer(view);
     html2canvas(data, {
       height: 1000,
     }).then((canvas) => {
@@ -47,4 +47,23 @@ export class ExportPDF {
       });
     });
   }
+
+  getContainer = (view): HTMLElement => {
+    // .czi-editor-frame-body-scroll
+    let comments = false;
+    let container = view.dom.parentElement.parentElement.parentElement;
+    if (null != container) {
+      const pluginEnabled = container.querySelector('#commentPlugin');
+      if (null != pluginEnabled) {
+        if (0 < (pluginEnabled as HTMLElement).childElementCount) {
+          comments = true;
+        }
+      }
+    }
+
+    if (!comments) {
+      container = view.dom;
+    }
+    return container;
+  };
 }
