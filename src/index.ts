@@ -6,6 +6,7 @@ import {
 } from '@modusoperandi/licit-doc-attrs-step';
 
 import {ExportPDFCommand} from './exportPdfCommand';
+import {EditorView} from 'prosemirror-view';
 
 export const KEY_EXPORT_PDF = makeKeyMapWithCommon(
   'exportPDF',
@@ -38,5 +39,10 @@ export class ExportPDFPlugin extends Plugin {
     return {
       '[picture_as_pdf] Export to PDF': EXPORT_PDF,
     };
+  }
+
+  // this helps to invoke even in readonly mode.
+  perform(view: EditorView): void {
+    EXPORT_PDF.execute(undefined, undefined, view);
   }
 }

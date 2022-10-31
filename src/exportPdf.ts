@@ -21,6 +21,8 @@ export class ExportPDF {
       fileName = time;
     }
 
+    console.info('Exporting PDF started.');
+
     const data = this.getContainer(view);
     html2canvas(data, {
       height: 1000,
@@ -43,6 +45,10 @@ export class ExportPDF {
           }
 
           pdf.save(fileName + '.pdf');
+          console.info('Exporting PDF finished.');
+        },
+        html2canvas: {
+          logging: false,
         },
       });
     });

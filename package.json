@@ -1,6 +1,6 @@
 {
   "name": "@modusoperandi/licit-export-pdf",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "MO's Export To PDF ProseMirror Plugin",
   "main": "dist/index.js",
   "typings": "./index.d.ts",
@@ -77,6 +77,7 @@
     "build:babel": "babel src --out-dir dist --extensions .ts",
     "build:dist": "npm run clean && npm run build:ts && npm run webpack && npm run build:babel",
     "lint:ts": "eslint src --ext .ts --fix",
+    "lint:css": "echo \"No CSS available\" && exit 1",
     "prepare": "npm run build:dist",
     "publish:dist": "npm publish"
   },
