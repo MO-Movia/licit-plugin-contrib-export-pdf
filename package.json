@@ -15,14 +15,10 @@
     }
   ],
   "dependencies": {
-    "@modusoperandi/licit-doc-attrs-step": "^0.1.4",
+    "@modusoperandi/licit-doc-attrs-step": "^0.1.5",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",
     "moment": "^2.29.4",
-    "prosemirror-model": "~1.16.0",
-    "prosemirror-state": "1.4.2",
-    "prosemirror-transform": "1.7.0",
-    "prosemirror-view": "1.27.0",
     "terser-webpack-plugin": "^5.3.6"
   },
   "devDependencies": {
