@@ -14,10 +14,12 @@ export const KEY_EXPORT_PDF = makeKeyMapWithCommon(
 const EXPORT_PDF = new ExportPDFCommand();
 
 export class ExportPDFPlugin extends Plugin {
-  constructor() {
+  showButton: boolean = true;
+  constructor(showButton: boolean) {
     super({
       key: new PluginKey('exportPDF'),
     });
+    this.showButton = showButton;
   }
 
   // Plugin method that supplies plugin schema to editor
@@ -35,8 +37,10 @@ export class ExportPDFPlugin extends Plugin {
   }
 
   initButtonCommands(): unknown {
-    return {
-      '[picture_as_pdf] Export to PDF': EXPORT_PDF,
-    };
+    return this.showButton
+      ? {
+          '[picture_as_pdf] Export to PDF': EXPORT_PDF,
+        }
+      : {};
   }
 }
