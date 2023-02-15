@@ -15,7 +15,7 @@ export const KEY_EXPORT_PDF = makeKeyMapWithCommon(
 const EXPORT_PDF = new ExportPDFCommand();
 
 export class ExportPDFPlugin extends Plugin {
-  showButton: boolean = true;
+  showButton = true;
   constructor(showButton: boolean) {
     super({
       key: new PluginKey('exportPDF'),
