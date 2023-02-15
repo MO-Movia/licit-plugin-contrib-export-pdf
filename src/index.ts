@@ -6,6 +6,7 @@ import {
 } from '@modusoperandi/licit-doc-attrs-step';
 
 import {ExportPDFCommand} from './exportPdfCommand';
+import {EditorView} from 'prosemirror-view';
 
 export const KEY_EXPORT_PDF = makeKeyMapWithCommon(
   'exportPDF',
@@ -14,10 +15,12 @@ export const KEY_EXPORT_PDF = makeKeyMapWithCommon(
 const EXPORT_PDF = new ExportPDFCommand();
 
 export class ExportPDFPlugin extends Plugin {
-  constructor() {
+  showButton = true;
+  constructor(showButton: boolean) {
     super({
       key: new PluginKey('exportPDF'),
     });
+    this.showButton = showButton;
   }
 
   // Plugin method that supplies plugin schema to editor
@@ -35,8 +38,15 @@ export class ExportPDFPlugin extends Plugin {
   }
 
   initButtonCommands(): unknown {
-    return {
-      '[picture_as_pdf] Export to PDF': EXPORT_PDF,
-    };
+    return this.showButton
+      ? {
+          '[picture_as_pdf] Export to PDF': EXPORT_PDF,
+        }
+      : {};
+  }
+
+  // this helps to invoke even in readonly mode.
+  perform(view: EditorView): void {
+    EXPORT_PDF.execute(undefined, undefined, view);
   }
 }
