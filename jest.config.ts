@@ -38,7 +38,6 @@ export default {
     //   "json",
     'text',
     'cobertura',
-    'junit',
     'lcov',
     //   "clover"
   ],
