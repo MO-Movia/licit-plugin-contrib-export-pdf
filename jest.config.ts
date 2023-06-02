@@ -37,6 +37,7 @@ export default {
   coverageReporters: [
     //   "json",
     'text',
+    'cobertura',
     'lcov',
     //   "clover"
   ],
