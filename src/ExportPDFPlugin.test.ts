@@ -1,4 +1,4 @@
-import {ExportPDFPlugin} from './index';
+import {ExportPDFPlugin} from './ExportPDFPlugin';
 import {createEditor, doc, p} from 'jest-prosemirror';
 import moment from 'moment';
 
