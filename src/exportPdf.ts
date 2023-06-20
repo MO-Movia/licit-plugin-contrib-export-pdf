@@ -1,4 +1,4 @@
-import {EditorView} from 'prosemirror-view';
+import { EditorView } from 'prosemirror-view';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import moment from 'moment/moment';
@@ -9,9 +9,9 @@ export class ExportPDF {
   /**
    * Export content to pdf and save locally.
    * @param  {EditorView} view
-   * @returns void
+   * @returns boolean
    */
-  exportPdf(view: EditorView): void {
+  exportPdf(view: EditorView): boolean {
     const objectId = view.state.doc.attrs['objectId'];
     let fileName = '';
     const time = moment().format('YYYY-MM-DD_HH:mm:ss');
@@ -25,7 +25,7 @@ export class ExportPDF {
     html2canvas(data, {
       height: 1000,
     }).then((canvas) => {
-      const jsPdf = new jsPDF('p', 'mm', [canvas.width, canvas.height]);
+      const jsPdf = new jsPDF('p', 'mm', [canvas?.width, canvas?.height]);
       jsPdf.html(data, {
         margin: [20, 0, 60, 0], // left
         callback: function (pdf) {
@@ -43,9 +43,11 @@ export class ExportPDF {
           }
 
           pdf.save(fileName + '.pdf');
+
         },
       });
     });
+    return true;
   }
 
   getContainer = (view): HTMLElement => {
