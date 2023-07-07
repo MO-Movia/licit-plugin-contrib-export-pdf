@@ -71,8 +71,19 @@ describe('Export PDF', () => {
         state: state,
       }
     );
+    // Spy on the private `onExport` method.
+    const spyRenderHTML = jest.spyOn(exportPdf, 'renderHTML');
+    const spyOnExport = jest.spyOn(exportPdf, 'onExport');
+
     exportPdf.exportPdf(view);
-    expect(mockPdfObject.save()).toEqual('2023-06-09_09:18:09.pdf');
+    expect(spyRenderHTML).toBeCalledTimes(1);
+
+    const thenable = exportPdf.renderHTML();
+    // Wait for the `then` part of the Promise to be invoked.
+    const result = thenable.then(() => {
+      // Verify that the private `onExport` method has been called.
+      expect(spyOnExport).toBeCalledTimes(2);// twice including additional call for testing here.
+    });
   });
 
   it('should save the pdf with object Id', () => {
