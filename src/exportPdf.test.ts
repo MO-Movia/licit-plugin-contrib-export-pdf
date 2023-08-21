@@ -37,14 +37,14 @@ jest.mock('jspdf', () => {
 });
 
 describe('Export PDF', () => {
-  let exportPdf;
-  let plugin;
+  let exportPdf: ExportPDF;
+  let plugin: ExportPDFPlugin;
   beforeEach(() => {
     plugin = new ExportPDFPlugin(false);
     exportPdf = new ExportPDF();
   });
 
-  it('should save the pdf if all required conditions satisfy', () => {
+  it('should save the pdf if all required conditions satisfy', async () => {
     const mySchema = new Schema({
       nodes: schema.spec.nodes,
       marks: schema.spec.marks,
@@ -72,18 +72,24 @@ describe('Export PDF', () => {
       }
     );
     // Spy on the private `onExport` method.
-    const spyRenderHTML = jest.spyOn(exportPdf, 'renderHTML');
-    const spyOnExport = jest.spyOn(exportPdf, 'onExport');
+    const spyRenderHTML = jest.spyOn(
+      exportPdf as unknown as {renderHTML: () => Promise<unknown>},
+      'renderHTML'
+    );
+    const spyOnExport = jest.spyOn(
+      exportPdf as unknown as {onExport: () => void},
+      'onExport'
+    );
 
     exportPdf.exportPdf(view);
     expect(spyRenderHTML).toBeCalledTimes(1);
 
-    const thenable = exportPdf.renderHTML();
-    // Wait for the `then` part of the Promise to be invoked.
-    const result = thenable.then(() => {
-      // Verify that the private `onExport` method has been called.
-      expect(spyOnExport).toBeCalledTimes(2);// twice including additional call for testing here.
-    });
+    await (
+      exportPdf as unknown as {renderHTML: () => Promise<unknown>}
+    ).renderHTML();
+
+    // Verify that the private `onExport` method has been called.
+    expect(spyOnExport).toBeCalledTimes(2); // twice including additional call for testing here.
   });
 
   it('should save the pdf with object Id', () => {

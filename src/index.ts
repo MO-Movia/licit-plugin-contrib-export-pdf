@@ -1,1 +1,1 @@
-export { ExportPDFPlugin } from "./ExportPDFPlugin";
+export { ExportPDFPlugin } from './ExportPDFPlugin';

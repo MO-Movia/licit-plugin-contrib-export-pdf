@@ -1,4 +1,4 @@
-import { EditorView } from 'prosemirror-view';
+import {EditorView} from 'prosemirror-view';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import moment from 'moment/moment';
@@ -27,18 +27,15 @@ export class ExportPDF {
   }
 
   private async renderHTML(data: HTMLElement, fileName: string): Promise<void> {
-    const self = this;
-    return html2canvas(data, {
+    const canvas = await html2canvas(data, {
       height: 1000,
-    }).then((canvas) => {
-      const jsPdf = new jsPDF('p', 'mm', [canvas?.width, canvas?.height]);
-      jsPdf.html(data, {
-        margin: [20, 0, 60, 0], // left
-        callback: function (pdf) {
-          self.onExport(pdf, fileName);
-          return Promise.resolve();
-        },
-      });
+    });
+    const jsPdf = new jsPDF('p', 'mm', [canvas?.width, canvas?.height]);
+    jsPdf.html(data, {
+      margin: [20, 0, 60, 0], // left
+      callback: (pdf) => {
+        this.onExport(pdf, fileName);
+      },
     });
   }
 
@@ -59,22 +56,15 @@ export class ExportPDF {
     pdf.save(fileName + '.pdf');
   }
 
-  getContainer = (view): HTMLElement => {
+  getContainer = (view: EditorView): HTMLElement => {
     // .czi-editor-frame-body-scroll
-    let comments = false;
-    let container = view.dom.parentElement.parentElement.parentElement;
-    if (null != container) {
-      const pluginEnabled = container.querySelector('#commentPlugin');
-      if (null != pluginEnabled) {
-        if (0 < (pluginEnabled as HTMLElement).childElementCount) {
-          comments = true;
-        }
-      }
+    const container = view.dom?.parentElement?.parentElement?.parentElement;
+    const pluginEnabled =
+      container?.querySelector('#commentPlugin')?.childElementCount > 0;
+    if (pluginEnabled) {
+      return view.dom;
     }
 
-    if (!comments) {
-      container = view.dom;
-    }
     return container;
   };
 }
