@@ -9,9 +9,9 @@ export class ExportPDF {
   /**
    * Export content to pdf and save locally.
    * @param  {EditorView} view
-   * @returns void
+   * @returns boolean
    */
-  exportPdf(view: EditorView): void {
+  exportPdf(view: EditorView): boolean {
     const objectId = view.state.doc.attrs['objectId'];
     let fileName = '';
     const time = moment().format('YYYY-MM-DD_HH:mm:ss');
@@ -22,48 +22,49 @@ export class ExportPDF {
     }
 
     const data = this.getContainer(view);
-    html2canvas(data, {
+    this.renderHTML(data, fileName);
+    return true;
+  }
+
+  private async renderHTML(data: HTMLElement, fileName: string): Promise<void> {
+    const canvas = await html2canvas(data, {
       height: 1000,
-    }).then((canvas) => {
-      const jsPdf = new jsPDF('p', 'mm', [canvas.width, canvas.height]);
-      jsPdf.html(data, {
-        margin: [20, 0, 60, 0], // left
-        callback: function (pdf) {
-          const pages = pdf.getNumberOfPages();
-          const pageWidth = pdf.internal.pageSize.width; //Optional
-          const pageHeight = pdf.internal.pageSize.height; //Optional
-
-          for (let j = 1; j < pages + 1; j++) {
-            const horizontalPos = pageWidth / 2; //Can be fixed number
-            const verticalPos = pageHeight - 10; //Can be fixed number
-            pdf.setPage(j);
-            pdf.text(`${j} of ${pages}`, horizontalPos, verticalPos, {
-              align: 'center',
-            });
-          }
-
-          pdf.save(fileName + '.pdf');
-        },
-      });
+    });
+    const jsPdf = new jsPDF('p', 'mm', [canvas?.width, canvas?.height]);
+    jsPdf.html(data, {
+      margin: [20, 0, 60, 0], // left
+      callback: (pdf) => {
+        this.onExport(pdf, fileName);
+      },
     });
   }
 
-  getContainer = (view): HTMLElement => {
-    // .czi-editor-frame-body-scroll
-    let comments = false;
-    let container = view.dom.parentElement.parentElement.parentElement;
-    if (null != container) {
-      const pluginEnabled = container.querySelector('#commentPlugin');
-      if (null != pluginEnabled) {
-        if (0 < (pluginEnabled as HTMLElement).childElementCount) {
-          comments = true;
-        }
-      }
+  private onExport(pdf: jsPDF, fileName: string): void {
+    const pages = pdf.getNumberOfPages();
+    const pageWidth = pdf.internal.pageSize.width; //Optional
+    const pageHeight = pdf.internal.pageSize.height; //Optional
+
+    for (let j = 1; j < pages + 1; j++) {
+      const horizontalPos = pageWidth / 2; //Can be fixed number
+      const verticalPos = pageHeight - 10; //Can be fixed number
+      pdf.setPage(j);
+      pdf.text(`${j} of ${pages}`, horizontalPos, verticalPos, {
+        align: 'center',
+      });
     }
 
-    if (!comments) {
-      container = view.dom;
+    pdf.save(fileName + '.pdf');
+  }
+
+  getContainer = (view: EditorView): HTMLElement => {
+    // .czi-editor-frame-body-scroll
+    const container = view.dom?.parentElement?.parentElement?.parentElement;
+    const pluginEnabled =
+      container?.querySelector('#commentPlugin')?.childElementCount > 0;
+    if (pluginEnabled) {
+      return view.dom;
     }
+
     return container;
   };
 }
