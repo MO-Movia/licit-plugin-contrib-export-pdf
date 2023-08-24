@@ -20,8 +20,8 @@ export class ExportPDFCommand extends UICommand {
         _state: EditorState,
         _dispatch: (tr: Transform) => void,
         view: EditorView
-    ): void => {
-        this.exportPdf.exportPdf(view);
+    ): boolean => {
+        return this.exportPdf.exportPdf(view);
     };
 
 }
