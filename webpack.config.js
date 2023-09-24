@@ -27,6 +27,10 @@ var options = {
         exclude: /node_modules/,
         loader: 'babel-loader',
       },
+      {
+        test: /\.(svg)(\?v=\d+\.\d+\.\d+)?$/,
+        type: 'asset/resource',
+      },
     ],
   },
   resolve: {
@@ -41,7 +45,7 @@ var options = {
       'process.env.NODE_ENV': JSON.stringify(NODE_ENV),
     }),
     new WriteFilePlugin()
-  ],
+  ]
 };
 
 if (isDev) {

@@ -7,6 +7,7 @@ import {
 
 import {ExportPDFCommand} from './exportPdfCommand';
 import {EditorView} from 'prosemirror-view';
+import {ExportPDFDark, ExportPDFLight} from './images';
 
 export const KEY_EXPORT_PDF = makeKeyMapWithCommon(
   'exportPDF',
@@ -37,12 +38,21 @@ export class ExportPDFPlugin extends Plugin {
     );
   }
 
-  initButtonCommands(): unknown {
-    return this.showButton
-      ? {
-          '[picture_as_pdf] Export to PDF': EXPORT_PDF,
-        }
-      : {};
+  initButtonCommands(theme: string): unknown {
+    if (this.showButton) {
+      let image = null;
+      if ('light' == theme) {
+        image = ExportPDFLight;
+      } else {
+        image = ExportPDFDark;
+      }
+
+      return {
+        [`[${image}] Export to PDF`]: EXPORT_PDF,
+      };
+    } else {
+      return {};
+    }
   }
 
   // this helps to invoke even in readonly mode.
