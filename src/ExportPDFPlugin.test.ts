@@ -1,10 +1,10 @@
 import {ExportPDFPlugin} from './ExportPDFPlugin';
-import {createEditor, doc, p, schema} from 'jest-prosemirror';
+import {createEditor, doc, p} from 'jest-prosemirror';
 import moment from 'moment';
-import {Schema} from 'prosemirror-model';
-import {EditorView} from 'prosemirror-view';
-import {EditorState} from 'prosemirror-state';
-import {ExportPDF} from './exportPdf';
+// import {Schema} from 'prosemirror-model';
+// import {EditorView} from 'prosemirror-view';
+// import {EditorState} from 'prosemirror-state';
+// import {ExportPDF} from './exportPdf';
 
 jest.mock('html2canvas', () => {
   return jest.fn().mockResolvedValue(null);
@@ -51,5 +51,5 @@ describe('Export PDF Plugin', () => {
     expect(btnCommand).not.toBeNull();
   });
 
- 
+
 });

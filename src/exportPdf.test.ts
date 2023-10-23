@@ -1,9 +1,9 @@
-import {ExportPDFPlugin} from './ExportPDFPlugin';
-import {ExportPDF} from './exportPdf';
-import {doc, p, schema} from 'jest-prosemirror';
-import {Schema} from 'prosemirror-model';
-import {EditorView} from 'prosemirror-view';
-import {EditorState} from 'prosemirror-state';
+
+import { ExportPDF } from './exportPdf';
+// import {doc, p, schema} from 'jest-prosemirror';
+// import {Schema} from 'prosemirror-model';
+import { EditorView } from 'prosemirror-view';
+// import {EditorState} from 'prosemirror-state';
 
 jest.mock('html2canvas', () => {
   return jest.fn().mockResolvedValue(null);
@@ -38,9 +38,7 @@ jest.mock('jspdf', () => {
 
 describe('Export PDF', () => {
   let exportPdf: ExportPDF;
-  let plugin: ExportPDFPlugin;
   beforeEach(() => {
-    plugin = new ExportPDFPlugin(false);
     exportPdf = new ExportPDF();
   });
 
@@ -56,13 +54,13 @@ describe('Export PDF', () => {
     const dom = document.createElement('div');
     dom.id = 'commentPlugin';
     third.appendChild(dom);
-  
+
     const mockView = {
       dom: dom,
       state: {
         doc: {
           attrs: {
-            objectId: null, 
+            objectId: null,
           },
         },
       },
@@ -72,7 +70,7 @@ describe('Export PDF', () => {
     expect(result).toBe(true);
     expect(mockPdfObject.save).toBeDefined();
   });
-  
+
   it('should save the pdf with object Id', () => {
     const parent = document.createElement('div');
     parent.id = 'parant';
@@ -112,11 +110,11 @@ describe('Export PDF', () => {
     const dom = document.createElement('div');
     dom.id = 'commentPlugin';
     third.appendChild(dom);
-  
+
     const pluginContainer = document.createElement('div');
     pluginContainer.id = 'commentPlugin';
     dom.appendChild(pluginContainer);
-  
+
     const mockView = {
       dom: dom,
       state: {
@@ -127,9 +125,9 @@ describe('Export PDF', () => {
         },
       },
     } as unknown as EditorView;
-  
+
     const result = exportPdf.exportPdf(mockView);
-  
+
     expect(result).toBe(true);
     expect(exportPdf.getContainer(mockView)).toBeDefined();
   });
