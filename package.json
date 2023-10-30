@@ -83,8 +83,10 @@
     "lint": "npm run lint:css & npm run lint:ts",
     "ci:build": "npm run clean && npm run build:ts && npm run webpack && npm run build:babel",
     "ci:bom": "cyclonedx-npm --ignore-npm-errors --short-PURLs --output-format XML --output-file dist/bom.xml",
-    "prepare": "npm run build:dist",
     "publish:dist": "npm publish"
+  },
+  "overrides": {
+    "semver": "^7.5.2"
   },
   "importSort": {
     ".js": {
