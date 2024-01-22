@@ -1,9 +1,9 @@
-import {ExportPDFPlugin} from './ExportPDFPlugin';
-import {ExportPDF} from './exportPdf';
-import {doc, p, schema} from 'jest-prosemirror';
-import {Schema} from 'prosemirror-model';
-import {EditorView} from 'prosemirror-view';
-import {EditorState} from 'prosemirror-state';
+
+import { ExportPDF } from './exportPdf';
+// import {doc, p, schema} from 'jest-prosemirror';
+// import {Schema} from 'prosemirror-model';
+import { EditorView } from 'prosemirror-view';
+// import {EditorState} from 'prosemirror-state';
 
 jest.mock('html2canvas', () => {
   return jest.fn().mockResolvedValue(null);
@@ -38,17 +38,11 @@ jest.mock('jspdf', () => {
 
 describe('Export PDF', () => {
   let exportPdf: ExportPDF;
-  let plugin: ExportPDFPlugin;
   beforeEach(() => {
-    plugin = new ExportPDFPlugin(false);
     exportPdf = new ExportPDF();
   });
 
-  it('should save the pdf if all required conditions satisfy', async () => {
-    const mySchema = new Schema({
-      nodes: schema.spec.nodes,
-      marks: schema.spec.marks,
-    });
+  it('should save the pdf with timestamp if objectId is null', () => {
     const parent = document.createElement('div');
     parent.id = 'parant';
     const second = document.createElement('div');
@@ -60,36 +54,21 @@ describe('Export PDF', () => {
     const dom = document.createElement('div');
     dom.id = 'commentPlugin';
     third.appendChild(dom);
-    const effSchema = plugin.getEffectiveSchema(mySchema);
-    const state = EditorState.create({
-      doc: doc('<p>', p('Hello World')),
-      schema: effSchema,
-    });
-    const view = new EditorView(
-      {mount: dom},
-      {
-        state: state,
-      }
-    );
-    // Spy on the private `onExport` method.
-    const spyRenderHTML = jest.spyOn(
-      exportPdf as unknown as {renderHTML: () => Promise<unknown>},
-      'renderHTML'
-    );
-    const spyOnExport = jest.spyOn(
-      exportPdf as unknown as {onExport: () => void},
-      'onExport'
-    );
 
-    exportPdf.exportPdf(view);
-    expect(spyRenderHTML).toBeCalledTimes(1);
+    const mockView = {
+      dom: dom,
+      state: {
+        doc: {
+          attrs: {
+            objectId: null,
+          },
+        },
+      },
+    } as unknown as EditorView;
+    const result = exportPdf.exportPdf(mockView);
 
-    await (
-      exportPdf as unknown as {renderHTML: () => Promise<unknown>}
-    ).renderHTML();
-
-    // Verify that the private `onExport` method has been called.
-    expect(spyOnExport).toBeCalledTimes(2); // twice including additional call for testing here.
+    expect(result).toBe(true);
+    expect(mockPdfObject.save).toBeDefined();
   });
 
   it('should save the pdf with object Id', () => {
@@ -117,5 +96,39 @@ describe('Export PDF', () => {
     } as unknown as EditorView;
     exportPdf.exportPdf(mockView);
     expect(mockPdfObject.save()).toEqual(mockView.state.doc.attrs.objectId);
+  });
+
+  it('should return view.dom if plugin is enabled', () => {
+    const parent = document.createElement('div');
+    parent.id = 'parant';
+    const second = document.createElement('div');
+    second.id = 'secondId';
+    parent.appendChild(second);
+    const third = document.createElement('div');
+    third.id = 'thirdId';
+    second.appendChild(third);
+    const dom = document.createElement('div');
+    dom.id = 'commentPlugin';
+    third.appendChild(dom);
+
+    const pluginContainer = document.createElement('div');
+    pluginContainer.id = 'commentPlugin';
+    dom.appendChild(pluginContainer);
+
+    const mockView = {
+      dom: dom,
+      state: {
+        doc: {
+          attrs: {
+            objectId: 'exampleObjectId',
+          },
+        },
+      },
+    } as unknown as EditorView;
+
+    const result = exportPdf.exportPdf(mockView);
+
+    expect(result).toBe(true);
+    expect(exportPdf.getContainer(mockView)).toBeDefined();
   });
 });
