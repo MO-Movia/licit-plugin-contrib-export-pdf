@@ -1,10 +1,8 @@
 import {ExportPDFPlugin} from './ExportPDFPlugin';
 import {createEditor, doc, p} from 'jest-prosemirror';
 import moment from 'moment';
-// import {Schema} from 'prosemirror-model';
-// import {EditorView} from 'prosemirror-view';
-// import {EditorState} from 'prosemirror-state';
-// import {ExportPDF} from './exportPdf';
+import {Schema} from 'prosemirror-model';
+import {EditorView} from 'prosemirror-view';
 
 jest.mock('html2canvas', () => {
   return jest.fn().mockResolvedValue(null);
@@ -21,7 +19,7 @@ jest.mock('jspdf', () => {
   return mockConstructor;
 });
 describe('Export PDF Plugin', () => {
-  let plugin;
+  let plugin: ExportPDFPlugin;
 
   beforeEach(() => {
     plugin = new ExportPDFPlugin(false);
@@ -51,5 +49,40 @@ describe('Export PDF Plugin', () => {
     expect(btnCommand).not.toBeNull();
   });
 
+  it('should return schema', () => {
+    const schema = {} as unknown as Schema;
+    expect(plugin.getEffectiveSchema(schema)).toBe(schema);
+  });
+  it('should return view.dom if plugin is enabled', () => {
+    const parent = document.createElement('div');
+    parent.id = 'parant';
+    const second = document.createElement('div');
+    second.id = 'secondId';
+    parent.appendChild(second);
+    const third = document.createElement('div');
+    third.id = 'thirdId';
+    second.appendChild(third);
+    const dom = document.createElement('div');
+    dom.id = 'commentPlugin';
+    third.appendChild(dom);
 
+    const pluginContainer = document.createElement('div');
+    pluginContainer.id = 'commentPlugin';
+    dom.appendChild(pluginContainer);
+
+    const mockView = {
+      dom: dom,
+      state: {
+        doc: {
+          attrs: {
+            objectId: 'exampleObjectId',
+          },
+        },
+      },
+    } as unknown as EditorView;
+
+    const result = plugin.perform(mockView);
+
+    expect(result).toBe(true);
+  });
 });
