@@ -1,56 +1,31 @@
 {
   "name": "@modusoperandi/licit-export-pdf",
-  "version": "0.0.10",
+  "version": "1.0.0",
+  "type": "module",
   "description": "MO's Export To PDF ProseMirror Plugin",
-  "main": "dist/index.js",
-  "typings": "./index.d.ts",
+  "main": "index.js",
+  "types": "index.d.ts",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/MO-Movia/licit-plugin-contrib-export-pdf.git"
   },
   "peerDependencies": {
-    "prosemirror-model": "1.16.1"
+    "@modusoperandi/licit-doc-attrs-step": "^1.0.0",
+    "prosemirror-model": "^1.16.1"
   },
   "dependencies": {
-    "@modusoperandi/licit-doc-attrs-step": "^0.1.5",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",
     "moment": "^2.29.4"
-   },
+  },
   "devDependencies": {
-    "@babel/cli": "^7.19.3",
-    "@babel/core": "^7.19.6",
-    "@babel/plugin-proposal-class-properties": "^7.18.6",
-    "@babel/plugin-proposal-decorators": "^7.20.0",
-    "@babel/plugin-proposal-do-expressions": "^7.18.6",
-    "@babel/plugin-proposal-export-default-from": "^7.18.10",
-    "@babel/plugin-proposal-export-namespace-from": "^7.18.9",
-    "@babel/plugin-proposal-function-sent": "^7.18.6",
-    "@babel/plugin-proposal-json-strings": "^7.18.6",
-    "@babel/plugin-proposal-logical-assignment-operators": "^7.18.9",
-    "@babel/plugin-proposal-nullish-coalescing-operator": "^7.18.6",
-    "@babel/plugin-proposal-numeric-separator": "^7.18.6",
-    "@babel/plugin-proposal-object-rest-spread": "^7.19.4",
-    "@babel/plugin-proposal-optional-chaining": "^7.21.0",
-    "@babel/plugin-proposal-pipeline-operator": "^7.18.9",
-    "@babel/plugin-proposal-throw-expressions": "^7.18.6",
-    "@babel/plugin-syntax-dynamic-import": "^7.8.3",
-    "@babel/plugin-syntax-import-meta": "^7.10.4",
-    "@babel/plugin-transform-parameters": "^7.18.8",
-    "@babel/plugin-transform-runtime": "^7.19.6",
-    "@babel/plugin-transform-typescript": "^7.20.0",
-    "@babel/preset-env": "^7.19.4",
-    "@babel/preset-react": "^7.18.6",
-    "@babel/preset-typescript": "^7.18.6",
     "@cyclonedx/cyclonedx-npm": "^1.11.0",
     "@types/jest": "^29.2.0",
     "@typescript-eslint/eslint-plugin": "^5.41.0",
     "@typescript-eslint/parser": "^5.41.0",
+    "copyfiles": "^2.4.1",
     "ajv": "^7.2.4",
-    "babel-loader": "^9.0.0",
-    "babel-plugin-transform-react-remove-prop-types": "0.4.24",
-    "clean-webpack-plugin": "^4.0.0",
     "eslint": "^8.26.0",
     "eslint-plugin-jest": "^27.1.3",
     "eslint-plugin-react": "^7.31.10",
@@ -62,28 +37,21 @@
     "lint-staged": "^13.0.3",
     "ts-jest": "^29.0.3",
     "ts-node": "^10.9.1",
-    "typescript": "^4.8.4",
-    "webpack": "^5.74.0",
-    "webpack-cli": "^4.10.0",
-    "write-file-webpack-plugin": "^4.5.1",
-    "terser-webpack-plugin": "^5.3.6"
+    "typescript": "^4.8.4"
   },
   "scripts": {
     "test": "jest --coverage",
     "test:unit": "jest",
     "test:coverage": "jest --coverage",
     "clean": "rm -rf dist/ && rm -f modusoperandi-licit-export-pdf-*.*.*.tgz",
-    "webpack": "webpack",
-    "build:ts": "tsc -p tsconfig.json",
-    "build:babel": "babel src --out-dir dist --extensions .ts",
-    "build:dist": "npm run clean && npm run build:ts && npm run webpack && npm run build:babel",
     "lint:ts": "eslint src --ext .ts --fix",
     "lint:css": "echo \"No CSS available\" && exit 1",
     "lint": "npm run lint:css & npm run lint:ts",
-    "ci:build": "npm run clean && npm run build:ts && npm run webpack && npm run build:babel",
-    "ci:bom": "cyclonedx-npm --ignore-npm-errors --short-PURLs --output-format XML --output-file dist/bom.xml",
-    "prepare": "npm run build:dist",
-    "publish:dist": "npm publish"
+    "ci:build": "tsc --build && copyfiles --up 1 \"src/**/*.css\" dist  && copyfiles package.json dist",
+    "ci:bom": "cyclonedx-npm --ignore-npm-errors --short-PURLs --output-format XML --output-file dist/bom.xml"
+  },
+  "overrides": {
+    "semver": "^7.5.2"
   },
   "importSort": {
     ".js": {
