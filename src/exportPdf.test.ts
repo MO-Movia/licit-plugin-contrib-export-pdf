@@ -1,9 +1,5 @@
-
-import { ExportPDF } from './exportPdf';
-// import {doc, p, schema} from 'jest-prosemirror';
-// import {Schema} from 'prosemirror-model';
-import { EditorView } from 'prosemirror-view';
-// import {EditorState} from 'prosemirror-state';
+import {ExportPDF} from './exportPdf';
+import {EditorView} from 'prosemirror-view';
 
 jest.mock('html2canvas', () => {
   return jest.fn().mockResolvedValue(null);
