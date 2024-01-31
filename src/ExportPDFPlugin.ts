@@ -46,7 +46,7 @@ export class ExportPDFPlugin extends Plugin {
   }
 
   // this helps to invoke even in readonly mode.
-  perform(view: EditorView): void {
-    EXPORT_PDF.execute(undefined, undefined, view);
+  perform(view: EditorView): boolean {
+    return EXPORT_PDF.execute(undefined, undefined, view);
   }
 }
