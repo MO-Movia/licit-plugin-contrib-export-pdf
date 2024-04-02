@@ -1,0 +1,16 @@
+@media screen {
+  .pagedjs_page {
+    margin-top: -96px;
+    margin-left: -127px;
+    page-break-before: always;
+    counter-increment: page;
+  }
+
+  .pagedjs_pagebox * {
+    width: 175mm;
+  }
+
+  .pagedjs_margin-bottom {
+    content: counter(page);
+  }
+}
