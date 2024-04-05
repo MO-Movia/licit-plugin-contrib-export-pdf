@@ -1,21 +1,24 @@
 import React from 'react';
-import {EditorView} from 'prosemirror-view';
-import {EditorState} from 'prosemirror-state';
-import {Previewer, registerHandlers} from 'pagedjs';
-import MyHandler, {Array} from './handlers';
+import { EditorView } from 'prosemirror-view';
+import { EditorState } from 'prosemirror-state';
+import { Previewer, registerHandlers } from 'pagedjs';
+import MyHandler, { Array } from './handlers';
 import jsPDF from 'jspdf';
 // import './ui/paged.css';
 export let Option = [];
 
-class PreviewForm extends React.Component {
+interface Props {
+  editorState: EditorState;
+  editorView: EditorView;
+  onClose: () => void;
+}
+
+
+class PreviewForm extends React.PureComponent<Props> {
+
   htmlString = '';
   paragraphNodeContent = [];
   dataTrial;
-  props: {
-    editorState: EditorState;
-    editorView: EditorView;
-    onClose(): void;
-  };
 
   componentDidMount(): void {
     if (Option.includes(2)) {
@@ -34,7 +37,7 @@ class PreviewForm extends React.Component {
     }
     Option.push(1);
     registerHandlers(MyHandler);
-    const {editorView} = this.props;
+    const { editorView } = this.props;
     let divContainer = document.getElementById('holder');
     const data = this.getContainer(editorView);
     let data1 = data.cloneNode(true);
@@ -56,7 +59,7 @@ class PreviewForm extends React.Component {
   }
 
   render(): React.ReactElement<any> {
-    const {editorView} = this.props;
+    const { editorView } = this.props;
     return (
       <div
         style={{
@@ -70,7 +73,7 @@ class PreviewForm extends React.Component {
           alignItems: 'center',
         }}
       >
-        <div style={{border: 'solid'}}>
+        <div style={{ border: 'solid' }}>
           <div
             id="holder"
             className="preview-container"
@@ -81,10 +84,10 @@ class PreviewForm extends React.Component {
             }}
           ></div>
 
-          <div style={{backgroundColor: 'darkgrey'}}>
+          <div style={{ backgroundColor: 'darkgrey' }}>
             <button onClick={this.handleConfirm}>Confirm</button>
             <button onClick={this.handleCancel}>Cancel</button>
-            <label style={{marginLeft: '10px'}}>
+            <label style={{ marginLeft: '10px' }}>
               <input
                 type="checkbox"
                 name="TOC"
@@ -92,7 +95,7 @@ class PreviewForm extends React.Component {
               />{' '}
               TOC
             </label>
-            <label style={{marginLeft: '10px'}}>
+            <label style={{ marginLeft: '10px' }}>
               <input
                 type="checkbox"
                 name="infoicon"
@@ -132,7 +135,7 @@ class PreviewForm extends React.Component {
     divContainer.innerHTML = '';
     let newDiv = document.createElement('div');
     newDiv.classList.add('tocHead');
-    const {editorView} = this.props;
+    const { editorView } = this.props;
     const data = this.getContainer(editorView);
     let data1 = data.cloneNode(true);
     data1.insertBefore(newDiv, data1.firstChild);
@@ -145,10 +148,7 @@ class PreviewForm extends React.Component {
         infoIcon.appendChild(superscript);
       });
     }
-    let paged = new Previewer();
-    paged.preview(data1, [], divContainer).then(flow => {
-      console.log('Rendered', flow.total, 'pages.');
-    });
+
   };
 
   InfoActive = (): void => {
@@ -157,7 +157,7 @@ class PreviewForm extends React.Component {
     }
     let divContainer = document.getElementById('holder');
     divContainer.innerHTML = '';
-    const {editorView} = this.props;
+    const { editorView } = this.props;
     const data = this.getContainer(editorView);
     let data1 = data.cloneNode(true);
     var infoIcons = (data1 as HTMLElement).querySelectorAll('.infoicon');
@@ -172,10 +172,6 @@ class PreviewForm extends React.Component {
       newDiv.classList.add('tocHead');
       data1.insertBefore(newDiv, data1.firstChild);
     }
-    let paged = new Previewer();
-    paged.preview(data1, [], divContainer).then(flow => {
-      console.log('Rendered', flow.total, 'pages.');
-    });
   };
 
   InfoDeactive = (): void => {
@@ -192,7 +188,7 @@ class PreviewForm extends React.Component {
   };
 
   original = (): void => {
-    const {editorView} = this.props;
+    const { editorView } = this.props;
     let divContainer = document.getElementById('holder');
     divContainer.innerHTML = '';
     const data = this.getContainer(editorView);

@@ -92,7 +92,7 @@ const jestConfig: JestConfigWithTsJest = {
   // A map from regular expressions to module names or to arrays of module names that allow to stub out resources with a single module
   moduleNameMapper: {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
-    '^(\\.{1,2}/.*)\\.js$': '$1',
+    '^(\\.{1,2}/.*)\\.js$/': '$1',
   },
 
   // An array of regexp pattern strings, matched against all module paths before considered 'visible' to the module loader

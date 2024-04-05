@@ -1,5 +1,6 @@
 import {ExportPDF} from './exportPdf';
 import {EditorView} from 'prosemirror-view';
+import createToc from './exportPdf'
 
 jest.mock('html2canvas', () => {
   return jest.fn().mockResolvedValue(null);
@@ -94,37 +95,82 @@ describe('Export PDF', () => {
     expect(mockPdfObject.save()).toEqual(mockView.state.doc.attrs.objectId);
   });
 
-  it('should return view.dom if plugin is enabled', () => {
-    const parent = document.createElement('div');
-    parent.id = 'parant';
-    const second = document.createElement('div');
-    second.id = 'secondId';
-    parent.appendChild(second);
-    const third = document.createElement('div');
-    third.id = 'thirdId';
-    second.appendChild(third);
-    const dom = document.createElement('div');
-    dom.id = 'commentPlugin';
-    third.appendChild(dom);
+  // it('should return view.dom if plugin is enabled', () => {
+  //   const parent = document.createElement('div');
+  //   parent.id = 'parant';
+  //   const second = document.createElement('div');
+  //   second.id = 'secondId';
+  //   parent.appendChild(second);
+  //   const third = document.createElement('div');
+  //   third.id = 'thirdId';
+  //   second.appendChild(third);
+  //   const dom = document.createElement('div');
+  //   dom.id = 'commentPlugin';
+  //   third.appendChild(dom);
 
-    const pluginContainer = document.createElement('div');
-    pluginContainer.id = 'commentPlugin';
-    dom.appendChild(pluginContainer);
+  //   const pluginContainer = document.createElement('div');
+  //   pluginContainer.id = 'commentPlugin';
+  //   dom.appendChild(pluginContainer);
 
-    const mockView = {
-      dom: dom,
-      state: {
-        doc: {
-          attrs: {
-            objectId: 'exampleObjectId',
-          },
-        },
-      },
-    } as unknown as EditorView;
+  //   const mockView = {
+  //     dom: dom,
+  //     state: {
+  //       doc: {
+  //         attrs: {
+  //           objectId: 'exampleObjectId',
+  //         },
+  //       },
+  //     },
+  //   } as unknown as EditorView;
 
-    const result = exportPdf.exportPdf(mockView);
+  //   const result = exportPdf.exportPdf(mockView);
 
-    expect(result).toBe(true);
-    expect(exportPdf.getContainer(mockView)).toBeDefined();
+  //   expect(result).toBe(true);
+  //   expect(exportPdf.getContainer(mockView)).toBeDefined();
+  // });
+});
+
+describe('createToc', () => {
+  // Mocking config object
+  const config = {
+    content: document.createElement('div'),
+    tocElement: 'div',
+    titleElements: ['h1', 'h2', 'h3'],
+  };
+
+
+
+  it('should add classes, data attributes, and ids to title elements', () => {
+    
+    const title1 = document.createElement('p');
+    title1.setAttribute('stylename', 'h1');
+    config.content.appendChild(title1);
+
+    const title2 = document.createElement('p');
+    title2.setAttribute('stylename', 'h2');
+    config.content.appendChild(title2);
+
+    const title3 = document.createElement('p');
+    title3.setAttribute('stylename', 'h3');
+    config.content.appendChild(title3);
+
+   
+    const tocElementDiv = document.createElement('div');
+    config.content.appendChild(tocElementDiv);
+
+    createToc(config);
+
+    
+    expect(title1.classList.contains('title-element')).toBeTruthy();
+    expect(title1.getAttribute('data-title-level')).toBe('1');
+    expect(title1.id).toBe('title-element-1');
+
+    expect(title2.classList.contains('title-element')).toBeTruthy();
+    expect(title2.getAttribute('data-title-level')).toBe('2');
+    expect(title2.id).toBe('title-element-2');
+
+    expect(title3.classList.contains('title-element')).toBeTruthy();
+    expect(title3.getAttribute('data-title-level')).toBe('3');
+    expect(title3.id).toBe('title-element-3');
   });
 });

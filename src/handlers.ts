@@ -1,4 +1,4 @@
-import {Handler, Paged} from 'pagedjs';
+import {Handler} from 'pagedjs';
 import createToc from './exportPdf';
 import {Option} from './preview';
 export let Array = [];
@@ -23,10 +23,12 @@ class MyHandler extends Handler {
     }
   }
 
-  afterPageLayout(pageFragment, page) {
+  afterPageLayout(pageFragment) {
+    
     if (Option.includes(3)) {
       let concatenatedValues = '';
       let object = Array[0];
+      console.log('Option = ', object)
       object.forEach(obj => {
         if (Option.includes(2)) {
           if (obj.key + 1 == pageFragment.dataset.pageNumber) {
@@ -43,73 +45,8 @@ class MyHandler extends Handler {
         `"${concatenatedValues + ' '}`
       );
     }
-    // if (Option.includes(2)) {
-    //   this.setPageNumberFooter(pageFragment);
-    // }
+   
   }
-
-  // setPageNumberFooter(pageFragment) {
-  //   const tocEle = pageFragment.querySelector(
-  //     '.pagedjs_sheet .pagedjs_pagebox .pagedjs_page_content .tocHead'
-  //   );
-
-  //   const pageNumber = pageFragment.dataset.pageNumber;
-  //   const footerElement = pageFragment.querySelector(
-  //     '.pagedjs_sheet .pagedjs_pagebox .pagedjs_margin-bottom .pagedjs_margin-bottom-left .pagedjs_margin-content'
-  //   );
-
-  //   if (footerElement) {
-  //     let innerHTML = '';
-  //     if (tocEle) {
-  //       this.countTOC++;
-  //       const romanNumeral = this.convertToRoman(parseInt(pageNumber, 10));
-  //       innerHTML = `Page ${romanNumeral}`;
-  //     } else {
-  //       innerHTML = `Page ${pageNumber - this.countTOC}`;
-  //     }
-  //     footerElement.innerHTML = innerHTML;
-  //     this.pageFooters.push(footerElement);
-  //   }
-  // }
-
-  // finalizeFooter(pageCount) {
-  //   let excount = 0;
-  //   let orgCount = pageCount - this.countTOC;
-  //   this.pageFooters.forEach(pageFooter => {
-  //     if (excount < this.countTOC) {
-  //       pageFooter.innerHTML = pageFooter.innerHTML;
-  //     } else {
-  //       pageFooter.innerHTML = pageFooter.innerHTML + ' of ' + orgCount;
-  //     }
-  //     excount++;
-  //   });
-  // }
-
-  // convertToRoman(num) {
-  //   const romanMap = [
-  //     {value: 1000, roman: 'M'},
-  //     {value: 900, roman: 'CM'},
-  //     {value: 500, roman: 'D'},
-  //     {value: 400, roman: 'CD'},
-  //     {value: 100, roman: 'C'},
-  //     {value: 90, roman: 'XC'},
-  //     {value: 50, roman: 'L'},
-  //     {value: 40, roman: 'XL'},
-  //     {value: 10, roman: 'X'},
-  //     {value: 9, roman: 'IX'},
-  //     {value: 5, roman: 'V'},
-  //     {value: 4, roman: 'IV'},
-  //     {value: 1, roman: 'I'},
-  //   ];
-  //   let roman = '';
-  //   for (let i = 0; i < romanMap.length; i++) {
-  //     while (num >= romanMap[i].value) {
-  //       roman += romanMap[i].roman;
-  //       num -= romanMap[i].value;
-  //     }
-  //   }
-  //   return roman;
-  // }
 
   afterRendered(pages) {
     if (Option.includes(1)) {
@@ -134,12 +71,9 @@ class MyHandler extends Handler {
       }
       Array.push(tocObjects);
     }
-    // if (Option.includes(2)) {
-    //   this.finalizeFooter(pages.length);
-    // }
   }
 
-  beforePageLayout(pageElement, page, breakToken) {
+  beforePageLayout() {
     this.doIT();
   }
 
