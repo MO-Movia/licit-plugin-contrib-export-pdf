@@ -1,7 +1,7 @@
 import {Handler} from 'pagedjs';
 import createToc from './exportPdf';
 import {Option} from './preview';
-export let Array = [];
+export const Array = [];
 
 class MyHandler extends Handler {
   done;
@@ -24,11 +24,11 @@ class MyHandler extends Handler {
   }
 
   afterPageLayout(pageFragment) {
-    
+
     if (Option.includes(3)) {
       let concatenatedValues = '';
-      let object = Array[0];
-      console.log('Option = ', object)
+      const object = Array[0];
+      console.log('Option = ', object);
       object.forEach(obj => {
         if (Option.includes(2)) {
           if (obj.key + 1 == pageFragment.dataset.pageNumber) {
@@ -41,28 +41,28 @@ class MyHandler extends Handler {
         }
       });
       pageFragment.style.setProperty(
-        `--pagedjs-string-last-chapTitled`,
+        '--pagedjs-string-last-chapTitled',
         `"${concatenatedValues + ' '}`
       );
     }
-   
+
   }
 
   afterRendered(pages) {
     if (Option.includes(1)) {
-      let tocObjects = [];
+      const tocObjects = [];
       let count = 0;
       for (let i = 0; i < pages.length; i++) {
         const outerHTMLValue = pages[i].element.outerHTML;
         const parser = new DOMParser();
         const doc = parser.parseFromString(outerHTMLValue, 'text/html');
-        let tocElements = doc.querySelectorAll(`infoicon`);
+        const tocElements = doc.querySelectorAll('infoicon');
         tocElements.forEach(element => {
           count++;
-          let description = element.attributes['description'].textContent;
-          let cleanedDescription =
+          const description = element.attributes['description'].textContent;
+          const cleanedDescription =
             ' ' + count + '. ' + description.replace(/<[^>]*>/g, '');
-          let obj = {
+          const obj = {
             key: i + 1,
             value: cleanedDescription,
           };
@@ -81,7 +81,7 @@ class MyHandler extends Handler {
     let opt;
     let opt2;
     if (Option.includes(3) && Option.includes(2)) {
-      opt2 = `.ProseMirror  infoicon { string-set: chapTitled content(text); }`;
+      opt2 = '.ProseMirror  infoicon { string-set: chapTitled content(text); }';
       opt = `@bottom-center{
 content: string(chapTitled, last);
 text-align: right;
@@ -91,7 +91,7 @@ content: "Page " counter(page) " of " counter(pages);
 }
 `;
     } else if (Option.includes(3)) {
-      opt2 = `.ProseMirror  infoicon { string-set: chapTitled content(text); }`;
+      opt2 = '.ProseMirror  infoicon { string-set: chapTitled content(text); }';
       opt = `@bottom-center{
 content: string(chapTitled, last);
 text-align: right;
@@ -113,7 +113,7 @@ content: "Page " counter(page) " of " counter(pages);
     }
 
     if (!this.done) {
-      let text = await this['polisher'].convertViaSheet(`@media print {@page {
+      const text = await this['polisher'].convertViaSheet(`@media print {@page {
 ${opt}
 }
 ${opt2}

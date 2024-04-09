@@ -25,16 +25,16 @@ describe('MyHandler', () => {
         jest.requireMock('./preview').Option = [1, 3, 2];
 
         const el = document.createElement('infoicon');
-        el.setAttribute('description', 'text')
+        el.setAttribute('description', 'text');
         const el1 = document.createElement('infoicon');
-        el1.setAttribute('description', 'text')
+        el1.setAttribute('description', 'text');
         const pages = [
             { element: el },
             { element: el1 }
         ];
 
         handler.afterRendered(pages);
-        handler.afterPageLayout({ dataset: { pageNumber: 2 }, style: { setProperty() { return 'bold' } } });
+        handler.afterPageLayout({ dataset: { pageNumber: 2 }, style: { setProperty() { return 'bold'; } } });
         expect(Array.length).toBeGreaterThan(0);
     });
 
@@ -42,16 +42,16 @@ describe('MyHandler', () => {
         jest.requireMock('./preview').Option = [1, 3];
 
         const el = document.createElement('infoicon');
-        el.setAttribute('description', 'text')
+        el.setAttribute('description', 'text');
         const el1 = document.createElement('infoicon');
-        el1.setAttribute('description', 'text')
+        el1.setAttribute('description', 'text');
         const pages = [
             { element: el },
             { element: el1 }
         ];
 
         handler.afterRendered(pages);
-        handler.afterPageLayout({ dataset: { pageNumber: 1 }, style: { setProperty() { return 'bold' } } });
+        handler.afterPageLayout({ dataset: { pageNumber: 1 }, style: { setProperty() { return 'bold'; } } });
         expect(Array.length).toBeGreaterThan(0);
     });
 

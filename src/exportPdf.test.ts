@@ -1,6 +1,6 @@
 import {ExportPDF} from './exportPdf';
 import {EditorView} from 'prosemirror-view';
-import createToc from './exportPdf'
+import createToc from './exportPdf';
 
 jest.mock('html2canvas', () => {
   return jest.fn().mockResolvedValue(null);
@@ -141,7 +141,7 @@ describe('createToc', () => {
 
 
   it('should add classes, data attributes, and ids to title elements', () => {
-    
+
     const title1 = document.createElement('p');
     title1.setAttribute('stylename', 'h1');
     config.content.appendChild(title1);
@@ -154,13 +154,13 @@ describe('createToc', () => {
     title3.setAttribute('stylename', 'h3');
     config.content.appendChild(title3);
 
-   
+
     const tocElementDiv = document.createElement('div');
     config.content.appendChild(tocElementDiv);
 
     createToc(config);
 
-    
+
     expect(title1.classList.contains('title-element')).toBeTruthy();
     expect(title1.getAttribute('data-title-level')).toBe('1');
     expect(title1.id).toBe('title-element-1');
