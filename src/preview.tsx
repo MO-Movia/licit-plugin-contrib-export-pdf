@@ -4,6 +4,7 @@ import { EditorState } from 'prosemirror-state';
 import { Previewer, registerHandlers } from 'pagedjs';
 import MyHandler, { Array } from './handlers';
 import jsPDF from 'jspdf';
+import { display } from 'html2canvas/dist/types/css/property-descriptors/display';
 // import './ui/paged.css';
 export let Option = [];
 
@@ -75,35 +76,72 @@ class PreviewForm extends React.PureComponent<Props> {
       >
         <div style={{ border: 'solid' }}>
           <div
-            id="holder"
-            className="preview-container"
-            style={{
-              height: '90vh',
-              width: 'auto',
-              overflowY: 'auto',
-            }}
-          ></div>
+            style={{ display: 'flex', flexDirection: 'row' }}>
 
-          <div style={{ backgroundColor: 'darkgrey' }}>
+            <div
+              id="holder"
+              className="preview-container"
+              style={{
+                height: '90vh',
+                width: 'auto',
+                overflowY: 'auto',
+              }}
+            ></div>
+            <div
+              style={{ height: '90vh', background: 'rgb(226 226 226)', position: 'relative' }}
+            >
+              <div style={{ padding: '20px' }}>
+                <span>Options:</span>
+                <div style={{ marginTop: '10px' }}>
+                  <label >
+                    <input
+                      type="checkbox"
+                      name="TOC"
+                      onChange={this.handleTOCChange}
+                    />{' '}
+                    Include TOC
+                  </label>
+                </div>
+                <div style={{ marginTop: '10px' }}>
+                  <label >
+                    <input
+                      type="checkbox"
+                      name="infoicon"
+                      onChange={this.handleInfoiconChange}
+                    />{' '}
+                    Convert Info Icons to Footnotes
+                  </label>
+                </div>
+
+              </div>
+
+              <div style={{ position: 'absolute', bottom: '0', right: '0', padding: '5px' }}>
+                <button onClick={this.handleConfirm}>Confirm</button>
+                <button onClick={this.handleCancel}>Cancel</button>
+              </div>
+
+            </div>
+          </div>
+          {/* <div style={{backgroundColor: 'darkgrey'}}>
             <button onClick={this.handleConfirm}>Confirm</button>
             <button onClick={this.handleCancel}>Cancel</button>
-            <label style={{ marginLeft: '10px' }}>
+            <label style={{marginLeft: '10px'}}>
               <input
                 type="checkbox"
                 name="TOC"
                 onChange={this.handleTOCChange}
               />{' '}
-              TOC
+              Include TOC
             </label>
-            <label style={{ marginLeft: '10px' }}>
+            <label style={{marginLeft: '10px'}}>
               <input
                 type="checkbox"
                 name="infoicon"
                 onChange={this.handleInfoiconChange}
               />{' '}
-              Infoicon
+              Convert Info Icons to Footnotes
             </label>
-          </div>
+          </div> */}
         </div>
       </div>
     );
@@ -135,6 +173,7 @@ class PreviewForm extends React.PureComponent<Props> {
     divContainer.innerHTML = '';
     let newDiv = document.createElement('div');
     newDiv.classList.add('tocHead');
+    newDiv.style.paddingBottom = '50px';
     const { editorView } = this.props;
     const data = this.getContainer(editorView);
     let data1 = data.cloneNode(true);
@@ -148,7 +187,10 @@ class PreviewForm extends React.PureComponent<Props> {
         infoIcon.appendChild(superscript);
       });
     }
-
+    let paged = new Previewer();
+    paged.preview(data1, [], divContainer).then(flow => {
+      console.log('Rendered', flow.total, 'pages.');
+    });
   };
 
   InfoActive = (): void => {
@@ -172,6 +214,10 @@ class PreviewForm extends React.PureComponent<Props> {
       newDiv.classList.add('tocHead');
       data1.insertBefore(newDiv, data1.firstChild);
     }
+    let paged = new Previewer();
+    paged.preview(data1, [], divContainer).then(flow => {
+      console.log('Rendered', flow.total, 'pages.');
+    });
   };
 
   InfoDeactive = (): void => {

@@ -46,16 +46,16 @@ export default function createToc(config) {
   const content1 = config.content;
   const tocElement1 = config.tocElement;
   const titleElements1 = config.titleElements;
-  const tocElementDiv = content1.querySelector(`${tocElement1}`);
-  if (!content1.querySelector('#list-toc-generated')) {
-    const tocUl = document.createElement('ul');
+  let tocElementDiv = content1.querySelector(`${tocElement1}`);
+  if (!content1.querySelector(`#list-toc-generated`)) {
+    let tocUl = document.createElement('ul');
     tocUl.id = 'list-toc-generated';
     tocElementDiv.appendChild(tocUl);
 
     let tocElementNbr = 0;
-    for (let i = 0; i < titleElements1.length; i++) {
-      const titleHierarchy = i + 1;
-      const titleElement = content1.querySelectorAll(
+    for (var i = 0; i < titleElements1.length; i++) {
+      let titleHierarchy = i + 1;
+      let titleElement = content1.querySelectorAll(
         `p[stylename="${titleElements1[i]}"]`
       );
       titleElement.forEach(function(element) {
@@ -65,18 +65,18 @@ export default function createToc(config) {
 
         // add id if doesn't exist
         tocElementNbr++;
-        const idElement = element.id;
+        let idElement = element.id;
         if (idElement == '') {
           element.id = 'title-element-' + tocElementNbr;
         }
       });
     }
-    const tocElements = content1.querySelectorAll('.title-element');
+    let tocElements = content1.querySelectorAll('.title-element');
 
-    for (let i = 0; i < tocElements.length; i++) {
-      const tocElement = tocElements[i];
+    for (var i = 0; i < tocElements.length; i++) {
+      let tocElement = tocElements[i];
 
-      const tocNewLi = document.createElement('li');
+      let tocNewLi = document.createElement('li');
 
       // Add class for the hierarcy of toc
       tocNewLi.classList.add('toc-element');
