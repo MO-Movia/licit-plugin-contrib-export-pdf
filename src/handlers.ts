@@ -1,35 +1,38 @@
 import {Handler} from 'pagedjs';
-import createToc from './exportPdf';
-import {Option} from './preview';
+import {createToc} from './exportPdf';
 export let Array = [];
+import {PreviewForm} from './preview'
 
-class MyHandler extends Handler {
+export class MyHandler extends Handler{
   done;
   countTOC = 0;
   pageFooters: Array<HTMLElement> = [];
   constructor(chunker, polisher, caller) {
     super(chunker, polisher, caller);
     this.done = false;
+    console.log(PreviewForm.tocHeader);
   }
-
+ 
   beforeParsed(content) {
+    console.log('isToc = ',PreviewForm.isToc);
+    console.log('isInfoicon = ',PreviewForm.isInfoicon)
     this.pageFooters = [];
-    if (Option.includes(2)) {
+    if (PreviewForm.isToc) {
       createToc({
         content: content,
         tocElement: '.tocHead',
-        titleElements: ['Chapter Header'],
+        titleElements: PreviewForm.tocHeader,
       });
     }
   }
 
   afterPageLayout(pageFragment) {
 
-    if (Option.includes(3)) {
+    if (PreviewForm.isInfoicon) {
       let concatenatedValues = '';
       let object = Array[0];
       object.forEach(obj => {
-        if (Option.includes(2)) {
+        if (PreviewForm.isToc) {
           if (obj.key + 1 == pageFragment.dataset.pageNumber) {
             concatenatedValues += obj.value + ' ';
           }
@@ -48,7 +51,7 @@ class MyHandler extends Handler {
   }
 
   afterRendered(pages) {
-    if (Option.includes(1)) {
+    if (PreviewForm.general) {
       let tocObjects = [];
       let count = 0;
       for (let i = 0; i < pages.length; i++) {
@@ -79,7 +82,7 @@ class MyHandler extends Handler {
   async doIT() {
     let opt;
     let opt2;
-    if (Option.includes(3) && Option.includes(2)) {
+    if (PreviewForm.isInfoicon && PreviewForm.isToc) {
       opt2 = `.ProseMirror  infoicon { string-set: chapTitled content(text); }`;
       opt = `@bottom-center{
 content: string(chapTitled, last);
@@ -89,7 +92,7 @@ text-align: right;
 content: "Page " counter(page) " of " counter(pages);
 }
 `;
-    } else if (Option.includes(3)) {
+    } else if (PreviewForm.isInfoicon) {
       opt2 = `.ProseMirror  infoicon { string-set: chapTitled content(text); }`;
       opt = `@bottom-center{
 content: string(chapTitled, last);
@@ -99,7 +102,7 @@ text-align: right;
 content: "Page " counter(page) " of " counter(pages);
 }
 `;
-    } else if (Option.includes(2)) {
+    } else if (PreviewForm.isToc) {
       opt = ` @bottom-left {
 content: "Page " counter(page) " of " counter(pages);
 }`;
@@ -214,5 +217,3 @@ background-color: #ffffff
     }
   }
 }
-
-export default MyHandler;

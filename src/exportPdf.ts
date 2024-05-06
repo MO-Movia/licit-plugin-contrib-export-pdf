@@ -1,7 +1,7 @@
 import {EditorView} from 'prosemirror-view';
 import moment from 'moment/moment';
 import {createPopUp} from '@modusoperandi/licit-ui-commands';
-import PreviewForm from './preview';
+import {PreviewForm} from './preview';
 
 // [FS] IRAD-1893 2022-07-25
 // Export to PDF file.
@@ -42,7 +42,7 @@ export class ExportPDF {
   }
 }
 
-export default function createToc(config) {
+export function createToc(config) {
   const content1 = config.content;
   const tocElement1 = config.tocElement;
   const titleElements1 = config.titleElements;
