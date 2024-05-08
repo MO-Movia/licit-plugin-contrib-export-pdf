@@ -1,21 +1,18 @@
-import {Handler} from 'pagedjs';
-import {createToc} from './exportPdf';
-export let Array = [];
-import {PreviewForm} from './preview'
+import { Handler } from 'pagedjs';
+import { createToc } from './exportPdf';
+export const Array = [];
+import { PreviewForm } from './preview';
 
-export class MyHandler extends Handler{
+export class MyHandler extends Handler {
   done;
   countTOC = 0;
   pageFooters: Array<HTMLElement> = [];
   constructor(chunker, polisher, caller) {
     super(chunker, polisher, caller);
     this.done = false;
-    console.log(PreviewForm.tocHeader);
   }
- 
+
   beforeParsed(content) {
-    console.log('isToc = ',PreviewForm.isToc);
-    console.log('isInfoicon = ',PreviewForm.isInfoicon)
     this.pageFooters = [];
     if (PreviewForm.isToc) {
       createToc({
@@ -30,7 +27,7 @@ export class MyHandler extends Handler{
 
     if (PreviewForm.isInfoicon) {
       let concatenatedValues = '';
-      let object = Array[0];
+      const object = Array[0];
       object.forEach(obj => {
         if (PreviewForm.isToc) {
           if (obj.key + 1 == pageFragment.dataset.pageNumber) {
@@ -52,19 +49,19 @@ export class MyHandler extends Handler{
 
   afterRendered(pages) {
     if (PreviewForm.general) {
-      let tocObjects = [];
+      const tocObjects = [];
       let count = 0;
       for (let i = 0; i < pages.length; i++) {
         const outerHTMLValue = pages[i].element.outerHTML;
         const parser = new DOMParser();
         const doc = parser.parseFromString(outerHTMLValue, 'text/html');
-        let tocElements = doc.querySelectorAll(`infoicon`);
+        const tocElements = doc.querySelectorAll('infoicon');
         tocElements.forEach(element => {
           count++;
-          let description = element.attributes['description'].textContent;
-          let cleanedDescription =
+          const description = element.attributes['description'].textContent;
+          const cleanedDescription =
             ' ' + count + '. ' + description.replace(/<[^>]*>/g, '');
-          let obj = {
+          const obj = {
             key: i + 1,
             value: cleanedDescription,
           };
@@ -83,7 +80,7 @@ export class MyHandler extends Handler{
     let opt;
     let opt2;
     if (PreviewForm.isInfoicon && PreviewForm.isToc) {
-      opt2 = `.ProseMirror  infoicon { string-set: chapTitled content(text); }`;
+      opt2 = '.ProseMirror  infoicon { string-set: chapTitled content(text); }';
       opt = `@bottom-center{
 content: string(chapTitled, last);
 text-align: right;
@@ -93,7 +90,7 @@ content: "Page " counter(page) " of " counter(pages);
 }
 `;
     } else if (PreviewForm.isInfoicon) {
-      opt2 = `.ProseMirror  infoicon { string-set: chapTitled content(text); }`;
+      opt2 = '.ProseMirror  infoicon { string-set: chapTitled content(text); }';
       opt = `@bottom-center{
 content: string(chapTitled, last);
 text-align: right;
@@ -115,7 +112,7 @@ content: "Page " counter(page) " of " counter(pages);
     }
 
     if (!this.done) {
-      let text = await this['polisher'].convertViaSheet(`@media print {@page {
+      const text = await this['polisher'].convertViaSheet(`@media print {@page {
 ${opt}
 }
 ${opt2}

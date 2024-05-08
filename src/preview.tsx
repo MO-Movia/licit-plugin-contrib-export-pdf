@@ -33,7 +33,6 @@ export class PreviewForm extends React.PureComponent<Props> {
     let divContainer = document.getElementById('holder');
     const data = this.getContainer(editorView);
     let data1 = data.cloneNode(true);
-    console.log(Array);
     let paged = new Previewer();
     paged.preview(data1, [], divContainer).then(flow => {
       console.log('Rendered', flow.total, 'pages.');
@@ -325,7 +324,9 @@ export class PreviewForm extends React.PureComponent<Props> {
       let parentDiv = document.createElement('div');
       parentDiv.style.paddingBottom = '50px';
       let header = document.createElement('h3');
-      header.textContent = this.props.editorView.state.doc.attrs.gg || 'Document Title';
+      header.textContent = editorView?.state?.doc?.attrs?.objectMetaData?.customEntity[
+        'http://www.w3.org/2000/01/rdf-schema#label'
+      ];
 
       let newDiv = document.createElement('div');
       newDiv.classList.add('tocHead');
@@ -342,7 +343,9 @@ export class PreviewForm extends React.PureComponent<Props> {
       let parentDiv = document.createElement('div');
       parentDiv.style.paddingBottom = '50px';
       let header = document.createElement('h3');
-      header.textContent = this.props.editorView.state.doc.attrs.gg || 'Document Title';
+      header.textContent = editorView?.state?.doc?.attrs?.objectMetaData?.customEntity[
+        'http://www.w3.org/2000/01/rdf-schema#label'
+      ];
       parentDiv.appendChild(header);
       data1.insertBefore(parentDiv, data1.firstChild);
     }
@@ -420,8 +423,6 @@ export class PreviewForm extends React.PureComponent<Props> {
     }
     this.props.onClose();
   };
-
-  // Function to get all CSS rules from current window
   prepareCSSRules = (doc): void => {
     const sheets = document.styleSheets;
     for (let i = 0; i < sheets.length; i++) {
@@ -430,9 +431,9 @@ export class PreviewForm extends React.PureComponent<Props> {
       const styleElement = doc.createElement('style') as HTMLElement;
       for (let j = 0; j < rules.length; j++) {
         styles.push(rules[j].cssText);
-        const attributes = (sheets[i].ownerNode as HTMLElement).attributes;
-        for (let k = 0; k < attributes.length; k++) {
-          styleElement.setAttribute(attributes[k].name, attributes[k].value);
+        const attributes = (sheets[i].ownerNode as HTMLElement)?.attributes;
+        for (let k = 0; k < attributes?.length; k++) {
+          styleElement.setAttribute(attributes?.[k].name, attributes?.[k].value);
         }
       }
       const styleText = styles.join('\n');

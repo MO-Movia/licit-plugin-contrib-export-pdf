@@ -1,12 +1,12 @@
-import {Schema} from 'prosemirror-model';
-import {Plugin, PluginKey} from 'prosemirror-state';
+import { Schema } from 'prosemirror-model';
+import { Plugin, PluginKey } from 'prosemirror-state';
 import {
   makeKeyMapWithCommon,
   createKeyMapPlugin,
 } from '@modusoperandi/licit-doc-attrs-step';
 
-import {ExportPDFCommand} from './exportPdfCommand';
-import {EditorView} from 'prosemirror-view';
+import { ExportPDFCommand } from './exportPdfCommand';
+import { EditorView } from 'prosemirror-view';
 
 export const KEY_EXPORT_PDF = makeKeyMapWithCommon(
   'exportPDF',
@@ -40,8 +40,8 @@ export class ExportPDFPlugin extends Plugin {
   initButtonCommands(): unknown {
     return this.showButton
       ? {
-          '[picture_as_pdf] Export to PDF': EXPORT_PDF,
-        }
+        '[picture_as_pdf] Export to PDF': EXPORT_PDF,
+      }
       : {};
   }
 

@@ -1,202 +1,296 @@
-import {PreviewForm} from './preview';
-import {EditorView} from 'prosemirror-view';
-import {EditorState} from 'prosemirror-state';
+import { PreviewForm } from './preview';
+import { EditorView } from 'prosemirror-view';
+import { EditorState } from 'prosemirror-state';
 
 describe('PreviewForm', () => {
-  it('should call handleInfoiconChange', () => {
-    const el = document.createElement('div');
-    jest.spyOn(document, 'getElementById').mockReturnValue(el);
 
-    const props = {
-      editorState: {} as unknown as EditorState,
-      editorView: {
-        dom: {parentElement: {parentElement: el}},
-      } as unknown as EditorView,
-      onClose() {
-        return;
-      },
-    };
-    const Previewform = new PreviewForm(props);
+    it('should call calcLogic when PreviewForm.isToc = true ', () => {
+        const dommock = document.createElement('div');
+        const parentelement = document.createElement('div');
+        parentelement.appendChild(dommock)
+        const parparentElement = document.createElement('div');
+        parparentElement.appendChild(parentelement);
 
-    let event = {target: {checked: true}};
-    let event_fal = {target: {checked: false}};
 
-    Previewform.handleInfoiconChange(event_fal);
+        jest.spyOn(document, 'getElementById').mockReturnValue(document.createElement('div'));
+        const props = {
+            editorState: { doc: { attrs: { gg: null } } } as unknown as EditorState,
+            editorView: { dom: dommock } as unknown as EditorView,
+            onClose: () => { }
+        }
+        const prevForm = new PreviewForm(props);
+        PreviewForm.isInfoicon = false;
+        PreviewForm.isToc = true;
+        expect(prevForm.calcLogic()).toBeUndefined();
+    })
+    it('should call calcLogic when PreviewForm.isTitle = true ', () => {
+        const dommock = document.createElement('div');
+        const parentelement = document.createElement('div');
+        parentelement.appendChild(dommock)
+        const parparentElement = document.createElement('div');
+        parparentElement.appendChild(parentelement);
 
-    expect(Previewform.handleTOCChange(event)).toBeUndefined();
 
-    jest.spyOn(Previewform, 'getContainer').mockReturnValue({
-      cloneNode() {
-        return {
-          insertBefore() {
-            return {};
-          },
-          querySelectorAll() {
-            return [
-              {
-                appendChild() {
-                  return {} as unknown as Element;
-                },
-              },
-            ];
-          },
+        jest.spyOn(document, 'getElementById').mockReturnValue(document.createElement('div'));
+        const props = {
+            editorState: { doc: { attrs: { gg: null } } } as unknown as EditorState,
+            editorView: { dom: dommock, state: { doc: { attrs: { gg: null } } } } as unknown as EditorView,
+            onClose: () => { }
+        }
+        const prevForm = new PreviewForm(props);
+        PreviewForm.isInfoicon = false;
+        PreviewForm.isTitle = true;
+        expect(prevForm.calcLogic()).toBeUndefined();
+    })
+    it('should call calcLogic when PreviewForm.isTitle = true and  PreviewForm.isToc = false', () => {
+        const dommock = document.createElement('div');
+        const parentelement = document.createElement('div');
+        parentelement.appendChild(dommock)
+        const parparentElement = document.createElement('div');
+        parparentElement.appendChild(parentelement);
+
+
+        jest.spyOn(document, 'getElementById').mockReturnValue(document.createElement('div'));
+        const props = {
+            editorState: { doc: { attrs: { gg: null } } } as unknown as EditorState,
+            editorView: { dom: dommock, state: { doc: { attrs: { gg: null } } } } as unknown as EditorView,
+            onClose: () => { }
+        }
+        const prevForm = new PreviewForm(props);
+        jest.spyOn(prevForm, 'insertFooters').mockImplementation(() => { });
+        PreviewForm.isInfoicon = false;
+        PreviewForm.isToc = false;
+        PreviewForm.isTitle = true;
+        PreviewForm.isCitation = true
+        PreviewForm.isInfoicon = true
+        expect(prevForm.calcLogic()).toBeUndefined();
+    })
+})
+
+describe('PreviewForm component', () => {
+    let onCloseMock: jest.Mock;
+    let printWindowMock: any;
+
+    beforeEach(() => {
+        onCloseMock = jest.fn();
+        printWindowMock = {
+            document: {
+                open: jest.fn(),
+                write: jest.fn(),
+                close: jest.fn(),
+                createElement: jest.fn(),
+                appendChild: jest.fn(),
+                removeChild: jest.fn(),
+                documentElement: document.createElement('div'),
+            },
+            print: jest.fn(),
         };
-      },
-    } as unknown as HTMLElement);
+        window.open = jest.fn(() => printWindowMock);
+        document.getElementById = jest.fn().mockReturnValue({
+            childNodes: [document.createElement('div')],
+        });
+    });
 
-    expect(Previewform.handleInfoiconChange(event)).toBeUndefined();
-    expect(Previewform.handleTOCChange(event)).toBeUndefined();
-    expect(Previewform.handleInfoiconChange(event_fal)).toBeUndefined();
-  });
+    afterEach(() => {
+        jest.clearAllMocks();
+    });
 
-  it('should call handleTOCChange', () => {
-    const el = document.createElement('div');
-    jest.spyOn(document, 'getElementById').mockReturnValue(el);
+    it('should call handleConfirm', () => {
 
-    const props = {
-      editorState: {} as unknown as EditorState,
-      editorView: {
-        dom: {parentElement: {parentElement: el}},
-      } as unknown as EditorView,
-      onClose() {
-        return;
-      },
-    };
-    const Previewform = new PreviewForm(props);
-
-    let event = {target: {checked: true}};
-    let event_fal = {target: {checked: false}};
-
-    expect(Previewform.handleTOCChange(event_fal)).toBeUndefined();
-
-    expect(Previewform.handleTOCChange(event)).toBeUndefined();
-    jest.spyOn(Previewform, 'getContainer').mockReturnValue({
-      cloneNode() {
-        return {
-          insertBefore() {
-            return {};
-          },
-          querySelectorAll() {
-            return [
-              {
-                appendChild() {
-                  return {} as unknown as Element;
-                },
-              },
-            ];
-          },
+        const props = {
+            editorState: {} as any,
+            editorView: {} as any,
+            onClose: onCloseMock,
         };
-      },
-    } as unknown as HTMLElement);
-    expect(Previewform.handleInfoiconChange(event)).toBeUndefined();
-  });
 
-  it('should call the function componentDidMount()', () => {
-    const el = document.createElement('div');
-    jest.spyOn(document, 'getElementById').mockReturnValue(el);
-
-    const props = {
-      editorState: {} as unknown as EditorState,
-      editorView: {
-        dom: {parentElement: {parentElement: el}},
-      } as unknown as EditorView,
-      onClose() {
-        return;
-      },
-    };
-    const Previewform = new PreviewForm(props);
-
-    Previewform.tocActive();
-    Previewform.InfoActive();
-    Previewform.componentDidMount();
-  });
-
-  it('should call the function Tocdeactive() check the condition Option.includes(3)', () => {
-    const el = document.createElement('div');
-    jest.spyOn(document, 'getElementById').mockReturnValue(el);
-
-    const props = {
-      editorState: {} as unknown as EditorState,
-      editorView: {
-        dom: {parentElement: {parentElement: el}},
-      } as unknown as EditorView,
-      onClose() {
-        return;
-      },
-    };
-    const Previewform = new PreviewForm(props);
-
-    Previewform.tocActive();
-    Previewform.InfoActive();
-    expect(Previewform.Tocdeactive()).toBeUndefined();
-  });
-
-  it('should call the function handleCancel()', () => {
-    const props = {
-      editorState: {} as unknown as EditorState,
-      editorView: {} as unknown as EditorView,
-      onClose() {
-        return 'close';
-      },
-    };
-    const Previewform = new PreviewForm(props);
-    expect(Previewform.handleCancel()).toBeUndefined();
-  });
-
-  xit('should call handleConfirm', () => {
-    const mockPrintWindow = {
-      document: {
-        open: jest.fn(),
-        write: jest.fn(),
-        close: jest.fn(),
-        querySelectorAll: jest.fn(),
-        createElement: jest.fn(),
-        appendChild: jest.fn(),
-        removeChild: jest.fn(),
-        documentElement: {firstChild: {}},
-      },
-    };
-    //mockPrintWindow.document.documentElement.removeChild.mockImplementationOnce(() => null);
-    const mockWindowOpen = jest.fn().mockReturnValue(mockPrintWindow);
-    window.open = mockWindowOpen;
-    document.getElementById = jest.fn().mockReturnValue({
-      childNodes: [document.createElement('div')],
+        const previewForm = new PreviewForm(props);
+        jest.spyOn(previewForm, 'prepareCSSRules').mockImplementation(() => { })
+        previewForm.handleConfirm();
+        expect(window.open).toHaveBeenCalledWith('', '_blank');
+        expect(printWindowMock.document.open).toHaveBeenCalled();
+        expect(printWindowMock.document.write).toHaveBeenCalledWith(expect.stringContaining('<!DOCTYPE html><html><head><title>LICIT</title></head><body></body></html>'));
+        expect(printWindowMock.document.documentElement.firstChild).not.toBeNull();
+        expect(printWindowMock.document.documentElement.appendChild).not.toBeNull();
+        expect(printWindowMock.document.close).toHaveBeenCalled();
+        expect(printWindowMock.print).toHaveBeenCalled();
+        expect(onCloseMock).toHaveBeenCalled();
     });
-    jest.spyOn(document, 'createElement').mockReturnValue({
-      appendChild: jest.fn(),
-      removeChild: jest.fn(),
-    } as any);
+    it('should handle handelDocumentTitle ', () => {
+        const props = {
+            editorState: {} as any,
+            editorView: {} as any,
+            onClose: onCloseMock,
+        };
 
-    jest.spyOn(document, 'createElement').mockReturnValue({} as any);
-
-    const props = {
-      editorState: {} as unknown as EditorState,
-      editorView: {} as unknown as EditorView,
-      onClose() {
-        return 'close';
-      },
-    };
-    const Previewform = new PreviewForm(props);
-    Previewform.handleConfirm();
-  });
-  xit('', () => {
-    const props = {
-      editorState: {} as unknown as EditorState,
-      editorView: {} as unknown as EditorView,
-      onClose() {
-        return 'close';
-      },
-    };
-    const Previewform = new PreviewForm(props);
-    Previewform.prepareCSSRules({
-      head: {
-        appendChild() {
-          return '';
-        },
-      },
-      createElement() {
-        return {setAttribute() {}, textContent: ''};
-      },
+        const previewForm = new PreviewForm(props);
+        const spy = jest.spyOn(previewForm, 'calcLogic').mockImplementation(() => { });
+        previewForm.handelDocumentTitle({ target: { checked: true } })
+        expect(spy).toHaveBeenCalled()
     });
-  });
+    it('should handle handelDocumentTitle when checked is false', () => {
+        const props = {
+            editorState: {} as any,
+            editorView: {} as any,
+            onClose: onCloseMock,
+        };
+
+        const previewForm = new PreviewForm(props);
+        const spy = jest.spyOn(previewForm, 'calcLogic').mockImplementation(() => { });
+        previewForm.handelDocumentTitle({ target: { checked: false } })
+        expect(spy).toHaveBeenCalled()
+    });
+    it('should handle handelCitation  ', () => {
+        const props = {
+            editorState: {} as any,
+            editorView: {} as any,
+            onClose: onCloseMock,
+        };
+
+        const previewForm = new PreviewForm(props);
+        const spy = jest.spyOn(previewForm, 'calcLogic').mockImplementation(() => { });
+        previewForm.handelCitation({ target: { checked: true } })
+        expect(spy).toHaveBeenCalled()
+    });
+    it('should handle handelCitation when checked is false', () => {
+        const props = {
+            editorState: {} as any,
+            editorView: {} as any,
+            onClose: onCloseMock,
+        };
+
+        const previewForm = new PreviewForm(props);
+        const spy = jest.spyOn(previewForm, 'calcLogic').mockImplementation(() => { });
+        previewForm.handelCitation({ target: { checked: false } })
+        expect(spy).toHaveBeenCalled()
+    });
+    it('should handle handleTOCChange   ', () => {
+        const props = {
+            editorState: {} as any,
+            editorView: {} as any,
+            onClose: onCloseMock,
+        };
+
+        const previewForm = new PreviewForm(props);
+        const spy = jest.spyOn(previewForm, 'calcLogic').mockImplementation(() => { });
+        previewForm.handleTOCChange({ target: { checked: true } })
+        expect(spy).toHaveBeenCalled()
+    });
+    it('should handle handleTOCChange  when checked is false', () => {
+        const props = {
+            editorState: {} as any,
+            editorView: {} as any,
+            onClose: onCloseMock,
+        };
+
+        const previewForm = new PreviewForm(props);
+        const spy = jest.spyOn(previewForm, 'calcLogic').mockImplementation(() => { });
+        previewForm.handleTOCChange({ target: { checked: false } })
+        expect(spy).toHaveBeenCalled()
+    });
+    it('should handle handleInfoiconChange    ', () => {
+        const props = {
+            editorState: {} as any,
+            editorView: {} as any,
+            onClose: onCloseMock,
+        };
+
+        const previewForm = new PreviewForm(props);
+        const spy = jest.spyOn(previewForm, 'calcLogic').mockImplementation(() => { });
+        previewForm.handleInfoiconChange({ target: { checked: true } })
+        expect(spy).toHaveBeenCalled()
+    });
+    it('should handle handleInfoiconChange   when checked is false', () => {
+        const props = {
+            editorState: {} as any,
+            editorView: {} as any,
+            onClose: onCloseMock,
+        };
+
+        const previewForm = new PreviewForm(props);
+        const spy = jest.spyOn(previewForm, 'calcLogic').mockImplementation(() => { });
+        previewForm.handleInfoiconChange({ target: { checked: false } })
+        expect(spy).toHaveBeenCalled()
+    });
+    it('should call the function handleCancel()', () => {
+
+        const props = {
+            editorState: {} as unknown as EditorState,
+            editorView: {} as unknown as EditorView,
+            onClose() { return 'close' }
+        };
+        const Previewform = new PreviewForm(props)
+        expect(Previewform.handleCancel()).toBeUndefined();
+    });
+    it('should handle getView_ ', () => {
+        const props = {
+            editorState: {} as unknown as EditorState,
+            editorView: {} as unknown as EditorView,
+            onClose() { return 'close' }
+        };
+        const Previewform = new PreviewForm(props)
+        expect(Previewform.getView_()).toBeDefined();
+    });
+    it('should handle insertFooters  ', () => {
+        const spy = jest.spyOn(document, 'createTextNode')
+        const props = {
+            editorState: {} as unknown as EditorState,
+            editorView: {} as unknown as EditorView,
+            onClose() { return 'close' }
+        };
+        const Previewform = new PreviewForm(props);
+        const el = document.createElement('div')
+        el.setAttribute('overallcitationcapco', 'TBD');
+        el.setAttribute('author', 'AUT');
+        Previewform.insertFooters([el], { querySelector: () => { return document.createElement('div') } })
+        expect(spy).toHaveBeenCalled();
+    });
+
+    it('should call prepareCSSRules ', () => {
+
+        const doc = { head: document.createElement('div'), createElement: () => { return document.createElement('div'); } };
+
+        const props = {
+            editorState: {} as unknown as EditorState,
+            editorView: {} as unknown as EditorView,
+            onClose() { return 'close' }
+        };
+        const Previewform = new PreviewForm(props);
+        Previewform.prepareCSSRules(doc);
+
+    });
+
+    it('should handel render', () => {
+
+        const props = {
+            editorState: {} as unknown as EditorState,
+            editorView: {} as unknown as EditorView,
+            onClose() { return 'close' }
+        };
+        const Previewform = new PreviewForm(props);
+        expect(Previewform.render()).toBeDefined();
+
+    })
+    it('should call the function componentDidMount()', () => {
+        const el = document.createElement('div');
+        jest.spyOn(document, 'getElementById').mockReturnValue(el);
+
+        const props = {
+            editorState: {} as unknown as EditorState,
+            editorView: {
+                dom: { parentElement: { parentElement: el } },
+            } as unknown as EditorView,
+            onClose() {
+                return;
+            },
+        };
+        const Previewform = new PreviewForm(props);
+        const spy = jest.spyOn(Previewform, 'getToc').mockReturnValue(null);
+        Previewform.componentDidMount();
+        expect(spy).toHaveBeenCalled()
+    });
 });
+
+
+
+
+

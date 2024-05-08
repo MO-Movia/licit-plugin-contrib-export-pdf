@@ -1,8 +1,8 @@
-import {ExportPDFCommand} from './exportPdfCommand';
-import {EditorState} from 'prosemirror-state';
-import {Transform} from 'prosemirror-transform';
-import {EditorView} from 'prosemirror-view';
-import {ExportPDF} from './exportPdf';
+import { ExportPDFCommand } from './exportPdfCommand';
+import { EditorState } from 'prosemirror-state';
+import { Transform } from 'prosemirror-transform';
+import { EditorView } from 'prosemirror-view';
+import { ExportPDF } from './exportPdf';
 
 describe('Export PDF Command', () => {
   it('isEnabled returns true', () => {
