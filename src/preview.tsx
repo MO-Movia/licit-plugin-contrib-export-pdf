@@ -19,7 +19,6 @@ export class PreviewForm extends React.PureComponent<Props> {
   static isTitle = false;
   constructor(props: Props) {
     super(props);
-    this.getToc(props.editorView)
   }
 
   htmlString = '';
@@ -27,9 +26,10 @@ export class PreviewForm extends React.PureComponent<Props> {
   dataTrial;
 
   componentDidMount(): void {
-    PreviewForm.general = true;
-    let a = registerHandlers(MyHandler);
     const { editorView } = this.props;
+    this.getToc(editorView)
+    PreviewForm.general = true;
+    registerHandlers(MyHandler);
     let divContainer = document.getElementById('holder');
     const data = this.getContainer(editorView);
     let data1 = data.cloneNode(true);
@@ -53,7 +53,7 @@ export class PreviewForm extends React.PureComponent<Props> {
       .filter((style) => style.styles.toc === true)
       .map((style) => style.styleName);
 
-    view.state.tr.doc.descendants((node) => {
+    view?.state?.tr?.doc.descendants((node) => {
       if (node.attrs.styleName) {
         for (let i = 0; i < storeTOCvalue.length; i++) {
           if (storeTOCvalue[i] === node.attrs.styleName) {
