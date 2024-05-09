@@ -221,15 +221,6 @@ describe('PreviewForm component', () => {
         const Previewform = new PreviewForm(props)
         expect(Previewform.handleCancel()).toBeUndefined();
     });
-    it('should handle getView_ ', () => {
-        const props = {
-            editorState: {} as unknown as EditorState,
-            editorView: {} as unknown as EditorView,
-            onClose() { return 'close' }
-        };
-        const Previewform = new PreviewForm(props)
-        expect(Previewform.getView_()).toBeDefined();
-    });
     it('should handle insertFooters  ', () => {
         const spy = jest.spyOn(document, 'createTextNode')
         const props = {

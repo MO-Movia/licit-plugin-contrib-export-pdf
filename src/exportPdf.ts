@@ -1,5 +1,4 @@
 import { EditorView } from 'prosemirror-view';
-import moment from 'moment/moment';
 import { createPopUp } from '@modusoperandi/licit-ui-commands';
 import { PreviewForm } from './preview';
 
@@ -13,15 +12,6 @@ export class ExportPDF {
    * @returns boolean
    */
   exportPdf(view: EditorView): boolean {
-    const objectId = view.state.doc.attrs['objectId'];
-    let fileName = '';
-    const time = moment().format('YYYY-MM-DD_HH:mm:ss');
-    if (null != objectId) {
-      fileName = objectId.split('/').pop() + '-' + time;
-    } else {
-      fileName = time;
-    }
-
     const viewPops = {
       editorState: view.state,
       editorView: view,
@@ -73,14 +63,12 @@ export function createToc(config) {
     }
     const tocElements = content1.querySelectorAll('.title-element');
 
-    for (let i = 0; i < tocElements.length; i++) {
-      const tocElement = tocElements[i];
-
+    for (const tocElement of tocElements) {
       const tocNewLi = document.createElement('li');
-
-      // Add class for the hierarcy of toc
+    
+      // Add class for the hierarchy of toc
       tocNewLi.classList.add('toc-element');
-
+    
       // Create the element
       tocNewLi.innerHTML =
         '<a href="#' + tocElement.id + '">' + tocElement.innerHTML + '</a>';

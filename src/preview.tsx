@@ -1,29 +1,20 @@
 import React from 'react';
 import { EditorView } from 'prosemirror-view';
-import { EditorState } from 'prosemirror-state';
 import { Previewer, registerHandlers } from 'pagedjs';
-import { MyHandler, Array } from './handlers';
+import { MyHandler } from './handlers';
 
 interface Props {
-  editorState: EditorState;
   editorView: EditorView;
   onClose: () => void;
 }
 
 export class PreviewForm extends React.PureComponent<Props> {
-  static general = false;
-  static isToc = false;
-  static isInfoicon = false;
-  static tocHeader = [];
-  static isCitation = false;
-  static isTitle = false;
-  constructor(props: Props) {
-    super(props);
-  }
-
-  htmlString = '';
-  paragraphNodeContent = [];
-  dataTrial;
+  public static general: boolean = false; //NOSONAR need to reassign this variable , so can't be readonly
+  public static isToc: boolean = false; //NOSONAR need to reassign this variable , so can't be readonly
+  public static isInfoicon: boolean = false; //NOSONAR need to reassign this variable , so can't be readonly
+  public static isCitation: boolean = false;//NOSONAR need to reassign this variable , so can't be readonly
+  public static isTitle: boolean = false;//NOSONAR need to reassign this variable , so can't be readonly
+  public static tocHeader = [];//NOSONAR need to reassign this variable , so can't be readonly
 
   componentDidMount(): void {
     const { editorView } = this.props;
@@ -36,9 +27,6 @@ export class PreviewForm extends React.PureComponent<Props> {
     let paged = new Previewer();
     paged.preview(data1, [], divContainer).then(flow => {
       console.log('Rendered', flow.total, 'pages.');
-      for (let i = 0; i < flow.paged; i++) {
-        this.htmlString += flow.paged[i];
-      }
     });
 
   }
@@ -54,19 +42,17 @@ export class PreviewForm extends React.PureComponent<Props> {
 
     view?.state?.tr?.doc.descendants((node) => {
       if (node.attrs.styleName) {
-        for (let i = 0; i < storeTOCvalue.length; i++) {
-          if (storeTOCvalue[i] === node.attrs.styleName) {
+        for (const tocValue of storeTOCvalue) {
+          if (tocValue === node.attrs.styleName) {
             PreviewForm.tocHeader.push(node.attrs.styleName);
           }
         }
+
       }
     });
   };
 
-
-
   render(): React.ReactElement<any> {
-    const { editorView } = this.props;
     return (
       <div
         style={{
@@ -185,12 +171,6 @@ export class PreviewForm extends React.PureComponent<Props> {
       this.InfoDeactive();
     }
   };
-
-  getView_() {
-    const { editorView } = this.props;
-    return editorView;
-  }
-
   documentTitleActive = (): void => {
     PreviewForm.isTitle = true;
     this.calcLogic();
@@ -260,7 +240,6 @@ export class PreviewForm extends React.PureComponent<Props> {
         'Declasify Date' +
         ' ' +
         CitationIcon.getAttribute('declassifydate');
-      // const cleanedDescription = description.replace(/<[^>]*>/g, '');
       const newDiv = document.createElement('div');
       const indexSpan = document.createElement('span');
       indexSpan.textContent = `[${index + 1}]`;
@@ -299,27 +278,23 @@ export class PreviewForm extends React.PureComponent<Props> {
 
 
     if (PreviewForm.isCitation) {
-      var CitationIcons = (data1 as HTMLElement).querySelectorAll('.citationnote');
+      let CitationIcons = data1.querySelectorAll('.citationnote');
       CitationIcons.forEach((CitationIcon, index) => {
-        var superscript = document.createElement('sup');
+        let superscript = document.createElement('sup');
         superscript.textContent = `[${index + 1}]`;
         CitationIcon.parentNode?.replaceChild(superscript, CitationIcon);
       });
       this.insertFooters(CitationIcons, data1);
     }
-
-
     if (PreviewForm.isInfoicon) {
-      var infoIcons = (data1 as HTMLElement).querySelectorAll('.infoicon');
+      let infoIcons = data1.querySelectorAll('.infoicon');
       infoIcons.forEach((infoIcon, index) => {
-        var superscript = document.createElement('sup');
+        let superscript = document.createElement('sup');
         superscript.textContent = (index + 1).toString();
         infoIcon.textContent = '';
         infoIcon.appendChild(superscript);
       });
     }
-
-
     if (PreviewForm.isToc && PreviewForm.isTitle) {
       let parentDiv = document.createElement('div');
       parentDiv.style.paddingBottom = '50px';
@@ -406,10 +381,9 @@ export class PreviewForm extends React.PureComponent<Props> {
           printWindow.document.documentElement.firstChild
         );
       }
-
-      for (let i = 0; i < divContainer.childNodes.length; i++) {
+      for (const childNode of divContainer.childNodes) {
         printWindow.document.documentElement.appendChild(
-          divContainer.childNodes[i].cloneNode(true)
+          childNode.cloneNode(true)
         );
       }
 
@@ -425,15 +399,15 @@ export class PreviewForm extends React.PureComponent<Props> {
   };
   prepareCSSRules = (doc): void => {
     const sheets = document.styleSheets;
-    for (let i = 0; i < sheets.length; i++) {
-      const rules = sheets[i].cssRules;
+    for (const sheet of sheets) {
+      const rules = sheet.cssRules;
       const styles = [];
       const styleElement = doc.createElement('style') as HTMLElement;
-      for (let j = 0; j < rules.length; j++) {
-        styles.push(rules[j].cssText);
-        const attributes = (sheets[i].ownerNode as HTMLElement)?.attributes;
-        for (let k = 0; k < attributes?.length; k++) {
-          styleElement.setAttribute(attributes?.[k].name, attributes?.[k].value);
+      for (const rule of rules) {
+        styles.push(rule.cssText);
+        const attributes = (sheet.ownerNode as HTMLElement)?.attributes;
+        for (const attribute of attributes ?? []) {
+          styleElement.setAttribute(attribute.name, attribute.value);
         }
       }
       const styleText = styles.join('\n');
@@ -441,6 +415,7 @@ export class PreviewForm extends React.PureComponent<Props> {
       doc.head.appendChild(styleElement);
     }
   };
+
 
   getContainer = (view): HTMLElement => {
     let comments = false;

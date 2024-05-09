@@ -1,6 +1,6 @@
 import { Handler } from 'pagedjs';
 import { createToc } from './exportPdf';
-export const Array = [];
+export const tocDatas = [];
 import { PreviewForm } from './preview';
 
 export class MyHandler extends Handler {
@@ -27,16 +27,11 @@ export class MyHandler extends Handler {
 
     if (PreviewForm.isInfoicon) {
       let concatenatedValues = '';
-      const object = Array[0];
-      object.forEach(obj => {
-        if (PreviewForm.isToc) {
-          if (obj.key + 1 == pageFragment.dataset.pageNumber) {
-            concatenatedValues += obj.value + ' ';
-          }
-        } else {
-          if (obj.key == pageFragment.dataset.pageNumber) {
-            concatenatedValues += obj.value + ' ';
-          }
+      const tocData = tocDatas[0];
+      tocData.forEach(obj => {
+        if ((PreviewForm.isToc && obj.key + 1 === pageFragment.dataset.pageNumber) ||
+          (!PreviewForm.isToc && obj.key === pageFragment.dataset.pageNumber)) {
+          concatenatedValues += obj.value + ' ';
         }
       });
       pageFragment.style.setProperty(
@@ -68,7 +63,7 @@ export class MyHandler extends Handler {
           tocObjects.push(obj);
         });
       }
-      Array.push(tocObjects);
+      tocDatas.push(tocObjects);
     }
   }
 
@@ -79,17 +74,7 @@ export class MyHandler extends Handler {
   async doIT() {
     let opt;
     let opt2;
-    if (PreviewForm.isInfoicon && PreviewForm.isToc) {
-      opt2 = '.ProseMirror  infoicon { string-set: chapTitled content(text); }';
-      opt = `@bottom-center{
-content: string(chapTitled, last);
-text-align: right;
-}
-@bottom-left {
-content: "Page " counter(page) " of " counter(pages);
-}
-`;
-    } else if (PreviewForm.isInfoicon) {
+    if (PreviewForm.isInfoicon && PreviewForm.isToc || PreviewForm.isInfoicon) {
       opt2 = '.ProseMirror  infoicon { string-set: chapTitled content(text); }';
       opt = `@bottom-center{
 content: string(chapTitled, last);
