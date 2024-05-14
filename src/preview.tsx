@@ -33,9 +33,7 @@ export class PreviewForm extends React.PureComponent<Props> {
   getToc = async (view) => {
     let storeTOCvalue = [];
     const stylePromise = view.runtime;
-    const prototype = Object.getPrototypeOf(stylePromise);
-    const styles = await prototype.getStylesAsync();
-
+    const styles = await stylePromise.getStylesAsync();
     storeTOCvalue = styles
       .filter((style) => style.styles.toc === true)
       .map((style) => style.styleName);
