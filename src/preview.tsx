@@ -23,7 +23,9 @@ export class PreviewForm extends React.PureComponent<Props> {
     registerHandlers(MyHandler);
     let divContainer = document.getElementById('holder');
     const data = this.getContainer(editorView);
-    let data1 = data.cloneNode(true);
+    let data1 = data.cloneNode(true) as HTMLElement;
+    let prosimer_cls_element = data1.querySelector('.ProseMirror') ;
+    prosimer_cls_element.setAttribute('contenteditable', 'false')
     let paged = new Previewer();
     paged.preview(data1, [], divContainer).then(flow => {
       console.log('Rendered', flow.total, 'pages.');
@@ -273,8 +275,8 @@ export class PreviewForm extends React.PureComponent<Props> {
     const { editorView } = this.props;
     const data = this.getContainer(editorView);
     let data1 = this.cloneModifyNode(data);
-
-
+    let prosimer_cls_element = data1.querySelector('.ProseMirror') ;
+    prosimer_cls_element.setAttribute('contenteditable', 'false')
     if (PreviewForm.isCitation) {
       let CitationIcons = data1.querySelectorAll('.citationnote');
       CitationIcons.forEach((CitationIcon, index) => {

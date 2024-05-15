@@ -191,6 +191,7 @@ background-color: #ffffff
 }
 .ProseMirror.czi-prosemirror-editor, .ProseMirror[data-layout='us_letter_portrait'] {
   min-height: auto !important;
+  padding: 0px;
 }
 }
 }`);
