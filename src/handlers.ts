@@ -29,8 +29,8 @@ export class MyHandler extends Handler {
       let concatenatedValues = '';
       const tocData = tocDatas[0];
       tocData.forEach(obj => {
-        if ((PreviewForm.isToc && obj.key + 1 === pageFragment.dataset.pageNumber) ||
-          (!PreviewForm.isToc && obj.key === pageFragment.dataset.pageNumber)) {
+        if ((PreviewForm.isToc && obj.key + 1 == pageFragment.dataset.pageNumber) ||
+          (!PreviewForm.isToc && obj.key == pageFragment.dataset.pageNumber)) {
           concatenatedValues += obj.value + ' ';
         }
       });
