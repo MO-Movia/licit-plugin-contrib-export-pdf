@@ -9,7 +9,10 @@ describe('PreviewForm', () => {
         const parentelement = document.createElement('div');
         parentelement.appendChild(dommock)
         const parparentElement = document.createElement('div');
+        const prosimer_cls_element = document.createElement('div');
+        prosimer_cls_element.className = 'ProseMirror'
         parparentElement.appendChild(parentelement);
+        parparentElement.appendChild(prosimer_cls_element);
 
 
         jest.spyOn(document, 'getElementById').mockReturnValue(document.createElement('div'));
@@ -28,7 +31,10 @@ describe('PreviewForm', () => {
         const parentelement = document.createElement('div');
         parentelement.appendChild(dommock)
         const parparentElement = document.createElement('div');
+        const prosimer_cls_element = document.createElement('div');
+        prosimer_cls_element.className = 'ProseMirror'
         parparentElement.appendChild(parentelement);
+        parparentElement.appendChild(prosimer_cls_element);
 
 
         jest.spyOn(document, 'getElementById').mockReturnValue(document.createElement('div'));
@@ -47,7 +53,10 @@ describe('PreviewForm', () => {
         const parentelement = document.createElement('div');
         parentelement.appendChild(dommock)
         const parparentElement = document.createElement('div');
+        const prosimer_cls_element = document.createElement('div');
+        prosimer_cls_element.className = 'ProseMirror'
         parparentElement.appendChild(parentelement);
+        parparentElement.appendChild(prosimer_cls_element);
 
 
         jest.spyOn(document, 'getElementById').mockReturnValue(document.createElement('div'));
@@ -263,6 +272,9 @@ describe('PreviewForm component', () => {
     })
     it('should call the function componentDidMount()', () => {
         const el = document.createElement('div');
+        const prosimer_cls_element = document.createElement('div');
+        prosimer_cls_element.className = 'ProseMirror'
+        el.appendChild(prosimer_cls_element);
         jest.spyOn(document, 'getElementById').mockReturnValue(el);
 
         const props = {
@@ -277,7 +289,7 @@ describe('PreviewForm component', () => {
         const Previewform = new PreviewForm(props);
         const spy = jest.spyOn(Previewform, 'getToc').mockReturnValue(null);
         Previewform.componentDidMount();
-        expect(spy).toHaveBeenCalled()
+        expect(spy).toHaveBeenCalled();
     });
 });
 
