@@ -65,10 +65,10 @@ export function createToc(config) {
 
     for (const tocElement of tocElements) {
       const tocNewLi = document.createElement('li');
-    
+
       // Add class for the hierarchy of toc
       tocNewLi.classList.add('toc-element');
-    
+
       // Create the element
       tocNewLi.innerHTML =
         '<a href="#' + tocElement.id + '">' + tocElement.innerHTML + '</a>';

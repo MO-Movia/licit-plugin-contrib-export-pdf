@@ -2,6 +2,8 @@ import React from 'react';
 import { EditorView } from 'prosemirror-view';
 import { Previewer, registerHandlers } from 'pagedjs';
 import { MyHandler } from './handlers';
+import { createPopUp, atViewportCenter } from '@modusoperandi/licit-ui-commands';
+import { Loader } from './loader';
 
 interface Props {
   editorView: EditorView;
@@ -15,6 +17,7 @@ export class PreviewForm extends React.PureComponent<Props> {
   public static isCitation: boolean = false;//NOSONAR need to reassign this variable , so can't be readonly
   public static isTitle: boolean = false;//NOSONAR need to reassign this variable , so can't be readonly
   public static tocHeader = [];//NOSONAR need to reassign this variable , so can't be readonly
+  _popUp = null;
 
   componentDidMount(): void {
     const { editorView } = this.props;
@@ -24,7 +27,7 @@ export class PreviewForm extends React.PureComponent<Props> {
     let divContainer = document.getElementById('holder');
     const data = this.getContainer(editorView);
     let data1 = data.cloneNode(true) as HTMLElement;
-    let prosimer_cls_element = data1.querySelector('.ProseMirror') ;
+    let prosimer_cls_element = data1.querySelector('.ProseMirror');
     prosimer_cls_element.setAttribute('contenteditable', 'false')
     let paged = new Previewer();
     paged.preview(data1, [], divContainer).then(flow => {
@@ -32,6 +35,20 @@ export class PreviewForm extends React.PureComponent<Props> {
     });
 
   }
+
+  showAlert() {
+    const anchor = null;
+    this._popUp = createPopUp(Loader, null, {
+      anchor,
+      position: atViewportCenter,
+      onClose: () => {
+        if (this._popUp) {
+          this._popUp = null;
+        }
+      },
+    });
+  }
+
   getToc = async (view) => {
     let storeTOCvalue = [];
     const stylePromise = view.runtime;
@@ -275,7 +292,7 @@ export class PreviewForm extends React.PureComponent<Props> {
     const { editorView } = this.props;
     const data = this.getContainer(editorView);
     let data1 = this.cloneModifyNode(data);
-    let prosimer_cls_element = data1.querySelector('.ProseMirror') ;
+    let prosimer_cls_element = data1.querySelector('.ProseMirror');
     prosimer_cls_element.setAttribute('contenteditable', 'false')
     if (PreviewForm.isCitation) {
       let CitationIcons = data1.querySelectorAll('.citationnote');
@@ -326,7 +343,9 @@ export class PreviewForm extends React.PureComponent<Props> {
     }
 
     let paged = new Previewer();
+    this.showAlert();
     paged.preview(data1, [], divContainer).then(flow => {
+      this._popUp.close();
       console.log('Rendered', flow.total, 'pages.');
     });
   }

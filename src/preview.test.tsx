@@ -291,6 +291,32 @@ describe('PreviewForm component', () => {
         Previewform.componentDidMount();
         expect(spy).toHaveBeenCalled();
     });
+
+    it('should call the getToc() function ',async()=>{
+        const props = {
+            editorState: {} as unknown as EditorState,
+            editorView: {} as unknown as EditorView,
+            onClose() {
+                return;
+            },
+        };
+        const view = {
+            runtime: {
+              getStylesAsync: () => {
+                return new Promise((resolve) => {
+                  const mockStyles = [
+                    { styles: {toc:true}, name: 'style1' },
+                    { styles: {toc:true}, name: 'style2' },
+                  ];
+                  resolve(mockStyles);
+                });
+              },
+            },
+          };
+        const Previewform = new PreviewForm(props);
+        expect(Previewform.getToc(view)).toBeDefined();
+        
+    })
 });
 
 
