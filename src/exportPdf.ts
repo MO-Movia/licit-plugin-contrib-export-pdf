@@ -72,7 +72,7 @@ export function createToc(config) {
       // Create the element
       tocNewLi.innerHTML =
         '<a href="#' + tocElement.id + '">' + tocElement.innerHTML + '</a>';
-      tocUl.appendChild(tocNewLi)
+      tocUl.appendChild(tocNewLi);
     }
   }
 }

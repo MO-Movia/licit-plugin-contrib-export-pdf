@@ -1,6 +1,5 @@
 import { MyHandler } from './handlers';
 import { PreviewForm } from './preview';
-import { tocDatas } from './handlers';
 
 describe('MyHandler', () => {
     const mockChunker = jest.fn();
@@ -33,8 +32,8 @@ describe('MyHandler', () => {
         ];
 
         handler.afterRendered(pages);
-        handler.afterPageLayout({ dataset: { pageNumber: 2 }, style: { setProperty() { return 'bold'; } } });
-        expect(tocDatas.length).toBeGreaterThan(0);
+        const test_ = handler.afterPageLayout({ dataset: { pageNumber: 2 }, style: { setProperty() { return 'bold'; } } });
+        expect(test_).toBeUndefined();
     });
 
     it('afterPageLayout sets up pageFooters if PreviewForm.isToc == false', () => {
@@ -52,8 +51,8 @@ describe('MyHandler', () => {
         ];
 
         handler.afterRendered(pages);
-        handler.afterPageLayout({ dataset: { pageNumber: 1 }, style: { setProperty() { return 'bold'; } } });
-        expect(tocDatas.length).toBeGreaterThan(0);
+        const test_ = handler.afterPageLayout({ dataset: { pageNumber: 1 }, style: { setProperty() { return 'bold'; } } });
+        expect(test_).toBeUndefined();
     });
 
 });

@@ -1,6 +1,6 @@
 import { Handler } from 'pagedjs';
 import { createToc } from './exportPdf';
-export const tocDatas = [];
+export const info_Icons = [];
 import { PreviewForm } from './preview';
 
 export class MyHandler extends Handler {
@@ -27,8 +27,8 @@ export class MyHandler extends Handler {
 
     if (PreviewForm.isInfoicon) {
       let concatenatedValues = '';
-      const tocData = tocDatas[tocDatas.length - 1];
-      tocData.forEach(obj => {
+      const infoIcons_ = info_Icons[info_Icons.length - 1];
+      infoIcons_.forEach(obj => {
         if ((PreviewForm.isToc && obj.key + 1 == pageFragment.dataset.pageNumber) ||
           (!PreviewForm.isToc && obj.key == pageFragment.dataset.pageNumber)) {
           concatenatedValues += obj.value + ' ';
@@ -44,7 +44,7 @@ export class MyHandler extends Handler {
 
   afterRendered(pages) {
     if (PreviewForm.general) {
-      const tocObjects = [];
+      const infoIcon_initial = [];
       let count = 0;
       for (let i = 0; i < pages.length; i++) {
         const outerHTMLValue = pages[i].element.outerHTML;
@@ -56,14 +56,14 @@ export class MyHandler extends Handler {
           const description = element.attributes['description'].textContent;
           const cleanedDescription =
             ' ' + count + '. ' + description.replace(/<[^>]*>/g, '');
-          const obj = {
+          const infoIcon_text_obj = {
             key: i + 1,
             value: cleanedDescription,
           };
-          tocObjects.push(obj);
+          infoIcon_initial.push(infoIcon_text_obj);
         });
       }
-      tocDatas.push(tocObjects);
+      info_Icons.push(infoIcon_initial);
     }
   }
 

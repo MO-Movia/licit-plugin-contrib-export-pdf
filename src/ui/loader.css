@@ -1,4 +1,4 @@
-.loader {
+.epdf-loader {
   width: 50px;
   padding: 8px;
   aspect-ratio: 1;
@@ -17,7 +17,7 @@
     transform: rotate(1turn);
   }
 }
-.loader-container {
+.epdf-loader-container {
   background-color: transparent;
   box-sizing: border-box;
   color: white;
