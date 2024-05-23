@@ -32,6 +32,8 @@ export class MyHandler extends Handler {
           if ((PreviewForm.isCitation && !(PreviewForm.isTitle) && !(PreviewForm.isToc) && obj.key == pageFragment.dataset.pageNumber) ||
           (((!PreviewForm.isCitation) || (PreviewForm.isCitation || PreviewForm.isTitle || PreviewForm.isToc )) && obj.key + 1 == pageFragment.dataset.pageNumber)) {
           concatenatedValues += obj.value + ' ';
+        } else if (!(PreviewForm.isCitation) && !(PreviewForm.isTitle) && !(PreviewForm.isToc) && obj.key == pageFragment.dataset.pageNumber){
+          concatenatedValues += obj.value + ' ';
         }
         });
       pageFragment.style.setProperty(
