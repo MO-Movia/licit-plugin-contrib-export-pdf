@@ -22,7 +22,6 @@ describe('PreviewForm', () => {
             onClose: () => { }
         }
         const prevForm = new PreviewForm(props);
-        PreviewForm.isInfoicon = false;
         PreviewForm.isToc = true;
         expect(prevForm.calcLogic()).toBeUndefined();
     })
@@ -44,7 +43,7 @@ describe('PreviewForm', () => {
             onClose: () => { }
         }
         const prevForm = new PreviewForm(props);
-        PreviewForm.isInfoicon = false;
+       
         PreviewForm.isTitle = true;
         expect(prevForm.calcLogic()).toBeUndefined();
     })
@@ -67,11 +66,11 @@ describe('PreviewForm', () => {
         }
         const prevForm = new PreviewForm(props);
         jest.spyOn(prevForm, 'insertFooters').mockImplementation(() => { });
-        PreviewForm.isInfoicon = false;
+   
         PreviewForm.isToc = false;
         PreviewForm.isTitle = true;
         PreviewForm.isCitation = true
-        PreviewForm.isInfoicon = true
+      
         expect(prevForm.calcLogic()).toBeUndefined();
     })
 })
@@ -194,30 +193,6 @@ describe('PreviewForm component', () => {
         const previewForm = new PreviewForm(props);
         const spy = jest.spyOn(previewForm, 'calcLogic').mockImplementation(() => { });
         previewForm.handleTOCChange({ target: { checked: false } })
-        expect(spy).toHaveBeenCalled()
-    });
-    it('should handle handleInfoiconChange    ', () => {
-        const props = {
-            editorState: {} as any,
-            editorView: {} as any,
-            onClose: onCloseMock,
-        };
-
-        const previewForm = new PreviewForm(props);
-        const spy = jest.spyOn(previewForm, 'calcLogic').mockImplementation(() => { });
-        previewForm.handleInfoiconChange({ target: { checked: true } })
-        expect(spy).toHaveBeenCalled()
-    });
-    it('should handle handleInfoiconChange   when checked is false', () => {
-        const props = {
-            editorState: {} as any,
-            editorView: {} as any,
-            onClose: onCloseMock,
-        };
-
-        const previewForm = new PreviewForm(props);
-        const spy = jest.spyOn(previewForm, 'calcLogic').mockImplementation(() => { });
-        previewForm.handleInfoiconChange({ target: { checked: false } })
         expect(spy).toHaveBeenCalled()
     });
     it('should call the function handleCancel()', () => {

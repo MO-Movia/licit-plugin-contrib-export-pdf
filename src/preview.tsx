@@ -13,7 +13,6 @@ interface Props {
 export class PreviewForm extends React.PureComponent<Props> {
   public static general: boolean = false; //NOSONAR need to reassign this variable , so can't be readonly
   public static isToc: boolean = false; //NOSONAR need to reassign this variable , so can't be readonly
-  public static isInfoicon: boolean = false; //NOSONAR need to reassign this variable , so can't be readonly
   public static isCitation: boolean = false;//NOSONAR need to reassign this variable , so can't be readonly
   public static isTitle: boolean = false;//NOSONAR need to reassign this variable , so can't be readonly
   public static tocHeader = [];//NOSONAR need to reassign this variable , so can't be readonly
@@ -27,13 +26,20 @@ export class PreviewForm extends React.PureComponent<Props> {
     let divContainer = document.getElementById('holder');
     const data = this.getContainer(editorView);
     let data1 = data.cloneNode(true) as HTMLElement;
+    let infoIcons = data1.querySelectorAll('.infoicon');
+    infoIcons.forEach((infoIcon, index) => {
+      let superscript = document.createElement('sup');
+      superscript.textContent = (index + 1).toString();
+      infoIcon.textContent = '';
+      infoIcon.appendChild(superscript);
+    });
     let prosimer_cls_element = data1.querySelector('.ProseMirror');
     prosimer_cls_element.setAttribute('contenteditable', 'false')
     let paged = new Previewer();
     paged.preview(data1, [], divContainer).then(flow => {
       console.log('Rendered', flow.total, 'pages.');
+      this.InfoActive();
     });
-
   }
 
   showAlert() {
@@ -111,17 +117,7 @@ export class PreviewForm extends React.PureComponent<Props> {
                     Include TOC
                   </label>
                 </div>
-                <div style={{ marginTop: '10px' }}>
-                  <label >
-                    <input
-                      type="checkbox"
-                      name="infoicon"
-                      onChange={this.handleInfoiconChange}
-                    />{' '}
-                    Convert Info Icons to Footnotes
-                  </label>
-                </div>
-
+          
                 <div style={{ marginTop: '10px' }}>
                   <label >
                     <input
@@ -181,13 +177,7 @@ export class PreviewForm extends React.PureComponent<Props> {
       this.Tocdeactive();
     }
   };
-  handleInfoiconChange = event => {
-    if (event.target.checked) {
-      this.InfoActive();
-    } else {
-      this.InfoDeactive();
-    }
-  };
+
   documentTitleActive = (): void => {
     PreviewForm.isTitle = true;
     this.calcLogic();
@@ -316,15 +306,6 @@ export class PreviewForm extends React.PureComponent<Props> {
       });
       this.insertFooters(CitationIcons, data1);
     }
-    if (PreviewForm.isInfoicon) {
-      let infoIcons = data1.querySelectorAll('.infoicon');
-      infoIcons.forEach((infoIcon, index) => {
-        let superscript = document.createElement('sup');
-        superscript.textContent = (index + 1).toString();
-        infoIcon.textContent = '';
-        infoIcon.appendChild(superscript);
-      });
-    }
     if (PreviewForm.isToc && PreviewForm.isTitle) {
       let parentDiv = document.createElement('div');
       parentDiv.style.paddingBottom = '50px';
@@ -354,7 +335,13 @@ export class PreviewForm extends React.PureComponent<Props> {
       parentDiv.appendChild(header);
       data1.insertBefore(parentDiv, data1.firstChild);
     }
-
+    let infoIcons = data1.querySelectorAll('.infoicon');
+    infoIcons.forEach((infoIcon, index) => {
+      let superscript = document.createElement('sup');
+      superscript.textContent = (index + 1).toString();
+      infoIcon.textContent = '';
+      infoIcon.appendChild(superscript);
+    });
     let paged = new Previewer();
     this.showAlert();
     paged.preview(data1, [], divContainer).then(flow => {
@@ -363,8 +350,6 @@ export class PreviewForm extends React.PureComponent<Props> {
     });
   }
 
-
-
   tocActive = (): void => {
     PreviewForm.isToc = true;
     this.calcLogic();
@@ -372,14 +357,6 @@ export class PreviewForm extends React.PureComponent<Props> {
   };
 
   InfoActive = (): void => {
-    PreviewForm.isInfoicon = true;
-    this.calcLogic();
-
-  };
-
-  InfoDeactive = (): void => {
-
-    PreviewForm.isInfoicon = false;
     this.calcLogic();
   };
 
@@ -391,7 +368,6 @@ export class PreviewForm extends React.PureComponent<Props> {
   };
 
   handleCancel = (): void => {
-    PreviewForm.isInfoicon = false;
     PreviewForm.isToc = false;
     PreviewForm.general = false;
     PreviewForm.isTitle = false;

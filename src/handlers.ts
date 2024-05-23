@@ -25,21 +25,20 @@ export class MyHandler extends Handler {
 
   afterPageLayout(pageFragment) {
 
-    if (PreviewForm.isInfoicon) {
       let concatenatedValues = '';
-      const infoIcons_ = info_Icons[info_Icons.length - 1];
-      infoIcons_.forEach(obj => {
-        if ((PreviewForm.isToc && obj.key + 1 == pageFragment.dataset.pageNumber) ||
-          (!PreviewForm.isToc && obj.key == pageFragment.dataset.pageNumber)) {
+      const infoIcons_ = info_Icons[0];
+      if (infoIcons_) {
+        infoIcons_.forEach(obj => {
+          if ((PreviewForm.isCitation && !(PreviewForm.isTitle) && !(PreviewForm.isToc) && obj.key == pageFragment.dataset.pageNumber) ||
+          (((!PreviewForm.isCitation) || (PreviewForm.isCitation || PreviewForm.isTitle || PreviewForm.isToc )) && obj.key + 1 == pageFragment.dataset.pageNumber)) {
           concatenatedValues += obj.value + ' ';
         }
-      });
+        });
       pageFragment.style.setProperty(
         '--pagedjs-string-last-chapTitled',
         `"${concatenatedValues + ' '}`
       );
     }
-
   }
 
   afterRendered(pages) {
@@ -63,7 +62,9 @@ export class MyHandler extends Handler {
           infoIcon_initial.push(infoIcon_text_obj);
         });
       }
-      info_Icons.push(infoIcon_initial);
+      if (info_Icons.length === 0) {
+        info_Icons.push(infoIcon_initial);
+    }
     }
   }
 
@@ -74,9 +75,8 @@ export class MyHandler extends Handler {
   async doIT() {
     let opt;
     let opt2;
-    if (PreviewForm.isInfoicon && PreviewForm.isToc || PreviewForm.isInfoicon) {
       opt2 = '.ProseMirror  infoicon { string-set: chapTitled content(text); }';
-      opt = `@bottom-center{
+      opt = `@bottom-center {
 content: string(chapTitled, last);
 text-align: right;
 }
@@ -84,17 +84,6 @@ text-align: right;
 content: "Page " counter(page) " of " counter(pages);
 }
 `;
-    } else if (PreviewForm.isToc) {
-      opt = ` @bottom-left {
-content: "Page " counter(page) " of " counter(pages);
-}`;
-      opt2 = '';
-    } else {
-      opt = ` @bottom-left {
-            content: "Page " counter(page) " of " counter(pages);
-          }`;
-      opt2 = '';
-    }
 
     if (!this.done) {
       const text = await this['polisher'].convertViaSheet(`@media print {@page {
