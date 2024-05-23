@@ -206,14 +206,27 @@ export class PreviewForm extends React.PureComponent<Props> {
   }
 
   insertFooters = (CitationIcons, trialHtml): void => {
-    const selector = trialHtml.querySelector(
-      '.ProseMirror.czi-prosemirror-editor'
-    );
-    for (let i = 0; i < 10; i++) {
-      const blankDiv = document.createElement('div');
-      selector.appendChild(blankDiv);
-      const nbsp = document.createTextNode('\u00A0');
-      selector.appendChild(nbsp);
+    const selector = trialHtml.querySelector('.ProseMirror.czi-prosemirror-editor');
+    if (CitationIcons.length > 0) {
+      for (let i = 0; i < 10; i++) {
+        if (i === 6) {
+          const citation_header = document.createElement('h4');
+          citation_header.textContent = 'Endnotes';
+          citation_header.style.color = 'blue';
+          selector.appendChild(citation_header)
+        } else if (i === 7) {
+          const underline = document.createElement('div');
+          underline.style.width = '200px'
+          underline.style.height = '1.5px';
+          underline.style.backgroundColor = '#000000';
+          selector.appendChild(underline);
+        } else {
+          const blankDiv = document.createElement('div');
+          selector.appendChild(blankDiv);
+          const nbsp = document.createTextNode('\u00A0');
+          selector.appendChild(nbsp);
+        }
+      }
     }
 
     CitationIcons.forEach((CitationIcon, index) => {
@@ -318,7 +331,7 @@ export class PreviewForm extends React.PureComponent<Props> {
       let header = document.createElement('h3');
       header.textContent = editorView?.state?.doc?.attrs?.objectMetaData?.customEntity[
         'http://www.w3.org/2000/01/rdf-schema#label'
-      ];
+      ] || 'DEFAULT TITLE';
 
       let newDiv = document.createElement('div');
       newDiv.classList.add('tocHead');
@@ -337,7 +350,7 @@ export class PreviewForm extends React.PureComponent<Props> {
       let header = document.createElement('h3');
       header.textContent = editorView?.state?.doc?.attrs?.objectMetaData?.customEntity[
         'http://www.w3.org/2000/01/rdf-schema#label'
-      ];
+      ] || 'DEFAULT TITLE';;
       parentDiv.appendChild(header);
       data1.insertBefore(parentDiv, data1.firstChild);
     }

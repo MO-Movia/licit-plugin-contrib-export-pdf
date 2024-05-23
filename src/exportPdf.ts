@@ -38,7 +38,7 @@ export function createToc(config) {
   const titleElements1 = config.titleElements;
   const tocElementDiv = content1.querySelector(`${tocElement1}`);
   if (!content1.querySelector('#list-toc-generated')) {
-    const tocUl = document.createElement('ul');
+    const tocUl = document.createElement('div');
     tocUl.id = 'list-toc-generated';
     tocElementDiv.appendChild(tocUl);
 
@@ -64,7 +64,7 @@ export function createToc(config) {
     const tocElements = content1.querySelectorAll('.title-element');
 
     for (const tocElement of tocElements) {
-      const tocNewLi = document.createElement('li');
+      const tocNewLi = document.createElement('p');
 
       // Add class for the hierarchy of toc
       tocNewLi.classList.add('toc-element');
@@ -72,7 +72,7 @@ export function createToc(config) {
       // Create the element
       tocNewLi.innerHTML =
         '<a href="#' + tocElement.id + '">' + tocElement.innerHTML + '</a>';
-      tocUl.appendChild(tocNewLi);
+      tocUl.appendChild(tocNewLi)
     }
   }
 }

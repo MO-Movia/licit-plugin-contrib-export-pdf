@@ -27,7 +27,7 @@ export class MyHandler extends Handler {
 
     if (PreviewForm.isInfoicon) {
       let concatenatedValues = '';
-      const tocData = tocDatas[0];
+      const tocData = tocDatas[tocDatas.length - 1];
       tocData.forEach(obj => {
         if ((PreviewForm.isToc && obj.key + 1 == pageFragment.dataset.pageNumber) ||
           (!PreviewForm.isToc && obj.key == pageFragment.dataset.pageNumber)) {
@@ -111,7 +111,7 @@ break-inside: avoid;
 }
 
 #list-toc-generated .toc-element a::after {
-content: " p. " target-counter(attr(href), page);
+content: target-counter(attr(href), page);
 float: right;
 }
 
