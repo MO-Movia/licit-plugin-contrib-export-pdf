@@ -12,12 +12,16 @@
   },
   "peerDependencies": {
     "@modusoperandi/licit-doc-attrs-step": "^1.0.0",
+    "@modusoperandi/licit-ui-commands": "^1.0.2",
     "prosemirror-model": "^1.16.1"
   },
   "dependencies": {
+    "@types/node": "^20.12.7",
+    "@types/react": "^18.2.74",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",
     "moment": "^2.29.4",
+    "pagedjs": "^0.4.3",
     "react": "^18.2.0"
   },
   "devDependencies": {
@@ -26,15 +30,15 @@
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.1",
     "copyfiles": "^2.4.1",
-    "ajv": "^8.12.0",
     "eslint": "^8.26.0",
     "eslint-plugin-jest": "^28.2.0",
     "eslint-plugin-react": "^7.31.10",
     "husky": "^9.0.7",
+    "identity-obj-proxy": "^3.0.0",
     "jest": "^29.2.2",
     "jest-environment-jsdom": "^29.2.2",
     "jest-junit": "^16.0.0",
-    "jest-prosemirror": "^2.1.5",
+    "jest-prosemirror": "^2.0.0",
     "lint-staged": "^15.2.1",
     "ts-jest": "^29.0.3",
     "ts-node": "^10.9.1",
@@ -46,7 +50,7 @@
     "test:coverage": "jest --coverage",
     "clean": "rm -rf dist/ && rm -f modusoperandi-licit-export-pdf-*.*.*.tgz",
     "lint:ts": "eslint src --ext .ts --fix",
-    "lint:css": "echo \"No CSS available\" && exit 1",
+    "lint:css": "stylelint \"**/*.css\" --fix",
     "lint": "npm run lint:css & npm run lint:ts",
     "ci:build": "tsc --build && copyfiles --up 1 \"src/**/*.css\" dist  && copyfiles package.json dist",
     "ci:bom": "cyclonedx-npm --ignore-npm-errors --short-PURLs --output-format XML --output-file dist/bom.xml"
@@ -66,6 +70,9 @@
     }
   },
   "lint-staged": {
+    "*.css": [
+      "stylelint --fix"
+    ],
     "!(*test|*.setup).ts": [
       "eslint --fix"
     ],

@@ -1,70 +1,78 @@
-import {EditorView} from 'prosemirror-view';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
-import moment from 'moment/moment';
+import { EditorView } from 'prosemirror-view';
+import { createPopUp } from '@modusoperandi/licit-ui-commands';
+import { PreviewForm } from './preview';
 
 // [FS] IRAD-1893 2022-07-25
 // Export to PDF file.
 export class ExportPDF {
+  _popUp = null;
   /**
    * Export content to pdf and save locally.
    * @param  {EditorView} view
    * @returns boolean
    */
   exportPdf(view: EditorView): boolean {
-    const objectId = view.state.doc.attrs['objectId'];
-    let fileName = '';
-    const time = moment().format('YYYY-MM-DD_HH:mm:ss');
-    if (null != objectId) {
-      fileName = objectId.split('/').pop() + '-' + time;
-    } else {
-      fileName = time;
-    }
+    const viewPops = {
+      editorState: view.state,
+      editorView: view,
+      onClose: () => {
+        if (this._popUp) {
+          this._popUp.close();
+          this._popUp = null;
+        }
+      },
+    };
+    this._popUp = createPopUp(PreviewForm, viewPops, {
+      autoDismiss: false,
+      modal: false,
+      anchor: view.dom.parentElement,
+    });
 
-    const data = this.getContainer(view);
-    this.renderHTML(data, fileName);
     return true;
   }
+}
 
-  private async renderHTML(data: HTMLElement, fileName: string): Promise<void> {
-    const canvas = await html2canvas(data, {
-      height: 1000,
-    });
-    const jsPdf = new jsPDF('p', 'mm', [canvas?.width, canvas?.height]);
-    jsPdf.html(data, {
-      margin: [20, 0, 60, 0], // left
-      callback: (pdf) => {
-        this.onExport(pdf, fileName);
-      },
-    });
-  }
+export function createToc(config) {
+  const content1 = config.content;
+  const tocElement1 = config.tocElement;
+  const titleElements1 = config.titleElements;
+  const tocElementDiv = content1.querySelector(`${tocElement1}`);
+  if (!content1.querySelector('#list-toc-generated')) {
+    const tocUl = document.createElement('div');
+    tocUl.id = 'list-toc-generated';
+    tocElementDiv.appendChild(tocUl);
 
-  private onExport(pdf: jsPDF, fileName: string): void {
-    const pages = pdf.getNumberOfPages();
-    const pageWidth = pdf.internal.pageSize.width; //Optional
-    const pageHeight = pdf.internal.pageSize.height; //Optional
+    let tocElementNbr = 0;
+    for (let i = 0; i < titleElements1.length; i++) {
+      const titleHierarchy = i + 1;
+      const titleElement = content1.querySelectorAll(
+        `p[stylename="${titleElements1[i]}"]`
+      );
+      titleElement.forEach(function (element) {
+        // add classes to the element
+        element.classList.add('title-element');
+        element.setAttribute('data-title-level', titleHierarchy.toString());
 
-    for (let j = 1; j < pages + 1; j++) {
-      const horizontalPos = pageWidth / 2; //Can be fixed number
-      const verticalPos = pageHeight - 10; //Can be fixed number
-      pdf.setPage(j);
-      pdf.text(`${j} of ${pages}`, horizontalPos, verticalPos, {
-        align: 'center',
+        // add id if doesn't exist
+        tocElementNbr++;
+        const idElement = element.id;
+        if (idElement == '') {
+          element.id = 'title-element-' + tocElementNbr;
+        }
       });
     }
+    const tocElements = content1.querySelectorAll('.title-element');
 
-    pdf.save(fileName + '.pdf');
-  }
+    for (const tocElement of tocElements) {
+      const tocNewLi = document.createElement('p');
 
-  getContainer = (view: EditorView): HTMLElement => {
-    // .czi-editor-frame-body-scroll
-    const container = view.dom?.parentElement?.parentElement?.parentElement;
-    const pluginEnabled =
-      container?.querySelector('#commentPlugin')?.childElementCount > 0;
-    if (pluginEnabled) {
-      return view.dom;
+      // Add class for the hierarchy of toc
+      tocNewLi.classList.add('toc-element');
+
+      // Create the element
+      tocNewLi.innerHTML =
+        '<a href="#' + tocElement.id + '">' + tocElement.innerHTML + '</a>';
+      tocUl.appendChild(tocNewLi);
     }
-
-    return container;
-  };
+  }
 }
