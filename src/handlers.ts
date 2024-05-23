@@ -29,17 +29,13 @@ export class MyHandler extends Handler {
       const infoIcons_ = info_Icons[0];
       if (infoIcons_) {
         infoIcons_.forEach(obj => {
-          if ((PreviewForm.isCitation && !(PreviewForm.isTitle) && !(PreviewForm.isToc) && obj.key == pageFragment.dataset.pageNumber) ||
-          (((!PreviewForm.isCitation) || (PreviewForm.isCitation || PreviewForm.isTitle || PreviewForm.isToc )) && obj.key + 1 == pageFragment.dataset.pageNumber)) {
-          concatenatedValues += obj.value + ' ';
-        } else if (!(PreviewForm.isCitation) && !(PreviewForm.isTitle) && !(PreviewForm.isToc) && obj.key == pageFragment.dataset.pageNumber){
-          concatenatedValues += obj.value + ' ';
-        }
+            if (((PreviewForm.isTitle) || (PreviewForm.isToc)) && obj.key + 1 == pageFragment.dataset.pageNumber) {
+                concatenatedValues += obj.value + ' ';
+            } else if (!(PreviewForm.isTitle) && !(PreviewForm.isToc) && obj.key == pageFragment.dataset.pageNumber){
+                concatenatedValues += obj.value + ' ';
+            }
         });
-      pageFragment.style.setProperty(
-        '--pagedjs-string-last-chapTitled',
-        `"${concatenatedValues + ' '}`
-      );
+        pageFragment.style.setProperty('--pagedjs-string-last-chapTitled', `"${concatenatedValues + ' '}`);
     }
   }
 
