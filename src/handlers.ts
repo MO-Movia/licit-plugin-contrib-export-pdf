@@ -25,17 +25,17 @@ export class MyHandler extends Handler {
 
   afterPageLayout(pageFragment) {
 
-      let concatenatedValues = '';
-      const infoIcons_ = info_Icons[0];
-      if (infoIcons_) {
-        infoIcons_.forEach(obj => {
-            if (((PreviewForm.isTitle) || (PreviewForm.isToc)) && obj.key + 1 == pageFragment.dataset.pageNumber) {
-                concatenatedValues += obj.value + ' ';
-            } else if (!(PreviewForm.isTitle) && !(PreviewForm.isToc) && obj.key == pageFragment.dataset.pageNumber){
-                concatenatedValues += obj.value + ' ';
-            }
-        });
-        pageFragment.style.setProperty('--pagedjs-string-last-chapTitled', `"${concatenatedValues + ' '}`);
+    let concatenatedValues = '';
+    const infoIcons_ = info_Icons[0];
+    if (infoIcons_) {
+      infoIcons_.forEach(obj => {
+        if (((PreviewForm.isTitle) || (PreviewForm.isToc)) && obj.key + 1 == pageFragment.dataset.pageNumber) {
+          concatenatedValues += obj.value + ' ';
+        } else if (!(PreviewForm.isTitle) && !(PreviewForm.isToc) && obj.key == pageFragment.dataset.pageNumber) {
+          concatenatedValues += obj.value + ' ';
+        }
+      });
+      pageFragment.style.setProperty('--pagedjs-string-last-chapTitled', `"${concatenatedValues + ' '}`);
     }
   }
 
@@ -62,7 +62,7 @@ export class MyHandler extends Handler {
       }
       if (info_Icons.length === 0) {
         info_Icons.push(infoIcon_initial);
-    }
+      }
     }
   }
 
@@ -73,13 +73,14 @@ export class MyHandler extends Handler {
   async doIT() {
     let opt;
     let opt2;
-      opt2 = '.ProseMirror  infoicon { string-set: chapTitled content(text); }';
-      opt = `@bottom-center {
+    opt2 = '.ProseMirror  infoicon { string-set: chapTitled content(text); }';
+    opt = `@bottom-center {
 content: string(chapTitled, last);
 text-align: right;
 }
 @bottom-left {
 content: "Page " counter(page) " of " counter(pages);
+color: #000000;
 }
 `;
 
@@ -152,7 +153,9 @@ width: 0;
 padding-left: 5px;
 letter-spacing: 2px;
 }
-
+.pagedjs_page .pagedjs_margin-bottom-center>.pagedjs_margin-content::after {
+  color: #000000;
+}
 #list-toc-generated .toc-element {
 display: flex;
 }

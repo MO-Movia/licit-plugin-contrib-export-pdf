@@ -105,45 +105,48 @@ export class PreviewForm extends React.PureComponent<Props> {
             <div
               style={{ height: '90vh', background: 'rgb(226 226 226)', position: 'relative' }}
             >
-              <div style={{ padding: '20px' }}>
-                <span>Options:</span>
-                <div style={{ marginTop: '10px' }}>
-                  <label >
+              <div style={{ padding: '20px', color:'#000000' }}>
+                <h6>Options:</h6>
+                <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                  <div>
                     <input
                       type="checkbox"
                       name="TOC"
                       onChange={this.handleTOCChange}
                     />{' '}
-                    Include TOC
-                  </label>
+
+                  </div>
+                  <div style={{ marginLeft: '5px' }}> Include TOC</div>
                 </div>
-          
-                <div style={{ marginTop: '10px' }}>
-                  <label >
+
+                <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                  <div >
                     <input
                       type="checkbox"
                       name="infoicon"
                       onChange={this.handelDocumentTitle}
                     />{' '}
-                    Document title
-                  </label>
+
+                  </div>
+                  <div style={{ marginLeft: '5px' }}>Document title</div>
                 </div>
 
-                <div style={{ marginTop: '10px' }}>
-                  <label >
+                <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                  <div >
                     <input
                       type="checkbox"
                       name="infoicon"
                       onChange={this.handelCitation}
                     />{' '}
-                    Citation
-                  </label>
+
+                  </div>
+                  <div style={{ marginLeft: '5px' }}>Citation</div>
                 </div>
 
 
               </div>
 
-              <div style={{ position: 'absolute', bottom: '0', right: '0', padding: '5px' }}>
+              <div style={{ position: 'absolute', bottom: '0', right: '0', padding: '5px', display: 'flex', flexDirection: 'row' }}>
                 <button onClick={this.handleConfirm}>Confirm</button>
                 <button onClick={this.handleCancel}>Cancel</button>
               </div>
@@ -198,16 +201,16 @@ export class PreviewForm extends React.PureComponent<Props> {
   insertFooters = (CitationIcons, trialHtml): void => {
     const selector = trialHtml.querySelector('.ProseMirror.czi-prosemirror-editor');
     if (CitationIcons.length > 0) {
-      for (let i = 0; i < 10; i++) {
-        if (i === 6) {
+      for (let i = 0; i < 6; i++) {
+        if (i === 4) {
           const citation_header = document.createElement('h4');
           citation_header.textContent = 'Endnotes';
           citation_header.style.color = 'blue';
           selector.appendChild(citation_header)
-        } else if (i === 7) {
+        } else if (i === 5) {
           const underline = document.createElement('div');
-          underline.style.width = '200px'
-          underline.style.height = '1.5px';
+          underline.style.width = '350px'
+          underline.style.height = '1px';
           underline.style.backgroundColor = '#000000';
           selector.appendChild(underline);
         } else {
@@ -329,6 +332,7 @@ export class PreviewForm extends React.PureComponent<Props> {
       let parentDiv = document.createElement('div');
       parentDiv.style.paddingBottom = '50px';
       let header = document.createElement('h3');
+      header.style.color = '#000000';
       header.textContent = editorView?.state?.doc?.attrs?.objectMetaData?.customEntity[
         'http://www.w3.org/2000/01/rdf-schema#label'
       ] || 'DEFAULT TITLE';;

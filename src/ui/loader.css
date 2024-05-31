@@ -20,7 +20,7 @@
 .epdf-loader-container {
   background-color: transparent;
   box-sizing: border-box;
-  color: white;
+  color: rgb(124, 121, 121);
   padding: 20px;
   width: 301px;
   display: flex;
