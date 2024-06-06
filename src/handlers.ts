@@ -1,6 +1,6 @@
 import { Handler } from 'pagedjs';
 import { createToc } from './exportPdf';
-export const info_Icons = [];
+export let info_Icons = [];
 import { PreviewForm } from './preview';
 
 export class MyHandler extends Handler {
@@ -40,8 +40,9 @@ export class MyHandler extends Handler {
   }
 
   afterRendered(pages) {
+    info_Icons = [];
     if (PreviewForm.general) {
-      const infoIcon_initial = [];
+      let infoIcon_initial = [];
       let count = 0;
       for (let i = 0; i < pages.length; i++) {
         const outerHTMLValue = pages[i].element.outerHTML;
