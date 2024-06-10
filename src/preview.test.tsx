@@ -43,7 +43,7 @@ describe('PreviewForm', () => {
             onClose: () => { }
         }
         const prevForm = new PreviewForm(props);
-       
+
         PreviewForm.isTitle = true;
         expect(prevForm.calcLogic()).toBeUndefined();
     })
@@ -66,11 +66,11 @@ describe('PreviewForm', () => {
         }
         const prevForm = new PreviewForm(props);
         jest.spyOn(prevForm, 'insertFooters').mockImplementation(() => { });
-   
+
         PreviewForm.isToc = false;
         PreviewForm.isTitle = true;
         PreviewForm.isCitation = true
-      
+
         expect(prevForm.calcLogic()).toBeUndefined();
     })
 })
@@ -267,7 +267,7 @@ describe('PreviewForm component', () => {
         expect(spy).toHaveBeenCalled();
     });
 
-    it('should call the getToc() function ',async()=>{
+    it('should call the getToc() function ', async () => {
         const props = {
             editorState: {} as unknown as EditorState,
             editorView: {} as unknown as EditorView,
@@ -277,20 +277,49 @@ describe('PreviewForm component', () => {
         };
         const view = {
             runtime: {
-              getStylesAsync: () => {
-                return new Promise((resolve) => {
-                  const mockStyles = [
-                    { styles: {toc:true}, name: 'style1' },
-                    { styles: {toc:true}, name: 'style2' },
-                  ];
-                  resolve(mockStyles);
-                });
-              },
+                getStylesAsync: () => {
+                    return new Promise((resolve) => {
+                        const mockStyles = [
+                            { styles: { toc: true }, name: 'style1' },
+                            { styles: { toc: true }, name: 'style2' },
+                        ];
+                        resolve(mockStyles);
+                    });
+                },
             },
-          };
+        };
         const Previewform = new PreviewForm(props);
         expect(Previewform.getToc(view)).toBeDefined();
-        
+
+    })
+
+    it('shouldcall the replaceImageWidth() function to pass originalWidth > 200 condtion', () => {
+        const props = {
+            editorState: {} as unknown as EditorState,
+            editorView: {} as unknown as EditorView,
+            onClose() {
+                return;
+            },
+        };
+        const Previewform = new PreviewForm(props);
+        const imageElement = document.createElement('img');
+        imageElement.setAttribute('width', '300');
+        Previewform.replaceImageWidth(imageElement);
+        expect(imageElement.getAttribute('data-original-width')).toBe('300');
+    })
+    it('shouldcall the replaceImageWidth() function to pass originalWidth < 200 condtion', () => {
+        const props = {
+            editorState: {} as unknown as EditorState,
+            editorView: {} as unknown as EditorView,
+            onClose() {
+                return;
+            },
+        };
+        const Previewform = new PreviewForm(props);
+        const imageElement = document.createElement('img');
+        imageElement.setAttribute('width', '150');
+        Previewform.replaceImageWidth(imageElement);
+        expect(imageElement.getAttribute('data-original-width')).toBe('150');
     })
 });
 

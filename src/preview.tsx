@@ -1,9 +1,9 @@
 import React from 'react';
-import {EditorView} from 'prosemirror-view';
-import {Previewer, registerHandlers} from 'pagedjs';
-import {MyHandler} from './handlers';
-import {createPopUp, atViewportCenter} from '@modusoperandi/licit-ui-commands';
-import {Loader} from './loader';
+import { EditorView } from 'prosemirror-view';
+import { Previewer, registerHandlers } from 'pagedjs';
+import { MyHandler } from './handlers';
+import { createPopUp, atViewportCenter } from '@modusoperandi/licit-ui-commands';
+import { Loader } from './loader';
 
 interface Props {
   editorView: EditorView;
@@ -19,7 +19,7 @@ export class PreviewForm extends React.PureComponent<Props> {
   _popUp = null;
 
   componentDidMount(): void {
-    const {editorView} = this.props;
+    const { editorView } = this.props;
     this.getToc(editorView);
     PreviewForm.general = true;
     registerHandlers(MyHandler);
@@ -33,8 +33,7 @@ export class PreviewForm extends React.PureComponent<Props> {
       infoIcon.textContent = '';
       infoIcon.appendChild(superscript);
     });
-    for (let i = 0; i < data1.children.length; i++) {
-      const element = data1.children[i];
+    for (const element of data1.children) {
       const imageElements = element.querySelectorAll('img');
       for (const imageElement of imageElements) {
         // Replace the width attribute with the desired new width value (capped at 500px if original width is larger).
@@ -108,8 +107,8 @@ export class PreviewForm extends React.PureComponent<Props> {
           alignItems: 'center',
         }}
       >
-        <div style={{border: 'solid'}}>
-          <div style={{display: 'flex', flexDirection: 'row'}}>
+        <div style={{ border: 'solid' }}>
+          <div style={{ display: 'flex', flexDirection: 'row' }}>
             <div
               id="holder"
               className="preview-container"
@@ -126,7 +125,7 @@ export class PreviewForm extends React.PureComponent<Props> {
                 position: 'relative',
               }}
             >
-              <div style={{padding: '20px', color: '#000000'}}>
+              <div style={{ padding: '20px', color: '#000000' }}>
                 <h6>Options:</h6>
                 <div
                   style={{
@@ -143,7 +142,7 @@ export class PreviewForm extends React.PureComponent<Props> {
                       onChange={this.handleTOCChange}
                     />{' '}
                   </div>
-                  <div style={{marginLeft: '5px'}}> Include TOC</div>
+                  <div style={{ marginLeft: '5px' }}> Include TOC</div>
                 </div>
 
                 <div
@@ -161,7 +160,7 @@ export class PreviewForm extends React.PureComponent<Props> {
                       onChange={this.handelDocumentTitle}
                     />{' '}
                   </div>
-                  <div style={{marginLeft: '5px'}}>Document title</div>
+                  <div style={{ marginLeft: '5px' }}>Document title</div>
                 </div>
 
                 <div
@@ -179,7 +178,7 @@ export class PreviewForm extends React.PureComponent<Props> {
                       onChange={this.handelCitation}
                     />{' '}
                   </div>
-                  <div style={{marginLeft: '5px'}}>Citation</div>
+                  <div style={{ marginLeft: '5px' }}>Citation</div>
                 </div>
               </div>
 
@@ -338,7 +337,7 @@ export class PreviewForm extends React.PureComponent<Props> {
   calcLogic = (): void => {
     let divContainer = document.getElementById('holder');
     divContainer.innerHTML = '';
-    const {editorView} = this.props;
+    const { editorView } = this.props;
     const data = this.getContainer(editorView);
     let data1 = this.cloneModifyNode(data);
     let prosimer_cls_element = data1.querySelector('.ProseMirror');
@@ -358,7 +357,7 @@ export class PreviewForm extends React.PureComponent<Props> {
       let header = document.createElement('h3');
       header.textContent =
         editorView?.state?.doc?.attrs?.objectMetaData?.customEntity[
-          'http://www.w3.org/2000/01/rdf-schema#label'
+        'http://www.w3.org/2000/01/rdf-schema#label'
         ] || 'DEFAULT TITLE';
 
       let newDiv = document.createElement('div');
@@ -378,7 +377,7 @@ export class PreviewForm extends React.PureComponent<Props> {
       header.style.color = '#000000';
       header.textContent =
         editorView?.state?.doc?.attrs?.objectMetaData?.customEntity[
-          'http://www.w3.org/2000/01/rdf-schema#label'
+        'http://www.w3.org/2000/01/rdf-schema#label'
         ] || 'DEFAULT TITLE';
       parentDiv.appendChild(header);
       data1.insertBefore(parentDiv, data1.firstChild);
@@ -390,8 +389,7 @@ export class PreviewForm extends React.PureComponent<Props> {
       infoIcon.textContent = '';
       infoIcon.appendChild(superscript);
     });
-    for (let i = 0; i < data1.children.length; i++) {
-      const element = data1.children[i];
+    for (const element of data1.children) {
       const imageElements = element.querySelectorAll('img');
       for (const imageElement of imageElements) {
         // Replace the width attribute with the desired new width value (capped at 500px if original width is larger).

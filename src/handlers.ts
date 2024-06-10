@@ -29,9 +29,11 @@ export class MyHandler extends Handler {
     const infoIcons_ = info_Icons[0];
     if (infoIcons_) {
       infoIcons_.forEach(obj => {
-        if (((PreviewForm.isTitle) || (PreviewForm.isToc)) && obj.key + 1 == pageFragment.dataset.pageNumber) {
-          concatenatedValues += obj.value + ' ';
-        } else if (!(PreviewForm.isTitle) && !(PreviewForm.isToc) && obj.key == pageFragment.dataset.pageNumber) {
+        const isTitleOrToc = PreviewForm.isTitle || PreviewForm.isToc;
+        const isMatchingPageNumber = obj.key == pageFragment.dataset.pageNumber;
+
+        if ((isTitleOrToc && obj.key + 1 == pageFragment.dataset.pageNumber) ||
+          (!isTitleOrToc && isMatchingPageNumber)) {
           concatenatedValues += obj.value + ' ';
         }
       });
