@@ -46,7 +46,7 @@ export function createToc(config) {
     for (let i = 0; i < titleElements1.length; i++) {
       const titleHierarchy = i + 1;
       const titleElement = content1.querySelectorAll(
-        `p[stylename="${titleElements1[i]}"]`
+        `p[stylename="${titleElements1[i]}"], h4[stylename="${titleElements1[i]}"]`
       );
       titleElement.forEach(function (element) {
         // add classes to the element

@@ -36,7 +36,7 @@ export class PreviewForm extends React.PureComponent<Props> {
     for (const element of data1.children) {
       const imageElements = element.querySelectorAll('img');
       for (const imageElement of imageElements) {
-        // Replace the width attribute with the desired new width value (capped at 500px if original width is larger).
+        // Replace the width attribute with the desired new width value (capped at 600px if original width is larger).
         this.replaceImageWidth(imageElement);
       }
     }
@@ -67,8 +67,8 @@ export class PreviewForm extends React.PureComponent<Props> {
     const originalWidth = parseInt(imageElement.getAttribute('width'), 10);
 
     imageElement.setAttribute('data-original-width', originalWidth);
-    // If the original width is above 200px, set it to 200px; otherwise, use the original width.
-    const updatedWidth = originalWidth > 200 ? '200px' : originalWidth;
+    // If the original width is above 600px, set it to 600px; otherwise, use the original width.
+    const updatedWidth = originalWidth > 600 ? '600px' : originalWidth;
 
     // Set the width attribute with the updated width value.
     imageElement.setAttribute('width', updatedWidth);
@@ -250,6 +250,7 @@ export class PreviewForm extends React.PureComponent<Props> {
           const citation_header = document.createElement('h4');
           citation_header.textContent = 'Endnotes';
           citation_header.style.color = 'blue';
+          citation_header.setAttribute('stylename', PreviewForm.tocHeader[0]);
           selector.appendChild(citation_header);
         } else if (i === 5) {
           const underline = document.createElement('div');
