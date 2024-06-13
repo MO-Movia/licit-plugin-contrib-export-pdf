@@ -355,7 +355,7 @@ export class PreviewForm extends React.PureComponent<Props> {
     }
     if (PreviewForm.isToc && PreviewForm.isTitle) {
       let parentDiv = document.createElement('div');
-      parentDiv.style.paddingBottom = '50px';
+      parentDiv.classList.add('titleHead')
       let header = document.createElement('h3');
       header.textContent =
         editorView?.state?.doc?.attrs?.objectMetaData?.customEntity[
@@ -364,7 +364,6 @@ export class PreviewForm extends React.PureComponent<Props> {
 
       let newDiv = document.createElement('div');
       newDiv.classList.add('tocHead');
-
       parentDiv.appendChild(header);
       parentDiv.appendChild(newDiv);
       data1.insertBefore(parentDiv, data1.firstChild);
@@ -374,7 +373,7 @@ export class PreviewForm extends React.PureComponent<Props> {
       data1.insertBefore(newDiv, data1.firstChild);
     } else if (PreviewForm.isTitle) {
       let parentDiv = document.createElement('div');
-      parentDiv.style.paddingBottom = '50px';
+      parentDiv.classList.add('titleHead')
       let header = document.createElement('h3');
       header.style.color = '#000000';
       header.textContent =

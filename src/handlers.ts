@@ -121,6 +121,13 @@ margin-left: 25px;
 counter-reset: counterTocLevel1;
 }
 
+.tocHead{
+  margin-bottom: 700px;
+}
+.titleHead{
+  margin-bottom: 700px;
+}
+
 #list-toc-generated .toc-element-level-1 {
 counter-increment: counterTocLevel1;
 counter-reset: counterTocLevel2;
