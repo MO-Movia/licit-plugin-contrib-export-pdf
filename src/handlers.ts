@@ -176,15 +176,9 @@ right: 0;
 @page {
 .ProseMirror {
 box-shadow: none;
-padding: 10px;
-width: fit-content;
 }
 .pagedjs_pagebox * {
 background-color: #ffffff
-}
-.ProseMirror.czi-prosemirror-editor, .ProseMirror[data-layout='us_letter_portrait'] {
-  min-height: auto !important;
-  padding: 0px;
 }
 }
 }`);

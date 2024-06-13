@@ -343,6 +343,7 @@ export class PreviewForm extends React.PureComponent<Props> {
     let data1 = this.cloneModifyNode(data);
     let prosimer_cls_element = data1.querySelector('.ProseMirror');
     prosimer_cls_element.setAttribute('contenteditable', 'false');
+    prosimer_cls_element.classList.remove('czi-prosemirror-editor');
     if (PreviewForm.isCitation) {
       let CitationIcons = data1.querySelectorAll('.citationnote');
       CitationIcons.forEach((CitationIcon, index) => {
