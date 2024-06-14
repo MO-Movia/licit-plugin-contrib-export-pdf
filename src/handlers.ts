@@ -1,6 +1,6 @@
 import { Handler } from 'pagedjs';
 import { createToc } from './exportPdf';
-export let info_Icons = [];
+export const info_Icons = [];
 import { PreviewForm } from './preview';
 
 export class MyHandler extends Handler {

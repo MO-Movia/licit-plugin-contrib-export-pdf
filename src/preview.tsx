@@ -242,10 +242,10 @@ export class PreviewForm extends React.PureComponent<Props> {
 
   insertFooters = (CitationIcons, trialHtml): void => {
     const selector = trialHtml.querySelector(
-      '.ProseMirror.czi-prosemirror-editor'
+      '.ProseMirror'
     );
     if (CitationIcons.length > 0) {
-      for (let i = 0; i < 6; i++) {
+      for (let i = 0; i < 7; i++) {
         if (i === 4) {
           const citation_header = document.createElement('h4');
           citation_header.textContent = 'Endnotes';
@@ -256,6 +256,7 @@ export class PreviewForm extends React.PureComponent<Props> {
           const underline = document.createElement('div');
           underline.style.width = '350px';
           underline.style.height = '1px';
+          underline.style.marginTop = '-5px'
           underline.style.backgroundColor = '#000000';
           selector.appendChild(underline);
         } else {
