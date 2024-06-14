@@ -1,7 +1,7 @@
-import { Handler } from 'pagedjs';
-import { createToc } from './exportPdf';
-export const info_Icons = [];
-import { PreviewForm } from './preview';
+import {Handler} from 'pagedjs';
+import {createToc} from './exportPdf';
+export let info_Icons = [];
+import {PreviewForm} from './preview';
 
 export class MyHandler extends Handler {
   done;
@@ -24,20 +24,24 @@ export class MyHandler extends Handler {
   }
 
   afterPageLayout(pageFragment) {
-
     let concatenatedValues = '';
     const infoIcons_ = info_Icons[0];
     if (infoIcons_) {
-      infoIcons_.forEach(obj => {
+      infoIcons_.forEach((obj) => {
         const isTitleOrToc = PreviewForm.isTitle || PreviewForm.isToc;
         const isMatchingPageNumber = obj.key == pageFragment.dataset.pageNumber;
 
-        if ((isTitleOrToc && obj.key + 1 == pageFragment.dataset.pageNumber) ||
-          (!isTitleOrToc && isMatchingPageNumber)) {
+        if (
+          (isTitleOrToc && obj.key + 1 == pageFragment.dataset.pageNumber) ||
+          (!isTitleOrToc && isMatchingPageNumber)
+        ) {
           concatenatedValues += obj.value + ' ';
         }
       });
-      pageFragment.style.setProperty('--pagedjs-string-last-chapTitled', `"${concatenatedValues + ' '}`);
+      pageFragment.style.setProperty(
+        '--pagedjs-string-last-chapTitled',
+        `"${concatenatedValues + ' '}`
+      );
     }
   }
 
@@ -51,7 +55,7 @@ export class MyHandler extends Handler {
         const parser = new DOMParser();
         const doc = parser.parseFromString(outerHTMLValue, 'text/html');
         const tocElements = doc.querySelectorAll('infoicon');
-        tocElements.forEach(element => {
+        tocElements.forEach((element) => {
           count++;
           const description = element.attributes['description'].textContent;
           const cleanedDescription =
