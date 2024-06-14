@@ -107,7 +107,7 @@ export class PreviewForm extends React.PureComponent<Props> {
           alignItems: 'center',
         }}
       >
-        <div style={{ border: 'solid' }}>
+        <div style={{ border: 'solid', visibility: 'hidden' }} className='exportpdf-preview-container'>
           <div style={{ display: 'flex', flexDirection: 'row' }}>
             <div
               id="holder"
@@ -346,8 +346,8 @@ export class PreviewForm extends React.PureComponent<Props> {
     prosimer_cls_element.setAttribute('contenteditable', 'false');
     prosimer_cls_element.classList.remove('czi-prosemirror-editor');
     prosimer_cls_element.querySelectorAll('.molm-czi-image-view-body-img-clip span').forEach(span_ => {
-      (span_ as HTMLElement).style.display = 'flex'; 
-  });
+      (span_ as HTMLElement).style.display = 'flex';
+    });
     if (PreviewForm.isCitation) {
       let CitationIcons = data1.querySelectorAll('.citationnote');
       CitationIcons.forEach((CitationIcon, index) => {
@@ -404,6 +404,8 @@ export class PreviewForm extends React.PureComponent<Props> {
     let paged = new Previewer();
     this.showAlert();
     paged.preview(data1, [], divContainer).then((flow) => {
+      const preview_container_ = document.querySelector('.exportpdf-preview-container');
+      (preview_container_ as HTMLElement).style.visibility = 'visible';
       this._popUp.close();
       console.log('Rendered', flow.total, 'pages.');
     });
