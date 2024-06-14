@@ -345,6 +345,9 @@ export class PreviewForm extends React.PureComponent<Props> {
     let prosimer_cls_element = data1.querySelector('.ProseMirror');
     prosimer_cls_element.setAttribute('contenteditable', 'false');
     prosimer_cls_element.classList.remove('czi-prosemirror-editor');
+    prosimer_cls_element.querySelectorAll('.molm-czi-image-view-body-img-clip span').forEach(span_ => {
+      (span_ as HTMLElement).style.display = 'flex'; 
+  });
     if (PreviewForm.isCitation) {
       let CitationIcons = data1.querySelectorAll('.citationnote');
       CitationIcons.forEach((CitationIcon, index) => {
