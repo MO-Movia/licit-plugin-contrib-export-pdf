@@ -79,8 +79,8 @@ export class PreviewForm extends React.PureComponent<Props> {
     const stylePromise = view.runtime;
     const styles = await stylePromise.getStylesAsync();
     storeTOCvalue = styles
-      .filter((style) => style.styles.toc === true)
-      .map((style) => style.styleName);
+      .filter((style) => style?.styles?.toc === true)
+      .map((style) => style?.styleName);
 
     view?.state?.tr?.doc.descendants((node) => {
       if (node.attrs.styleName) {
