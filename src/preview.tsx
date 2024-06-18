@@ -1,9 +1,9 @@
 import React from 'react';
-import { EditorView } from 'prosemirror-view';
-import { Previewer, registerHandlers } from 'pagedjs';
-import { MyHandler } from './handlers';
-import { createPopUp, atViewportCenter } from '@modusoperandi/licit-ui-commands';
-import { Loader } from './loader';
+import {EditorView} from 'prosemirror-view';
+import {Previewer, registerHandlers} from 'pagedjs';
+import {MyHandler} from './handlers';
+import {createPopUp, atViewportCenter} from '@modusoperandi/licit-ui-commands';
+import {Loader} from './loader';
 
 interface Props {
   editorView: EditorView;
@@ -19,7 +19,7 @@ export class PreviewForm extends React.PureComponent<Props> {
   _popUp = null;
 
   componentDidMount(): void {
-    const { editorView } = this.props;
+    const {editorView} = this.props;
     this.getToc(editorView);
     PreviewForm.general = true;
     registerHandlers(MyHandler);
@@ -66,12 +66,9 @@ export class PreviewForm extends React.PureComponent<Props> {
     // Get the original width of the image.
     const originalWidth = parseInt(imageElement.getAttribute('width'), 10);
 
-    imageElement.setAttribute('data-original-width', originalWidth);
-    // If the original width is above 600px, set it to 600px; otherwise, use the original width.
-    const updatedWidth = originalWidth > 600 ? '600px' : originalWidth;
-
-    // Set the width attribute with the updated width value.
-    imageElement.setAttribute('width', updatedWidth);
+    if (originalWidth > 600) {
+      imageElement.style.maxWidth = '600px';
+    }
   };
 
   getToc = async (view) => {
@@ -107,8 +104,11 @@ export class PreviewForm extends React.PureComponent<Props> {
           alignItems: 'center',
         }}
       >
-        <div style={{ border: 'solid', visibility: 'hidden' }} className='exportpdf-preview-container'>
-          <div style={{ display: 'flex', flexDirection: 'row' }}>
+        <div
+          style={{border: 'solid', visibility: 'hidden'}}
+          className="exportpdf-preview-container"
+        >
+          <div style={{display: 'flex', flexDirection: 'row'}}>
             <div
               id="holder"
               className="preview-container"
@@ -125,7 +125,7 @@ export class PreviewForm extends React.PureComponent<Props> {
                 position: 'relative',
               }}
             >
-              <div style={{ padding: '20px', color: '#000000' }}>
+              <div style={{padding: '20px', color: '#000000'}}>
                 <h6>Options:</h6>
                 <div
                   style={{
@@ -142,7 +142,7 @@ export class PreviewForm extends React.PureComponent<Props> {
                       onChange={this.handleTOCChange}
                     />{' '}
                   </div>
-                  <div style={{ marginLeft: '5px' }}> Include TOC</div>
+                  <div style={{marginLeft: '5px'}}> Include TOC</div>
                 </div>
 
                 <div
@@ -160,7 +160,7 @@ export class PreviewForm extends React.PureComponent<Props> {
                       onChange={this.handelDocumentTitle}
                     />{' '}
                   </div>
-                  <div style={{ marginLeft: '5px' }}>Document title</div>
+                  <div style={{marginLeft: '5px'}}>Document title</div>
                 </div>
 
                 <div
@@ -178,7 +178,7 @@ export class PreviewForm extends React.PureComponent<Props> {
                       onChange={this.handelCitation}
                     />{' '}
                   </div>
-                  <div style={{ marginLeft: '5px' }}>Citation</div>
+                  <div style={{marginLeft: '5px'}}>Citation</div>
                 </div>
               </div>
 
@@ -241,9 +241,7 @@ export class PreviewForm extends React.PureComponent<Props> {
   };
 
   insertFooters = (CitationIcons, trialHtml): void => {
-    const selector = trialHtml.querySelector(
-      '.ProseMirror'
-    );
+    const selector = trialHtml.querySelector('.ProseMirror');
     if (CitationIcons.length > 0) {
       for (let i = 0; i < 7; i++) {
         if (i === 4) {
@@ -256,7 +254,7 @@ export class PreviewForm extends React.PureComponent<Props> {
           const underline = document.createElement('div');
           underline.style.width = '350px';
           underline.style.height = '1px';
-          underline.style.marginTop = '-5px'
+          underline.style.marginTop = '-5px';
           underline.style.backgroundColor = '#000000';
           selector.appendChild(underline);
         } else {
@@ -339,15 +337,17 @@ export class PreviewForm extends React.PureComponent<Props> {
   calcLogic = (): void => {
     let divContainer = document.getElementById('holder');
     divContainer.innerHTML = '';
-    const { editorView } = this.props;
+    const {editorView} = this.props;
     const data = this.getContainer(editorView);
     let data1 = this.cloneModifyNode(data);
     let prosimer_cls_element = data1.querySelector('.ProseMirror');
     prosimer_cls_element.setAttribute('contenteditable', 'false');
     prosimer_cls_element.classList.remove('czi-prosemirror-editor');
-    prosimer_cls_element.querySelectorAll('.molm-czi-image-view-body-img-clip span').forEach(span_ => {
-      (span_ as HTMLElement).style.display = 'flex';
-    });
+    prosimer_cls_element
+      .querySelectorAll('.molm-czi-image-view-body-img-clip span')
+      .forEach((span_) => {
+        (span_ as HTMLElement).style.display = 'flex';
+      });
     if (PreviewForm.isCitation) {
       let CitationIcons = data1.querySelectorAll('.citationnote');
       CitationIcons.forEach((CitationIcon, index) => {
@@ -359,11 +359,12 @@ export class PreviewForm extends React.PureComponent<Props> {
     }
     if (PreviewForm.isToc && PreviewForm.isTitle) {
       let parentDiv = document.createElement('div');
-      parentDiv.classList.add('titleHead')
+      parentDiv.classList.add('titleHead');
       let header = document.createElement('h3');
+      header.style.color = '#000000';
       header.textContent =
         editorView?.state?.doc?.attrs?.objectMetaData?.customEntity[
-        'http://www.w3.org/2000/01/rdf-schema#label'
+          'http://www.w3.org/2000/01/rdf-schema#label'
         ] || 'DEFAULT TITLE';
 
       let newDiv = document.createElement('div');
@@ -377,12 +378,12 @@ export class PreviewForm extends React.PureComponent<Props> {
       data1.insertBefore(newDiv, data1.firstChild);
     } else if (PreviewForm.isTitle) {
       let parentDiv = document.createElement('div');
-      parentDiv.classList.add('titleHead')
+      parentDiv.classList.add('titleHead');
       let header = document.createElement('h3');
       header.style.color = '#000000';
       header.textContent =
         editorView?.state?.doc?.attrs?.objectMetaData?.customEntity[
-        'http://www.w3.org/2000/01/rdf-schema#label'
+          'http://www.w3.org/2000/01/rdf-schema#label'
         ] || 'DEFAULT TITLE';
       parentDiv.appendChild(header);
       data1.insertBefore(parentDiv, data1.firstChild);
@@ -404,7 +405,9 @@ export class PreviewForm extends React.PureComponent<Props> {
     let paged = new Previewer();
     this.showAlert();
     paged.preview(data1, [], divContainer).then((flow) => {
-      const preview_container_ = document.querySelector('.exportpdf-preview-container');
+      const preview_container_ = document.querySelector(
+        '.exportpdf-preview-container'
+      );
       (preview_container_ as HTMLElement).style.visibility = 'visible';
       this._popUp.close();
       console.log('Rendered', flow.total, 'pages.');
