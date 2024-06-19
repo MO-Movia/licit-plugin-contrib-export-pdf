@@ -1,9 +1,9 @@
 import React from 'react';
-import {EditorView} from 'prosemirror-view';
-import {Previewer, registerHandlers} from 'pagedjs';
-import {MyHandler} from './handlers';
-import {createPopUp, atViewportCenter} from '@modusoperandi/licit-ui-commands';
-import {Loader} from './loader';
+import { EditorView } from 'prosemirror-view';
+import { Previewer, registerHandlers } from 'pagedjs';
+import { MyHandler } from './handlers';
+import { createPopUp, atViewportCenter } from '@modusoperandi/licit-ui-commands';
+import { Loader } from './loader';
 
 interface Props {
   editorView: EditorView;
@@ -19,7 +19,7 @@ export class PreviewForm extends React.PureComponent<Props> {
   _popUp = null;
 
   componentDidMount(): void {
-    const {editorView} = this.props;
+    const { editorView } = this.props;
     this.getToc(editorView);
     PreviewForm.general = true;
     registerHandlers(MyHandler);
@@ -105,10 +105,10 @@ export class PreviewForm extends React.PureComponent<Props> {
         }}
       >
         <div
-          style={{border: 'solid', visibility: 'hidden'}}
+          style={{ border: 'solid', visibility: 'hidden' }}
           className="exportpdf-preview-container"
         >
-          <div style={{display: 'flex', flexDirection: 'row'}}>
+          <div style={{ display: 'flex', flexDirection: 'row' }}>
             <div
               id="holder"
               className="preview-container"
@@ -125,7 +125,7 @@ export class PreviewForm extends React.PureComponent<Props> {
                 position: 'relative',
               }}
             >
-              <div style={{padding: '20px', color: '#000000'}}>
+              <div style={{ padding: '20px', color: '#000000' }}>
                 <h6>Options:</h6>
                 <div
                   style={{
@@ -142,7 +142,7 @@ export class PreviewForm extends React.PureComponent<Props> {
                       onChange={this.handleTOCChange}
                     />{' '}
                   </div>
-                  <div style={{marginLeft: '5px'}}> Include TOC</div>
+                  <div style={{ marginLeft: '5px' }}> Include TOC</div>
                 </div>
 
                 <div
@@ -160,7 +160,7 @@ export class PreviewForm extends React.PureComponent<Props> {
                       onChange={this.handelDocumentTitle}
                     />{' '}
                   </div>
-                  <div style={{marginLeft: '5px'}}>Document title</div>
+                  <div style={{ marginLeft: '5px' }}>Document title</div>
                 </div>
 
                 <div
@@ -178,7 +178,7 @@ export class PreviewForm extends React.PureComponent<Props> {
                       onChange={this.handelCitation}
                     />{' '}
                   </div>
-                  <div style={{marginLeft: '5px'}}>Citation</div>
+                  <div style={{ marginLeft: '5px' }}>Citation</div>
                 </div>
               </div>
 
@@ -334,10 +334,28 @@ export class PreviewForm extends React.PureComponent<Props> {
     return data.cloneNode(true) as HTMLElement;
   };
 
+  addLinkEventListeners = (): void => {
+    const links = document.querySelectorAll('.toc-element a');
+    links.forEach(link => {
+      link.addEventListener('click', this.handleLinkClick);
+    });
+  };
+
+  handleLinkClick = (event: MouseEvent): void => {
+    event.preventDefault();
+    const targetId = (event.currentTarget as HTMLAnchorElement).getAttribute('href')?.slice(1);
+    if (targetId) {
+      const targetElement = document.getElementById(targetId);
+      if (targetElement) {
+        targetElement.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
+
   calcLogic = (): void => {
     let divContainer = document.getElementById('holder');
     divContainer.innerHTML = '';
-    const {editorView} = this.props;
+    const { editorView } = this.props;
     const data = this.getContainer(editorView);
     let data1 = this.cloneModifyNode(data);
     let prosimer_cls_element = data1.querySelector('.ProseMirror');
@@ -364,7 +382,7 @@ export class PreviewForm extends React.PureComponent<Props> {
       header.style.color = '#000000';
       header.textContent =
         editorView?.state?.doc?.attrs?.objectMetaData?.customEntity[
-          'http://www.w3.org/2000/01/rdf-schema#label'
+        'http://www.w3.org/2000/01/rdf-schema#label'
         ] || 'DEFAULT TITLE';
 
       let newDiv = document.createElement('div');
@@ -383,7 +401,7 @@ export class PreviewForm extends React.PureComponent<Props> {
       header.style.color = '#000000';
       header.textContent =
         editorView?.state?.doc?.attrs?.objectMetaData?.customEntity[
-          'http://www.w3.org/2000/01/rdf-schema#label'
+        'http://www.w3.org/2000/01/rdf-schema#label'
         ] || 'DEFAULT TITLE';
       parentDiv.appendChild(header);
       data1.insertBefore(parentDiv, data1.firstChild);
@@ -409,6 +427,7 @@ export class PreviewForm extends React.PureComponent<Props> {
         '.exportpdf-preview-container'
       );
       (preview_container_ as HTMLElement).style.visibility = 'visible';
+      this.addLinkEventListeners();
       this._popUp.close();
       console.log('Rendered', flow.total, 'pages.');
     });

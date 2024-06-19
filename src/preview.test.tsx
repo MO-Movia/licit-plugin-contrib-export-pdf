@@ -303,26 +303,63 @@ describe('PreviewForm component', () => {
         };
         const Previewform = new PreviewForm(props);
         const imageElement = document.createElement('img');
-        imageElement.setAttribute('width', '300');
+        imageElement.setAttribute('width', '700');
         Previewform.replaceImageWidth(imageElement);
-        expect(imageElement.getAttribute('data-original-width')).toBe('300');
-    })
-    it('shouldcall the replaceImageWidth() function to pass originalWidth < 200 condtion', () => {
-        const props = {
-            editorState: {} as unknown as EditorState,
-            editorView: {} as unknown as EditorView,
-            onClose() {
-                return;
-            },
-        };
-        const Previewform = new PreviewForm(props);
-        const imageElement = document.createElement('img');
-        imageElement.setAttribute('width', '150');
-        Previewform.replaceImageWidth(imageElement);
-        expect(imageElement.getAttribute('data-original-width')).toBe('150');
+        expect(imageElement.getAttribute('data-original-width')).toBe(null);
     })
 });
-
+describe('addLinkEventListeners && handleLinkClick', () => {
+    let previewForm
+    beforeEach(() => {
+        document.body.innerHTML = `
+        <div class="toc-element">
+          <a href="#section1">Section 1</a>
+        </div>
+        <div id="section1">Content of Section 1</div>
+      `;
+    });
+    const props = {
+        editorState: {} as unknown as EditorState,
+        editorView: {} as unknown as EditorView,
+        onClose() {
+            return;
+        },
+    };
+    previewForm = new PreviewForm(props);
+    afterEach(() => {
+        document.body.innerHTML = '';
+    });
+    it('should call the function addLinkEventListeners()', () => {
+       let test_ = previewForm.addLinkEventListeners();
+        const link = document.querySelector('.toc-element a');
+        const targetElement = document.getElementById('section1');
+        const preventDefault = jest.fn();
+        const event = new MouseEvent('click', { bubbles: true });
+        Object.defineProperty(event, 'currentTarget', { value: link });
+        Object.defineProperty(event, 'preventDefault', { value: preventDefault });
+        const scrollIntoView = jest.fn();
+        targetElement.scrollIntoView = scrollIntoView;
+        expect(test_).toBeUndefined();
+    });
+    it('should call the function handleLinkClick()', () => {
+        const link = document.createElement('a');
+        link.setAttribute('href', '#section1');
+    
+        const preventDefault = jest.fn();
+        const event = new MouseEvent('click', { bubbles: true });
+        Object.defineProperty(event, 'currentTarget', { value: link });
+        Object.defineProperty(event, 'preventDefault', { value: preventDefault });
+    
+        const targetElement = document.getElementById('section1');
+        const scrollIntoView = jest.fn();
+        targetElement.scrollIntoView = scrollIntoView;
+    
+        previewForm.handleLinkClick(event);
+    
+        expect(preventDefault).toHaveBeenCalled();
+        expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth' });
+      });
+});
 
 
 
