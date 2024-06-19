@@ -78,10 +78,9 @@ export class MyHandler extends Handler {
   }
 
   async doIT() {
-    let opt;
-    let opt2;
-    opt2 = '.ProseMirror  infoicon { string-set: chapTitled content(text); }';
-    opt = `@bottom-center {
+    const opt2 =
+      '.ProseMirror  infoicon { string-set: chapTitled content(text); }';
+    const opt = `@bottom-center {
 content: string(chapTitled, last);
 text-align: right;
 }
