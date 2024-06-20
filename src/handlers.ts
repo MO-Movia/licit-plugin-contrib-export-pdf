@@ -165,6 +165,7 @@ float: left;
 width: 0;
 padding-left: 5px;
 letter-spacing: 2px;
+color: #000000;
 }
 .pagedjs_page .pagedjs_margin-bottom-center>.pagedjs_margin-content::after {
   color: #000000;

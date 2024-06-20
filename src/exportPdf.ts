@@ -68,10 +68,14 @@ export function createToc(config) {
 
       // Add class for the hierarchy of toc
       tocNewLi.classList.add('toc-element');
-
+      let truncateText = tocElement.textContent;
+      if (truncateText.length > 70) {
+        truncateText = truncateText.substring(0, 70).trim();
+        truncateText = truncateText.substring(0, truncateText.lastIndexOf(' '));
+      }
       // Create the element
       tocNewLi.innerHTML =
-        '<a href="#' + tocElement.id + '">' + tocElement.innerHTML + '</a>';
+        '<a href="#' + tocElement.id + '">' + truncateText + '</a>';
       tocUl.appendChild(tocNewLi);
     }
   }
