@@ -1,7 +1,7 @@
-import { Handler } from 'pagedjs';
-import { createToc } from './exportPdf';
+import {Handler} from 'pagedjs';
+import {createToc} from './exportPdf';
 export const info_Icons = [];
-import { PreviewForm } from './preview';
+import {PreviewForm} from './preview';
 
 export class MyHandler extends Handler {
   done;
@@ -24,22 +24,29 @@ export class MyHandler extends Handler {
   }
 
   afterPageLayout(pageFragment) {
+    let concatenatedValues = '';
+    const infoIcons_ = info_Icons[0];
+    if (infoIcons_) {
+      infoIcons_.forEach((obj) => {
+        const isTitleOrToc = PreviewForm.isTitle || PreviewForm.isToc;
+        const isMatchingPageNumber = obj.key == pageFragment.dataset.pageNumber;
 
-      let concatenatedValues = '';
-      const infoIcons_ = info_Icons[0];
-      if (infoIcons_) {
-        infoIcons_.forEach(obj => {
-            if (((PreviewForm.isTitle) || (PreviewForm.isToc)) && obj.key + 1 == pageFragment.dataset.pageNumber) {
-                concatenatedValues += obj.value + ' ';
-            } else if (!(PreviewForm.isTitle) && !(PreviewForm.isToc) && obj.key == pageFragment.dataset.pageNumber){
-                concatenatedValues += obj.value + ' ';
-            }
-        });
-        pageFragment.style.setProperty('--pagedjs-string-last-chapTitled', `"${concatenatedValues + ' '}`);
+        if (
+          (isTitleOrToc && obj.key + 1 == pageFragment.dataset.pageNumber) ||
+          (!isTitleOrToc && isMatchingPageNumber)
+        ) {
+          concatenatedValues += obj.value + ' ';
+        }
+      });
+      pageFragment.style.setProperty(
+        '--pagedjs-string-last-chapTitled',
+        `"${concatenatedValues + ' '}`
+      );
     }
   }
 
   afterRendered(pages) {
+    info_Icons.pop();
     if (PreviewForm.general) {
       const infoIcon_initial = [];
       let count = 0;
@@ -48,7 +55,7 @@ export class MyHandler extends Handler {
         const parser = new DOMParser();
         const doc = parser.parseFromString(outerHTMLValue, 'text/html');
         const tocElements = doc.querySelectorAll('infoicon');
-        tocElements.forEach(element => {
+        tocElements.forEach((element) => {
           count++;
           const description = element.attributes['description'].textContent;
           const cleanedDescription =
@@ -62,7 +69,7 @@ export class MyHandler extends Handler {
       }
       if (info_Icons.length === 0) {
         info_Icons.push(infoIcon_initial);
-    }
+      }
     }
   }
 
@@ -71,15 +78,15 @@ export class MyHandler extends Handler {
   }
 
   async doIT() {
-    let opt;
-    let opt2;
-      opt2 = '.ProseMirror  infoicon { string-set: chapTitled content(text); }';
-      opt = `@bottom-center {
+    const opt2 =
+      '.ProseMirror  infoicon { string-set: chapTitled content(text); }';
+    const opt = `@bottom-center {
 content: string(chapTitled, last);
 text-align: right;
 }
 @bottom-left {
 content: "Page " counter(page) " of " counter(pages);
+color: #000000;
 }
 `;
 
@@ -117,6 +124,13 @@ margin-left: 25px;
 counter-reset: counterTocLevel1;
 }
 
+.tocHead{
+  margin-bottom: 700px;
+}
+.titleHead{
+  margin-bottom: 700px;
+}
+
 #list-toc-generated .toc-element-level-1 {
 counter-increment: counterTocLevel1;
 counter-reset: counterTocLevel2;
@@ -151,8 +165,11 @@ float: left;
 width: 0;
 padding-left: 5px;
 letter-spacing: 2px;
+color: #000000;
 }
-
+.pagedjs_page .pagedjs_margin-bottom-center>.pagedjs_margin-content::after {
+  color: #000000;
+}
 #list-toc-generated .toc-element {
 display: flex;
 }
@@ -170,15 +187,9 @@ right: 0;
 @page {
 .ProseMirror {
 box-shadow: none;
-padding: 10px;
-width: fit-content;
 }
 .pagedjs_pagebox * {
 background-color: #ffffff
-}
-.ProseMirror.czi-prosemirror-editor, .ProseMirror[data-layout='us_letter_portrait'] {
-  min-height: auto !important;
-  padding: 0px;
 }
 }
 }`);
