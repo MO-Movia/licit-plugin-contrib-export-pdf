@@ -1,6 +1,6 @@
 {
   "name": "@modusoperandi/licit-export-pdf",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "description": "MO's Export To PDF ProseMirror Plugin",
   "main": "index.js",
@@ -11,8 +11,8 @@
     "url": "git+https://github.com/MO-Movia/licit-plugin-contrib-export-pdf.git"
   },
   "peerDependencies": {
-    "@modusoperandi/licit-doc-attrs-step": "^1.0.0",
-    "@modusoperandi/licit-ui-commands": "^1.0.2",
+    "@modusoperandi/licit-doc-attrs-step": "^1.0.2",
+    "@modusoperandi/licit-ui-commands": "^1.0.3",
     "prosemirror-model": "^1.16.1"
   },
   "dependencies": {
