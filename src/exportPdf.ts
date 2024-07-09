@@ -46,7 +46,7 @@ export function createToc(config) {
     for (let i = 0; i < titleElements1.length; i++) {
       const titleHierarchy = i + 1;
       const titleElement = content1.querySelectorAll(
-        `p[stylename="${titleElements1[i]}"]`
+        `p[stylename="${titleElements1[i]}"], h4[stylename="${titleElements1[i]}"]`
       );
       titleElement.forEach(function (element) {
         // add classes to the element
@@ -68,10 +68,14 @@ export function createToc(config) {
 
       // Add class for the hierarchy of toc
       tocNewLi.classList.add('toc-element');
-
+      let truncateText = tocElement.textContent;
+      if (truncateText.length > 70) {
+        truncateText = truncateText.substring(0, 70).trim();
+        truncateText = truncateText.substring(0, truncateText.lastIndexOf(' '));
+      }
       // Create the element
       tocNewLi.innerHTML =
-        '<a href="#' + tocElement.id + '">' + tocElement.innerHTML + '</a>';
+        '<a href="#' + tocElement.id + '">' + truncateText + '</a>';
       tocUl.appendChild(tocNewLi);
     }
   }
