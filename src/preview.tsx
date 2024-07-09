@@ -1,9 +1,9 @@
 import React from 'react';
-import { EditorView } from 'prosemirror-view';
-import { Previewer, registerHandlers } from 'pagedjs';
-import { MyHandler } from './handlers';
-import { createPopUp, atViewportCenter } from '@modusoperandi/licit-ui-commands';
-import { Loader } from './loader';
+import {EditorView} from 'prosemirror-view';
+import {Previewer, registerHandlers} from 'pagedjs';
+import {MyHandler} from './handlers';
+import {createPopUp, atViewportCenter} from '@modusoperandi/licit-ui-commands';
+import {Loader} from './loader';
 
 interface Props {
   editorView: EditorView;
@@ -11,16 +11,16 @@ interface Props {
 }
 
 export class PreviewForm extends React.PureComponent<Props> {
-  public static general: boolean = false; //NOSONAR need to reassign this variable , so can't be readonly
-  public static isToc: boolean = false; //NOSONAR need to reassign this variable , so can't be readonly
-  public static isCitation: boolean = false;//NOSONAR need to reassign this variable , so can't be readonly
-  public static isTitle: boolean = false;//NOSONAR need to reassign this variable , so can't be readonly
-  public static tocHeader = [];//NOSONAR need to reassign this variable , so can't be readonly
+  public static general: boolean = false;
+  public static isToc: boolean = false;
+  public static isCitation: boolean = false;
+  public static isTitle: boolean = false;
+  public static tocHeader = [];
   _popUp = null;
 
   componentDidMount(): void {
-    const { editorView } = this.props;
-    this.getToc(editorView)
+    const {editorView} = this.props;
+    this.getToc(editorView);
     PreviewForm.general = true;
     registerHandlers(MyHandler);
     let divContainer = document.getElementById('holder');
@@ -33,10 +33,17 @@ export class PreviewForm extends React.PureComponent<Props> {
       infoIcon.textContent = '';
       infoIcon.appendChild(superscript);
     });
+    for (const element of data1.children) {
+      const imageElements = element.querySelectorAll('img');
+      for (const imageElement of imageElements) {
+        // Replace the width attribute with the desired new width value (capped at 600px if original width is larger).
+        this.replaceImageWidth(imageElement);
+      }
+    }
     let prosimer_cls_element = data1.querySelector('.ProseMirror');
-    prosimer_cls_element.setAttribute('contenteditable', 'false')
+    prosimer_cls_element.setAttribute('contenteditable', 'false');
     let paged = new Previewer();
-    paged.preview(data1, [], divContainer).then(flow => {
+    paged.preview(data1, [], divContainer).then((flow) => {
       console.log('Rendered', flow.total, 'pages.');
       this.InfoActive();
     });
@@ -55,13 +62,22 @@ export class PreviewForm extends React.PureComponent<Props> {
     });
   }
 
+  replaceImageWidth = (imageElement): void => {
+    // Get the original width of the image.
+    const originalWidth = parseInt(imageElement.getAttribute('width'), 10);
+
+    if (originalWidth > 600) {
+      imageElement.style.maxWidth = '600px';
+    }
+  };
+
   getToc = async (view) => {
     let storeTOCvalue = [];
     const stylePromise = view.runtime;
     const styles = await stylePromise.getStylesAsync();
     storeTOCvalue = styles
-      .filter((style) => style.styles.toc === true)
-      .map((style) => style.styleName);
+      .filter((style) => style?.styles?.toc === true)
+      .map((style) => style?.styleName);
 
     view?.state?.tr?.doc.descendants((node) => {
       if (node.attrs.styleName) {
@@ -70,7 +86,6 @@ export class PreviewForm extends React.PureComponent<Props> {
             PreviewForm.tocHeader.push(node.attrs.styleName);
           }
         }
-
       }
     });
   };
@@ -89,10 +104,11 @@ export class PreviewForm extends React.PureComponent<Props> {
           alignItems: 'center',
         }}
       >
-        <div style={{ border: 'solid' }}>
-          <div
-            style={{ display: 'flex', flexDirection: 'row' }}>
-
+        <div
+          style={{border: 'solid', visibility: 'hidden'}}
+          className="exportpdf-preview-container"
+        >
+          <div style={{display: 'flex', flexDirection: 'row'}}>
             <div
               id="holder"
               className="preview-container"
@@ -103,74 +119,105 @@ export class PreviewForm extends React.PureComponent<Props> {
               }}
             ></div>
             <div
-              style={{ height: '90vh', background: 'rgb(226 226 226)', position: 'relative' }}
+              style={{
+                height: '90vh',
+                background: 'rgb(226 226 226)',
+                position: 'relative',
+              }}
             >
-              <div style={{ padding: '20px' }}>
-                <span>Options:</span>
-                <div style={{ marginTop: '10px' }}>
-                  <label >
+              <div style={{padding: '20px', color: '#000000'}}>
+                <h6>Options:</h6>
+                <div
+                  style={{
+                    marginTop: '20px',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                  }}
+                >
+                  <div>
                     <input
                       type="checkbox"
                       name="TOC"
                       onChange={this.handleTOCChange}
                     />{' '}
-                    Include TOC
-                  </label>
+                  </div>
+                  <div style={{marginLeft: '5px'}}> Include TOC</div>
                 </div>
-          
-                <div style={{ marginTop: '10px' }}>
-                  <label >
+
+                <div
+                  style={{
+                    marginTop: '8px',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                  }}
+                >
+                  <div>
                     <input
                       type="checkbox"
                       name="infoicon"
                       onChange={this.handelDocumentTitle}
                     />{' '}
-                    Document title
-                  </label>
+                  </div>
+                  <div style={{marginLeft: '5px'}}>Document title</div>
                 </div>
 
-                <div style={{ marginTop: '10px' }}>
-                  <label >
+                <div
+                  style={{
+                    marginTop: '8px',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                  }}
+                >
+                  <div>
                     <input
                       type="checkbox"
                       name="infoicon"
                       onChange={this.handelCitation}
                     />{' '}
-                    Citation
-                  </label>
+                  </div>
+                  <div style={{marginLeft: '5px'}}>Citation</div>
                 </div>
-
-
               </div>
 
-              <div style={{ position: 'absolute', bottom: '0', right: '0', padding: '5px' }}>
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: '0',
+                  right: '0',
+                  padding: '5px',
+                  display: 'flex',
+                  flexDirection: 'row',
+                }}
+              >
                 <button onClick={this.handleConfirm}>Confirm</button>
                 <button onClick={this.handleCancel}>Cancel</button>
               </div>
-
             </div>
           </div>
         </div>
       </div>
     );
   }
-  handelDocumentTitle = event => {
+  handelDocumentTitle = (event) => {
     if (event.target.checked) {
       this.documentTitleActive();
     } else {
       this.documentTitleDeactive();
     }
-  }
+  };
 
-  handelCitation = event => {
+  handelCitation = (event) => {
     if (event.target.checked) {
-      this.citationActive()
+      this.citationActive();
     } else {
       this.citationDeactive();
     }
-  }
+  };
 
-  handleTOCChange = event => {
+  handleTOCChange = (event) => {
     if (event.target.checked) {
       this.tocActive();
     } else {
@@ -181,33 +228,33 @@ export class PreviewForm extends React.PureComponent<Props> {
   documentTitleActive = (): void => {
     PreviewForm.isTitle = true;
     this.calcLogic();
-  }
+  };
 
   documentTitleDeactive = (): void => {
     PreviewForm.isTitle = false;
     this.calcLogic();
-  }
+  };
 
   citationActive = (): void => {
     PreviewForm.isCitation = true;
     this.calcLogic();
-
-
-  }
+  };
 
   insertFooters = (CitationIcons, trialHtml): void => {
-    const selector = trialHtml.querySelector('.ProseMirror.czi-prosemirror-editor');
+    const selector = trialHtml.querySelector('.ProseMirror');
     if (CitationIcons.length > 0) {
-      for (let i = 0; i < 10; i++) {
-        if (i === 6) {
+      for (let i = 0; i < 7; i++) {
+        if (i === 4) {
           const citation_header = document.createElement('h4');
           citation_header.textContent = 'Endnotes';
           citation_header.style.color = 'blue';
-          selector.appendChild(citation_header)
-        } else if (i === 7) {
+          citation_header.setAttribute('stylename', PreviewForm.tocHeader[0]);
+          selector.appendChild(citation_header);
+        } else if (i === 5) {
           const underline = document.createElement('div');
-          underline.style.width = '200px'
-          underline.style.height = '1.5px';
+          underline.style.width = '350px';
+          underline.style.height = '1px';
+          underline.style.marginTop = '-5px';
           underline.style.backgroundColor = '#000000';
           selector.appendChild(underline);
         } else {
@@ -277,26 +324,50 @@ export class PreviewForm extends React.PureComponent<Props> {
       newDiv.appendChild(descriptionSpan);
       selector.appendChild(newDiv);
     });
-
-
   };
 
   citationDeactive = (): void => {
     PreviewForm.isCitation = false;
     this.calcLogic();
-  }
+  };
   cloneModifyNode = (data: HTMLElement) => {
     return data.cloneNode(true) as HTMLElement;
-  }
+  };
+
+  addLinkEventListeners = (): void => {
+    const links = document.querySelectorAll('.toc-element a');
+    links.forEach((link) => {
+      link.addEventListener('click', this.handleLinkClick);
+    });
+  };
+
+  handleLinkClick = (event: MouseEvent): void => {
+    event.preventDefault();
+    const targetId = (event.currentTarget as HTMLAnchorElement)
+      .getAttribute('href')
+      ?.slice(1);
+    if (targetId) {
+      const targetElement = document.getElementById(targetId);
+      if (targetElement) {
+        targetElement.scrollIntoView({behavior: 'smooth'});
+      }
+    }
+  };
 
   calcLogic = (): void => {
     let divContainer = document.getElementById('holder');
     divContainer.innerHTML = '';
-    const { editorView } = this.props;
+    const {editorView} = this.props;
     const data = this.getContainer(editorView);
     let data1 = this.cloneModifyNode(data);
     let prosimer_cls_element = data1.querySelector('.ProseMirror');
-    prosimer_cls_element.setAttribute('contenteditable', 'false')
+    prosimer_cls_element.setAttribute('contenteditable', 'false');
+    prosimer_cls_element.classList.remove('czi-prosemirror-editor');
+    prosimer_cls_element
+      .querySelectorAll('.molm-czi-image-view-body-img-clip span')
+      .forEach((span_) => {
+        (span_ as HTMLElement).style.display = 'flex';
+      });
     if (PreviewForm.isCitation) {
       let CitationIcons = data1.querySelectorAll('.citationnote');
       CitationIcons.forEach((CitationIcon, index) => {
@@ -308,30 +379,34 @@ export class PreviewForm extends React.PureComponent<Props> {
     }
     if (PreviewForm.isToc && PreviewForm.isTitle) {
       let parentDiv = document.createElement('div');
-      parentDiv.style.paddingBottom = '50px';
-      let header = document.createElement('h3');
-      header.textContent = editorView?.state?.doc?.attrs?.objectMetaData?.customEntity[
-        'http://www.w3.org/2000/01/rdf-schema#label'
-      ] || 'DEFAULT TITLE';
+      parentDiv.classList.add('titleHead');
+      let header = document.createElement('h4');
+      header.style.marginBottom = '40px';
+      header.style.color = '#000000';
+      header.textContent =
+        editorView?.state?.doc?.attrs?.objectMetaData?.customEntity[
+          'http://www.w3.org/2000/01/rdf-schema#label'
+        ] || 'DEFAULT TITLE';
 
       let newDiv = document.createElement('div');
       newDiv.classList.add('tocHead');
-
       parentDiv.appendChild(header);
       parentDiv.appendChild(newDiv);
       data1.insertBefore(parentDiv, data1.firstChild);
-
     } else if (PreviewForm.isToc) {
       let newDiv = document.createElement('div');
       newDiv.classList.add('tocHead');
       data1.insertBefore(newDiv, data1.firstChild);
     } else if (PreviewForm.isTitle) {
       let parentDiv = document.createElement('div');
-      parentDiv.style.paddingBottom = '50px';
-      let header = document.createElement('h3');
-      header.textContent = editorView?.state?.doc?.attrs?.objectMetaData?.customEntity[
-        'http://www.w3.org/2000/01/rdf-schema#label'
-      ] || 'DEFAULT TITLE';;
+      parentDiv.classList.add('titleHead');
+      let header = document.createElement('h4');
+      header.style.marginBottom = '40px';
+      header.style.color = '#000000';
+      header.textContent =
+        editorView?.state?.doc?.attrs?.objectMetaData?.customEntity[
+          'http://www.w3.org/2000/01/rdf-schema#label'
+        ] || 'DEFAULT TITLE';
       parentDiv.appendChild(header);
       data1.insertBefore(parentDiv, data1.firstChild);
     }
@@ -342,27 +417,36 @@ export class PreviewForm extends React.PureComponent<Props> {
       infoIcon.textContent = '';
       infoIcon.appendChild(superscript);
     });
+    for (const element of data1.children) {
+      const imageElements = element.querySelectorAll('img');
+      for (const imageElement of imageElements) {
+        // Replace the width attribute with the desired new width value (capped at 500px if original width is larger).
+        this.replaceImageWidth(imageElement);
+      }
+    }
     let paged = new Previewer();
     this.showAlert();
-    paged.preview(data1, [], divContainer).then(flow => {
+    paged.preview(data1, [], divContainer).then((flow) => {
+      const preview_container_ = document.querySelector(
+        '.exportpdf-preview-container'
+      );
+      (preview_container_ as HTMLElement).style.visibility = 'visible';
+      this.addLinkEventListeners();
       this._popUp.close();
       console.log('Rendered', flow.total, 'pages.');
     });
-  }
+  };
 
   tocActive = (): void => {
     PreviewForm.isToc = true;
     this.calcLogic();
-
   };
 
   InfoActive = (): void => {
     this.calcLogic();
   };
 
-
   Tocdeactive = (): void => {
-
     PreviewForm.isToc = false;
     this.calcLogic();
   };
@@ -424,7 +508,6 @@ export class PreviewForm extends React.PureComponent<Props> {
     }
   };
 
-
   getContainer = (view): HTMLElement => {
     let comments = false;
     let container;
@@ -434,4 +517,3 @@ export class PreviewForm extends React.PureComponent<Props> {
     return container;
   };
 }
-
