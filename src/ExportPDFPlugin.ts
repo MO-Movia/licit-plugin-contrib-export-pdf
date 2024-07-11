@@ -1,12 +1,12 @@
-import { Schema } from 'prosemirror-model';
-import { Plugin, PluginKey } from 'prosemirror-state';
+import {Schema} from 'prosemirror-model';
+import {Plugin, PluginKey} from 'prosemirror-state';
 import {
   makeKeyMapWithCommon,
   createKeyMapPlugin,
 } from '@modusoperandi/licit-doc-attrs-step';
 
-import { ExportPDFCommand } from './exportPdfCommand';
-import { EditorView } from 'prosemirror-view';
+import {ExportPDFCommand} from './exportPdfCommand';
+import {EditorView} from 'prosemirror-view';
 
 export const KEY_EXPORT_PDF = makeKeyMapWithCommon(
   'exportPDF',
@@ -15,12 +15,12 @@ export const KEY_EXPORT_PDF = makeKeyMapWithCommon(
 const EXPORT_PDF = new ExportPDFCommand();
 
 export class ExportPDFPlugin extends Plugin {
-  showButton = true;
+  static showButton = true;
   constructor(showButton: boolean) {
     super({
       key: new PluginKey('exportPDF'),
     });
-    this.showButton = showButton;
+    ExportPDFPlugin.showButton = showButton;
   }
 
   // Plugin method that supplies plugin schema to editor
@@ -38,15 +38,16 @@ export class ExportPDFPlugin extends Plugin {
   }
 
   initButtonCommands(): unknown {
-    return this.showButton
+    return ExportPDFPlugin.showButton
       ? {
-        '[picture_as_pdf] Export to PDF': EXPORT_PDF,
-      }
+          '[picture_as_pdf] Export to PDF': EXPORT_PDF,
+        }
       : {};
   }
 
   // this helps to invoke even in readonly mode.
-  perform(view: EditorView): boolean {
+  static perform(view: EditorView, showButton: boolean): boolean {
+    ExportPDFPlugin.showButton = showButton;
     return EXPORT_PDF.execute(undefined, undefined, view);
   }
 }
