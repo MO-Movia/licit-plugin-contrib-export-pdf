@@ -1,7 +1,7 @@
-import { ExportPDFPlugin } from './ExportPDFPlugin';
-import { createEditor, doc, p } from 'jest-prosemirror';
+import {ExportPDFPlugin} from './ExportPDFPlugin';
+import {createEditor, doc, p} from 'jest-prosemirror';
 import moment from 'moment';
-import { Schema } from 'prosemirror-model';
+import {Schema} from 'prosemirror-model';
 jest.mock('html2canvas', () => {
   return jest.fn().mockResolvedValue(null);
 });
@@ -42,7 +42,7 @@ describe('Export PDF Plugin', () => {
   });
 
   it('should call initButtonCommands if the show button is false', () => {
-    plugin.showButton = true;
+    ExportPDFPlugin.showButton = true;
     const btnCommand = plugin.initButtonCommands();
     expect(btnCommand).not.toBeNull();
   });
