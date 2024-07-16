@@ -20,7 +20,7 @@ describe('Export PDF Plugin', () => {
   let plugin: ExportPDFPlugin;
 
   beforeEach(() => {
-    plugin = new ExportPDFPlugin(false);
+    plugin = new ExportPDFPlugin();
   });
 
   it('should handle export to pdf', () => {
@@ -42,7 +42,6 @@ describe('Export PDF Plugin', () => {
   });
 
   it('should call initButtonCommands if the show button is false', () => {
-    ExportPDFPlugin.showButton = true;
     const btnCommand = plugin.initButtonCommands();
     expect(btnCommand).not.toBeNull();
   });

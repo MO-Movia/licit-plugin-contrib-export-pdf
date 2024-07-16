@@ -15,12 +15,10 @@ export const KEY_EXPORT_PDF = makeKeyMapWithCommon(
 const EXPORT_PDF = new ExportPDFCommand();
 
 export class ExportPDFPlugin extends Plugin {
-  static showButton = true;
-  constructor(showButton: boolean) {
+  constructor() {
     super({
       key: new PluginKey('exportPDF'),
     });
-    ExportPDFPlugin.showButton = showButton;
   }
 
   // Plugin method that supplies plugin schema to editor
@@ -38,23 +36,13 @@ export class ExportPDFPlugin extends Plugin {
   }
 
   initButtonCommands(): unknown {
-    return ExportPDFPlugin.showButton
-      ? {
-          '[picture_as_pdf] Export to PDF': EXPORT_PDF,
-        }
-      : {};
+    return {
+      '[picture_as_pdf] Export to PDF': EXPORT_PDF,
+    };
   }
 
-  /**
-   * @deprecated Use ExportPDFPlugin.export(view, showButton) instead.
-   */
-
+  // this helps to invoke even in readonly mode.
   perform(view: EditorView): boolean {
-    return ExportPDFPlugin.export(view, true);
-  }
-
-  static export(view: EditorView, showButton: boolean): boolean {
-    ExportPDFPlugin.showButton = showButton;
     return EXPORT_PDF.execute(undefined, undefined, view);
   }
 }
