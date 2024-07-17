@@ -41,8 +41,16 @@ export class ExportPDFPlugin extends Plugin {
     };
   }
 
+  /**
+   * @deprecated Use ExportPDFPlugin.export(view) instead.
+   */
+
   // this helps to invoke even in readonly mode.
   perform(view: EditorView): boolean {
+    return ExportPDFPlugin.export(view);
+  }
+
+  static export(view: EditorView): boolean {
     return EXPORT_PDF.execute(undefined, undefined, view);
   }
 }
