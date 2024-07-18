@@ -1,4 +1,8 @@
-import { createToc } from './exportPdf';
+import {createToc, ExportPDF} from './exportPdf';
+import {EditorView} from 'prosemirror-view';
+import {PreviewForm} from './preview';
+import * as prevF from './preview';
+import {EditorState} from 'prosemirror-state';
 
 jest.mock('html2canvas', () => {
   return jest.fn().mockResolvedValue(null);
@@ -37,7 +41,6 @@ describe('createToc', () => {
     titleElements: ['h1', 'h2', 'h3'],
   };
   it('should add classes, data attributes, and ids to title elements', () => {
-
     const title1 = document.createElement('p');
     title1.setAttribute('stylename', 'h1');
     config.content.appendChild(title1);
@@ -50,12 +53,10 @@ describe('createToc', () => {
     title3.setAttribute('stylename', 'h3');
     config.content.appendChild(title3);
 
-
     const tocElementDiv = document.createElement('div');
     config.content.appendChild(tocElementDiv);
 
     createToc(config);
-
 
     expect(title1.classList.contains('title-element')).toBeTruthy();
     expect(title1.getAttribute('data-title-level')).toBe('1');
@@ -68,5 +69,16 @@ describe('createToc', () => {
     expect(title3.classList.contains('title-element')).toBeTruthy();
     expect(title3.getAttribute('data-title-level')).toBe('3');
     expect(title3.id).toBe('title-element-3');
+  });
+  it('should handle exportPdf', () => {
+    jest
+      .spyOn(prevF, 'PreviewForm')
+      .mockReturnValue([] as unknown as PreviewForm);
+
+    const exppdf = new ExportPDF();
+    const mockEditorView = {
+      dom: {parentElement: document.createElement('div')},
+    } as unknown as EditorView;
+    expect(exppdf.exportPdf(mockEditorView)).toBeTruthy();
   });
 });
