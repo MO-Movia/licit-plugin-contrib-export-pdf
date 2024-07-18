@@ -2,7 +2,6 @@ import {createToc, ExportPDF} from './exportPdf';
 import {EditorView} from 'prosemirror-view';
 import {PreviewForm} from './preview';
 import * as prevF from './preview';
-import {EditorState} from 'prosemirror-state';
 
 jest.mock('html2canvas', () => {
   return jest.fn().mockResolvedValue(null);
