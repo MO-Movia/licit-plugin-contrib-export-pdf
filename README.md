@@ -1,25 +1,21 @@
-
 # Ability to export the editor content as pdf.
-  
 
 ## Build
-  
 
 ### Commands
- 
+
 - npm install
 
-- npm pack 
+- npm pack
 
 #### To use this in Licit
 
-- npm install *@modusoperandi/licit-export-pdf*
+- npm install _@modusoperandi/licit-export-pdf_
 
-Include plugin in licit component 
+Include plugin in licit component
 
-- import ExportPDFPlugin 
+- import ExportPDFPlugin
 - add ExportPDFPlugin instance in licit's plugin array
-- Constructor param showButton to display PDF button in toolbar or not.
 
 ```
 import {ExportPDFPlugin} from  '@modusoperandi/licit-export-pdf';
