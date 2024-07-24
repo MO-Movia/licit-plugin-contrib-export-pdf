@@ -1,6 +1,6 @@
 {
   "name": "@modusoperandi/licit-export-pdf",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "type": "module",
   "description": "MO's Export To PDF ProseMirror Plugin",
   "main": "index.js",
@@ -13,36 +13,37 @@
   "peerDependencies": {
     "@modusoperandi/licit-doc-attrs-step": "^1.0.2",
     "@modusoperandi/licit-ui-commands": "^1.0.3",
-    "prosemirror-model": "^1.16.1"
-  },
-  "dependencies": {
-    "@types/node": "^20.12.7",
-    "@types/react": "^18.2.74",
-    "html2canvas": "^1.4.1",
-    "jspdf": "^2.5.1",
-    "moment": "^2.29.4",
     "pagedjs": "^0.4.3",
-    "react": "^18.2.0"
+    "prosemirror-model": "^1.22.2",
+    "react": "^18.3.1"
   },
   "devDependencies": {
-    "@cyclonedx/cyclonedx-npm": "^1.11.0",
-    "@types/jest": "^29.2.0",
-    "@typescript-eslint/eslint-plugin": "^7.0.0",
-    "@typescript-eslint/parser": "^7.0.1",
+    "@cyclonedx/cyclonedx-npm": "^1.19.3",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.14.12",
+    "@types/react": "^18.3.3",
+    "@typescript-eslint/eslint-plugin": "^7.17.0",
+    "@typescript-eslint/parser": "^7.17.0",
     "copyfiles": "^2.4.1",
-    "eslint": "^8.26.0",
-    "eslint-plugin-jest": "^28.2.0",
-    "eslint-plugin-react": "^7.31.10",
-    "husky": "^9.0.7",
+    "eslint": "^8.57.0",
+    "eslint-plugin-jest": "^28.6.0",
+    "eslint-plugin-react": "^7.35.0",
+    "html2canvas": "^1.4.1",
+    "husky": "^9.1.1",
     "identity-obj-proxy": "^3.0.0",
-    "jest": "^29.2.2",
-    "jest-environment-jsdom": "^29.2.2",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
     "jest-junit": "^16.0.0",
-    "jest-prosemirror": "^2.0.0",
-    "lint-staged": "^15.2.1",
-    "ts-jest": "^29.0.3",
-    "ts-node": "^10.9.1",
-    "typescript": "^5.3.3"
+    "jest-prosemirror": "^2.2.0",
+    "jspdf": "^2.5.1",
+    "lint-staged": "^15.2.7",
+    "moment": "^2.30.1",
+    "ts-jest": "^29.2.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4"
+  },
+  "overrides": {
+    "libxmljs2": "^1.0.0"
   },
   "scripts": {
     "test": "jest --coverage",
@@ -54,9 +55,6 @@
     "lint": "npm run lint:css & npm run lint:ts",
     "ci:build": "tsc --build && copyfiles --up 1 \"src/**/*.css\" dist  && copyfiles package.json dist",
     "ci:bom": "cyclonedx-npm --ignore-npm-errors --short-PURLs --output-format XML --output-file dist/bom.xml"
-  },
-  "overrides": {
-    "semver": "^7.5.2"
   },
   "importSort": {
     ".js": {
