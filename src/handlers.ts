@@ -1,18 +1,19 @@
-import {Handler} from 'pagedjs';
-import {createToc} from './exportPdf';
+import { Handler } from 'pagedjs';
+import { createToc } from './exportPdf';
 export const info_Icons = [];
-import {PreviewForm} from './preview';
+import { PreviewForm } from './preview';
 
 export class MyHandler extends Handler {
-  done;
-  countTOC = 0;
-  pageFooters: Array<HTMLElement> = [];
+  public done;
+  public countTOC = 0;
+  public pageFooters: Array<HTMLElement> = [];
+
   constructor(chunker, polisher, caller) {
     super(chunker, polisher, caller);
     this.done = false;
   }
 
-  beforeParsed(content) {
+  public beforeParsed(content): void {
     this.pageFooters = [];
     if (PreviewForm.isToc) {
       createToc({
@@ -23,7 +24,7 @@ export class MyHandler extends Handler {
     }
   }
 
-  afterPageLayout(pageFragment) {
+  public afterPageLayout(pageFragment): void {
     let concatenatedValues = '';
     const infoIcons_ = info_Icons[0];
     if (infoIcons_) {
@@ -45,7 +46,7 @@ export class MyHandler extends Handler {
     }
   }
 
-  afterRendered(pages) {
+  public afterRendered(pages): void {
     info_Icons.pop();
     if (PreviewForm.general) {
       const infoIcon_initial = [];
@@ -73,22 +74,21 @@ export class MyHandler extends Handler {
     }
   }
 
-  beforePageLayout() {
+  public beforePageLayout(): void {
     this.doIT();
   }
 
-  async doIT() {
-    const opt2 =
-      '.ProseMirror  infoicon { string-set: chapTitled content(text); }';
+  public async doIT(): Promise<void> {
+    const opt2 = '.ProseMirror  infoicon { string-set: chapTitled content(text); }';
     const opt = `@bottom-center {
-content: string(chapTitled, last);
-text-align: right;
-}
-@bottom-left {
-content: "Page " counter(page) " of " counter(pages);
-color: #000000;
-}
-`;
+  content: string(chapTitled, last);
+  text-align: right;
+  }
+  @bottom-left {
+  content: "Page " counter(page) " of " counter(pages);
+  color: #000000;
+  }
+  `;
 
     if (!this.done) {
       const text = await this['polisher'].convertViaSheet(`@media print {@page {

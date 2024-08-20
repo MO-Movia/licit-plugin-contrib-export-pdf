@@ -6,18 +6,19 @@ import { ExportPDF } from './exportPdf';
 import React from 'react';
 
 export class ExportPDFCommand extends UICommand {
-  exportPdf: ExportPDF;
+  public exportPdf: ExportPDF;
 
   constructor() {
     super();
     this.exportPdf = new ExportPDF();
   }
 
-  isEnabled = (): boolean => {
+  public isEnabled = (): boolean => {
     return true;
   };
 
-  waitForUserInput = (
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  public waitForUserInput = (
     _state: EditorState,
     _dispatch?: (tr: Transform) => void,
     _view?: EditorView,
@@ -26,7 +27,7 @@ export class ExportPDFCommand extends UICommand {
     return Promise.resolve(undefined);
   };
 
-  executeWithUserInput = (
+  public executeWithUserInput = (
     _state: EditorState,
     _dispatch?: (tr: Transform) => void,
     _view?: EditorView,
@@ -34,12 +35,13 @@ export class ExportPDFCommand extends UICommand {
   ): boolean => {
     return false;
   };
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 
-  cancel(): void {
+  public cancel(): void {
     return null;
   }
 
-  execute = (
+  public execute = (
     _state: EditorState,
     _dispatch: (tr: Transform) => void,
     view: EditorView
@@ -47,13 +49,15 @@ export class ExportPDFCommand extends UICommand {
     return this.exportPdf.exportPdf(view);
   };
 
-  renderLabel() {
+  public renderLabel(): null {
     return null;
   }
-  isActive(): boolean {
+
+  public isActive(): boolean {
     return true;
   }
-  executeCustom(_state: EditorState, tr: Transform): Transform {
+
+  public executeCustom(_state: EditorState, tr: Transform): Transform {
     return tr;
   }
 }
