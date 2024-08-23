@@ -7,8 +7,25 @@ import {Loader} from './loader';
 
 type StoredStyle = {
   name: string;
-  level: number;
+  level: number | string;
 }
+
+type SectionNodeStructure = {
+  id: string;
+  title: string;
+  style: string;
+  level: number | null;
+  children: SectionNodeStructure[];
+}
+
+type FlatSectionNodeStructure = {
+  id: string;
+  title: string;
+  style: string;
+  level: number | null;
+  childrenIds: string[];
+}
+
 interface Props {
   editorView: EditorView;
   onClose: () => void;
@@ -16,6 +33,8 @@ interface Props {
 
 interface State {
   sections: React.ReactElement<any>[];
+  sectionNodeStructure: SectionNodeStructure[];
+  flattenedSectionNodeStructure: FlatSectionNodeStructure[];
   sectionNodesToExclude: string[];
   storedStyles: StoredStyle[];
 }
@@ -27,12 +46,15 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   public static isTitle: boolean = false;
   public static tocHeader = [];
   public tocNodeList: Record<string, any>[] = [];
+  public sectionListElements: React.ReactElement<any>[] = [];
   private _popUp = null;
 
-  constructor() {
-    super(null);
+  constructor(props) {
+    super(props);
     this.state = {
       sections: [],
+      sectionNodeStructure: [],
+      flattenedSectionNodeStructure: [],
       sectionNodesToExclude: [],
       storedStyles: []
     };
@@ -121,49 +143,159 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       }
     });
 
-    this.renderTocList();
+    this.buildStructure();
+    this.renderTocList(this.state.sectionNodeStructure);
   };
 
+  private renderTocList(structure: SectionNodeStructure[], topLevelElement = false): void {
+    for (const section of structure) {
+      const uniqueSectionId = `licit-pdf-export-${section.id}`
+      const indentIncrement = 15;
+      let indentAmount = '0';
 
-  private renderTocList(): void {
-    const sectionItems = [];
+      if (section.level > 1) {
+        indentAmount = `${(section.level - 1) * indentIncrement}px`;
+      }
 
-    for (const node of this.tocNodeList) {
-      const sectionId = node.attrs.objectId;
-      const sectionTitle = node.content.content[0].text ?? '';
-
-      sectionItems.push(
-        <div style={{padding: '5px 10px', display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', width: '100%'}}>
+      this.sectionListElements.push(
+        <div key={section.id} style={{padding: '5px 10px', paddingLeft: indentAmount , display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', minWidth: '100%', width: 'auto'}}>
           <div>
-            <input style={{cursor: 'pointer'}} type="checkbox" name="infoicon" id={sectionId} value='on' onChange={() => this.updateDocumentSectionList(sectionId)} defaultChecked={true} />
+            <input style={{cursor: 'pointer'}} type="checkbox" name="infoicon" id={uniqueSectionId} value='on' onChange={() => this.updateDocumentSectionList(section.id)} defaultChecked={true} />
             {' '}
           </div>
   
-          <label htmlFor={sectionId} style={{cursor: 'pointer', marginLeft: '5px', overflow: 'hidden', textWrap: 'nowrap', textOverflow: 'ellipsis'}}>{sectionTitle}</label>
+          <label htmlFor={uniqueSectionId} style={{cursor: 'pointer', marginLeft: '5px', textWrap: 'nowrap'}}>{section.title}</label>
         </div>
-      )
+      );
+
+      if (section.children.length) {
+        this.renderTocList(section.children, true);
+      }
     }
 
+    if (!topLevelElement) {
+      this.setState((prevState) => {
+        return({ ...prevState, sections: this.sectionListElements });
+      });
+    }
+  }
+
+  private buildStructure(): void {
+    const structure = this.tocNodeList.reduce((r, { ...node }) => {
+      const style = node.attrs.styleName;
+      const level = this.getStyleLevel(style) ?? 1;
+      const value = {
+        id: node.attrs.objectId,
+        title: node.content.content[0].text ?? '',
+        style,
+        level,
+        children: []
+      };
+      r[level] = value.children;
+      r[level - 1].push(value);
+      return r;
+    }, [[]]).shift();
+
+    const flattenedStructure = this.flattenStructure(structure);
+
     this.setState((prevState) => {
-      return({ ...prevState, sections: sectionItems });
+      return({
+        ...prevState,
+        flattenedSectionNodeStructure: flattenedStructure,
+        sectionNodeStructure: structure 
+      });
     });
+  }
+
+  private flattenStructure(structure: SectionNodeStructure[]): FlatSectionNodeStructure[] {
+    const flattenedStructure: FlatSectionNodeStructure[] = [];
+
+    for (const section of structure) {
+      const flattenedSection: FlatSectionNodeStructure = {
+        ...section,
+        childrenIds: [],
+      }
+
+      if (section.children.length) {
+        for (const child of section.children) {
+          flattenedSection.childrenIds.push(child.id);
+        }
+
+        flattenedStructure.push(flattenedSection);
+        flattenedStructure.push(...this.flattenStructure(section.children));
+      } else {
+        flattenedStructure.push(flattenedSection);
+
+      }
+    }
+
+    return flattenedStructure;
   }
 
   public updateDocumentSectionList(sectionId: string): void {
     if (this.state.sectionNodesToExclude.includes(sectionId)) {
+      const ids = this.addSelectedSection(sectionId);      
+      let newNodeList = [...this.state.sectionNodesToExclude];
+
+      for (const id of ids) {
+        newNodeList = newNodeList.filter(nodeId => nodeId !== id);
+      }
+
       this.setState((prevState) => {
         return({
           ...prevState,
-          sectionNodesToExclude: this.state.sectionNodesToExclude.filter(nodeId => nodeId !== sectionId)
+          sectionNodesToExclude: newNodeList
         });
       }, () => { this.calcLogic(); });
     } else {
+      this.toggleAllSectionChildElements(sectionId, true);
       this.setState((prevState) => {
         const newState = prevState;
         newState.sectionNodesToExclude.push(sectionId);
         return newState;
       },
       () => { this.calcLogic(); });
+    }
+  }
+
+  private addSelectedSection(sectionId: string, isChildId = false): string[] {
+    const section = this.state.flattenedSectionNodeStructure.find(section => section.id === sectionId);
+    const sectionIdsToAdd = [sectionId];
+
+    if (isChildId) {
+      this.toggleDisableInput(sectionId, false);
+    }
+
+    if (section.childrenIds.length) {
+      this.toggleAllSectionChildElements(sectionId, false);
+    }
+
+    for (const section of this.state.flattenedSectionNodeStructure) {
+      if (section.childrenIds.includes(sectionId)) {
+        sectionIdsToAdd.push(...this.addSelectedSection(section.id, true));
+      }
+    }
+
+    return sectionIdsToAdd;
+  }
+
+  private toggleAllSectionChildElements(sectionId: string, isDisabled: boolean): void {
+    const section = this.state.flattenedSectionNodeStructure.find(section => section.id === sectionId);
+
+    if (section.childrenIds.length) {
+      for (const id of section.childrenIds) {
+        this.toggleDisableInput(id, isDisabled);
+        this.toggleAllSectionChildElements(id, isDisabled);
+      }
+    }
+  }
+
+  private toggleDisableInput(id: string, isChecked: boolean): void {
+    const uniqueSectionId = `licit-pdf-export-${id}`
+    const input = document.getElementById(uniqueSectionId) as HTMLInputElement;
+
+    if (input) {
+      input.disabled = isChecked;
     }
   }
 
@@ -225,16 +357,18 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
                 <h6 style={{ marginRight: 'auto', marginTop: '30px' }}>Document Sections:</h6>
 
-                <div key='{this.props.sections}' style={{
+                <div key='{this.props.sections}' id='licit-pdf-export-sections-list' style={{
                   borderRadius: '5px',
                   marginTop: '10px',
                   display: 'flex',
                   flexDirection: 'column',
-                  alignItems: 'center',
+                  alignItems: 'flex-start',
                   background: '#fff',
                   width: '300px',
                   maxHeight: '200px',
-                  overflowY: 'auto'
+                  overflowY: 'auto',
+                  overflowX: 'auto',
+                  paddingLeft: '10px'
                 }}>
                   {this.state.sections}
                 </div>
@@ -499,14 +633,10 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     for (const id of this.state.sectionNodesToExclude) {
       const node = this.tocNodeList.find(node => node.attrs.objectId === id) ?? null;
 
-
       if (node && node.attrs?.styleName) {
         const nodeStyle = node.attrs.styleName;
         const workingIndexes = tempTocNodeList.filter(node => node.attrs.styleName === nodeStyle);
         const workingSection = workingIndexes.findIndex(node => node.attrs.objectId === id);
-
-        console.log('id ', id);
-        console.log('list ', tempTocNodeList);
 
         if (proseMirrorContainer) {
           const sectionElements = proseMirrorContainer.children ?? [];
@@ -531,14 +661,16 @@ export class PreviewForm extends React.PureComponent<Props, State> {
           let nextSectionStyleName = sectionElements[startingIndex].attributes.getNamedItem('stylename')?.value ?? ''
           let nextElementLevel = this.getStyleLevel(nextSectionStyleName);
 
-          do {
-            sectionElements[startingIndex].remove();
-            
-            if (!sectionElements[startingIndex]) break;
+          if (!nextElementLevel || nextElementLevel > sectionLevel){
+            do {
+              sectionElements[startingIndex].remove();
+              
+              if (!sectionElements[startingIndex]) break;
 
-            nextSectionStyleName = sectionElements[startingIndex].attributes.getNamedItem('stylename')?.value ?? ''
-            nextElementLevel = this.getStyleLevel(nextSectionStyleName);
-          } while ((startingIndex < sectionElements.length && nextElementLevel > sectionLevel) || !nextElementLevel);
+              nextSectionStyleName = sectionElements[startingIndex].attributes.getNamedItem('stylename')?.value ?? ''
+              nextElementLevel = this.getStyleLevel(nextSectionStyleName);
+            } while ((startingIndex < sectionElements.length && nextElementLevel > sectionLevel) || !nextElementLevel);
+          }
         }
       }
 
@@ -550,9 +682,11 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   }
 
   private getStyleLevel(styleName: string): number | null {
-    const style = this.state.storedStyles.find(style => style.name === styleName);
+    let style = this.state.storedStyles.find(style => style.name === styleName);
+    if (!style?.level) return null;
 
-    return style ? style.level : null;
+    const level = Number(style.level);
+    return isNaN(level) ? 1 : level;
   }
 
   public tocActive = (): void => {
