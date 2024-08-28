@@ -1,30 +1,21 @@
 import React from 'react';
-import {EditorView} from 'prosemirror-view';
-import {Previewer, registerHandlers} from 'pagedjs';
-import {MyHandler} from './handlers';
-import {createPopUp, atViewportCenter} from '@modusoperandi/licit-ui-commands';
-import {Loader} from './loader';
-
-type StoredStyle = {
-  name: string;
-  level: number | string;
-}
-
-type SectionNodeStructure = {
-  id: string;
-  title: string;
-  style: string;
-  level: number | null;
-  children: SectionNodeStructure[];
-}
-
-type FlatSectionNodeStructure = {
-  id: string;
-  title: string;
-  style: string;
-  level: number | null;
-  childrenIds: string[];
-}
+import { EditorView } from 'prosemirror-view';
+import { Previewer, registerHandlers } from 'pagedjs';
+import { MyHandler } from './handlers';
+import { createPopUp, atViewportCenter } from '@modusoperandi/licit-ui-commands';
+import { Loader } from './loader';
+import {
+  SectionNodeStructure,
+  FlatSectionNodeStructure,
+  buildSectionStructure,
+  flattenStructure,
+  toggleAllSectionChildElements,
+  filterDocumentSections,
+  buildListOfIdsToRemove,
+  buildListOfIdsToAdd
+} from './utils/document-section-utils';
+import { Node } from 'prosemirror-model';
+import { DocumentStyle, getTableOfContentStyles, StoredStyle } from './utils/table-of-contents-utils';
 
 interface Props {
   editorView: EditorView;
@@ -45,7 +36,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   public static isCitation: boolean = false;
   public static isTitle: boolean = false;
   public static tocHeader = [];
-  public tocNodeList: Record<string, any>[] = [];
+  public tocNodeList: Node[] = [];
   public sectionListElements: React.ReactElement<any>[] = [];
   private _popUp = null;
 
@@ -66,7 +57,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     PreviewForm.general = true;
     registerHandlers(MyHandler);
     let divContainer = document.getElementById('holder');
-    const data = this.getContainer(editorView);
+    const data = editorView.dom.parentElement.parentElement;
     let data1 = data.cloneNode(true) as HTMLElement;
     let infoIcons = data1.querySelectorAll('.infoicon');
     infoIcons.forEach((infoIcon, index) => {
@@ -113,26 +104,10 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   };
 
   public getToc = async (view): Promise<void> => {
-    let storeTOCvalue = [];
-    const stylePromise = view.runtime;
-    const styles = await stylePromise.getStylesAsync();
-    storeTOCvalue = styles
-      .filter((style) => style?.styles?.toc === true)
-      .map((style) => {
-        return {
-          name: style?.styleName,
-          level: style?.styles?.styleLevel
-        }
-      });
+    const styles = await view.runtime.getStylesAsync() as DocumentStyle[];
+    const storeTOCvalue = getTableOfContentStyles(styles);
 
-    this.setState((prevState) => {
-      return({
-        ...prevState,
-        storedStyles: storeTOCvalue,
-      });
-    });
-
-    view?.state?.tr?.doc.descendants((node) => {
+    view?.state?.tr?.doc.descendants((node: Node) => {
       if (node.attrs.styleName) {
         for (const tocValue of storeTOCvalue) {
           if (tocValue.name === node.attrs.styleName) {
@@ -143,160 +118,46 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       }
     });
 
-    this.buildStructure();
-    this.renderTocList(this.state.sectionNodeStructure);
-  };
-
-  private renderTocList(structure: SectionNodeStructure[], topLevelElement = false): void {
-    for (const section of structure) {
-      const uniqueSectionId = `licit-pdf-export-${section.id}`
-      const indentIncrement = 15;
-      let indentAmount = '0';
-
-      if (section.level > 1) {
-        indentAmount = `${(section.level - 1) * indentIncrement}px`;
-      }
-
-      this.sectionListElements.push(
-        <div key={section.id} style={{padding: '5px 10px', paddingLeft: indentAmount , display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', minWidth: '100%', width: 'auto'}}>
-          <div>
-            <input style={{cursor: 'pointer'}} type="checkbox" name="infoicon" id={uniqueSectionId} value='on' onChange={() => this.updateDocumentSectionList(section.id)} defaultChecked={true} />
-            {' '}
-          </div>
-  
-          <label htmlFor={uniqueSectionId} style={{cursor: 'pointer', marginLeft: '5px', textWrap: 'nowrap'}}>{section.title}</label>
-        </div>
-      );
-
-      if (section.children.length) {
-        this.renderTocList(section.children, true);
-      }
-    }
-
-    if (!topLevelElement) {
-      this.setState((prevState) => {
-        return({ ...prevState, sections: this.sectionListElements });
-      });
-    }
-  }
-
-  private buildStructure(): void {
-    const structure = this.tocNodeList.reduce((r, { ...node }) => {
-      const style = node.attrs.styleName;
-      const level = this.getStyleLevel(style) ?? 1;
-      const value = {
-        id: node.attrs.objectId,
-        title: node.content.content[0].text ?? '',
-        style,
-        level,
-        children: []
-      };
-      r[level] = value.children;
-      r[level - 1].push(value);
-      return r;
-    }, [[]]).shift();
-
-    const flattenedStructure = this.flattenStructure(structure);
+    const sectionNodeStructure = buildSectionStructure(this.tocNodeList, storeTOCvalue);
+    const flattenedSectionNodeStructure = flattenStructure(sectionNodeStructure);
 
     this.setState((prevState) => {
       return({
         ...prevState,
-        flattenedSectionNodeStructure: flattenedStructure,
-        sectionNodeStructure: structure 
+        storedStyles: storeTOCvalue,
+        flattenedSectionNodeStructure,
+        sectionNodeStructure,
       });
     });
-  }
 
-  private flattenStructure(structure: SectionNodeStructure[]): FlatSectionNodeStructure[] {
-    const flattenedStructure: FlatSectionNodeStructure[] = [];
-
-    for (const section of structure) {
-      const flattenedSection: FlatSectionNodeStructure = {
-        ...section,
-        childrenIds: [],
-      }
-
-      if (section.children.length) {
-        for (const child of section.children) {
-          flattenedSection.childrenIds.push(child.id);
-        }
-
-        flattenedStructure.push(flattenedSection);
-        flattenedStructure.push(...this.flattenStructure(section.children));
-      } else {
-        flattenedStructure.push(flattenedSection);
-
-      }
-    }
-
-    return flattenedStructure;
-  }
+    this.renderTocList(this.state.sectionNodeStructure);
+  };
 
   public updateDocumentSectionList(sectionId: string): void {
+    const flattenedSectionNodeStructure = this.state.flattenedSectionNodeStructure;
+    let newNodeList: string[] = [];
+
     if (this.state.sectionNodesToExclude.includes(sectionId)) {
-      const ids = this.addSelectedSection(sectionId);      
-      let newNodeList = [...this.state.sectionNodesToExclude];
-
-      for (const id of ids) {
-        newNodeList = newNodeList.filter(nodeId => nodeId !== id);
-      }
-
-      this.setState((prevState) => {
-        return({
-          ...prevState,
-          sectionNodesToExclude: newNodeList
-        });
-      }, () => { this.calcLogic(); });
+      newNodeList = buildListOfIdsToAdd(
+        sectionId,
+        this.state.sectionNodesToExclude,
+        flattenedSectionNodeStructure
+      );
     } else {
-      this.toggleAllSectionChildElements(sectionId, true);
-      this.setState((prevState) => {
-        const newState = prevState;
-        newState.sectionNodesToExclude.push(sectionId);
-        return newState;
-      },
-      () => { this.calcLogic(); });
-    }
-  }
-
-  private addSelectedSection(sectionId: string, isChildId = false): string[] {
-    const section = this.state.flattenedSectionNodeStructure.find(section => section.id === sectionId);
-    const sectionIdsToAdd = [sectionId];
-
-    if (isChildId) {
-      this.toggleDisableInput(sectionId, false);
+      toggleAllSectionChildElements(flattenedSectionNodeStructure, sectionId, true);
+      newNodeList = buildListOfIdsToRemove(
+        sectionId,
+        this.state.sectionNodesToExclude,
+        flattenedSectionNodeStructure
+      );
     }
 
-    if (section.childrenIds.length) {
-      this.toggleAllSectionChildElements(sectionId, false);
-    }
-
-    for (const section of this.state.flattenedSectionNodeStructure) {
-      if (section.childrenIds.includes(sectionId)) {
-        sectionIdsToAdd.push(...this.addSelectedSection(section.id, true));
-      }
-    }
-
-    return sectionIdsToAdd;
-  }
-
-  private toggleAllSectionChildElements(sectionId: string, isDisabled: boolean): void {
-    const section = this.state.flattenedSectionNodeStructure.find(section => section.id === sectionId);
-
-    if (section.childrenIds.length) {
-      for (const id of section.childrenIds) {
-        this.toggleDisableInput(id, isDisabled);
-        this.toggleAllSectionChildElements(id, isDisabled);
-      }
-    }
-  }
-
-  private toggleDisableInput(id: string, isChecked: boolean): void {
-    const uniqueSectionId = `licit-pdf-export-${id}`
-    const input = document.getElementById(uniqueSectionId) as HTMLInputElement;
-
-    if (input) {
-      input.disabled = isChecked;
-    }
+    this.setState((prevState) => {
+      return({
+        ...prevState,
+        sectionNodesToExclude: newNodeList
+      });
+    }, () => { this.calcLogic(); });
   }
 
   public render(): React.ReactElement<any> {
@@ -543,7 +404,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     let divContainer = document.getElementById('holder');
     divContainer.innerHTML = '';
     const {editorView} = this.props;
-    const data = this.getContainer(editorView);
+    const data = editorView.dom.parentElement.parentElement;
     let data1 = this.cloneModifyNode(data);
     let prosimer_cls_element = data1.querySelector('.ProseMirror');
     prosimer_cls_element.setAttribute('contenteditable', 'false');
@@ -554,7 +415,12 @@ export class PreviewForm extends React.PureComponent<Props, State> {
         (span_ as HTMLElement).style.display = 'flex';
       });
 
-    data1 = this.filterSections(data1);
+    data1 = filterDocumentSections(
+      data1,
+      this.tocNodeList,
+      this.state.sectionNodesToExclude,
+      this.state.storedStyles
+    );
 
     if (PreviewForm.isCitation) {
       let CitationIcons = data1.querySelectorAll('.citationnote');
@@ -625,69 +491,6 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       this._popUp.close();
     });
   };
-
-  private filterSections(renderedDoc: HTMLElement): HTMLElement {
-    const proseMirrorContainer = renderedDoc.getElementsByClassName('ProseMirror')[0] ?? null;
-    let tempTocNodeList = [...this.tocNodeList];
-
-    for (const id of this.state.sectionNodesToExclude) {
-      const node = this.tocNodeList.find(node => node.attrs.objectId === id) ?? null;
-
-      if (node && node.attrs?.styleName) {
-        const nodeStyle = node.attrs.styleName;
-        const workingIndexes = tempTocNodeList.filter(node => node.attrs.styleName === nodeStyle);
-        const workingSection = workingIndexes.findIndex(node => node.attrs.objectId === id);
-
-        if (proseMirrorContainer) {
-          const sectionElements = proseMirrorContainer.children ?? [];
-          const collectionArray = Array.from(sectionElements);
-          const nodeIndexs = [];
-
-          for (const [index, element] of collectionArray.entries()) {
-            if (element.attributes.getNamedItem('stylename')?.value === nodeStyle) {
-              nodeIndexs.push(index);
-            }
-          }
-
-          const startingIndex = nodeIndexs[workingSection];
-          const sectionLevel = this.getStyleLevel(nodeStyle);
-
-          if (!sectionLevel || !sectionElements[startingIndex]) return renderedDoc;
-
-          sectionElements[startingIndex].remove();
-
-          if (!sectionElements[startingIndex]) return renderedDoc;
-
-          let nextSectionStyleName = sectionElements[startingIndex].attributes.getNamedItem('stylename')?.value ?? ''
-          let nextElementLevel = this.getStyleLevel(nextSectionStyleName);
-
-          if (!nextElementLevel || nextElementLevel > sectionLevel){
-            do {
-              sectionElements[startingIndex].remove();
-              
-              if (!sectionElements[startingIndex]) break;
-
-              nextSectionStyleName = sectionElements[startingIndex].attributes.getNamedItem('stylename')?.value ?? ''
-              nextElementLevel = this.getStyleLevel(nextSectionStyleName);
-            } while ((startingIndex < sectionElements.length && nextElementLevel > sectionLevel) || !nextElementLevel);
-          }
-        }
-      }
-
-      const removedSection = tempTocNodeList.findIndex(node => node.attrs.objectId === id);
-      tempTocNodeList.splice(removedSection, 1);
-    }
-
-    return renderedDoc;
-  }
-
-  private getStyleLevel(styleName: string): number | null {
-    let style = this.state.storedStyles.find(style => style.name === styleName);
-    if (!style?.level) return null;
-
-    const level = Number(style.level);
-    return isNaN(level) ? 1 : level;
-  }
 
   public tocActive = (): void => {
     PreviewForm.isToc = true;
@@ -761,12 +564,36 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     }
   };
 
-  public getContainer = (view): HTMLElement => {
-    let comments = false;
-    let container;
-    if (!comments) {
-      container = view.dom.parentElement.parentElement;
+  private renderTocList(structure: SectionNodeStructure[], topLevelElement = false): void {
+    for (const section of structure) {
+      const uniqueSectionId = `licit-pdf-export-${section.id}`
+      const indentIncrement = 15;
+      let indentAmount = '0';
+
+      if (section.level > 1) {
+        indentAmount = `${(section.level - 1) * indentIncrement}px`;
+      }
+
+      this.sectionListElements.push(
+        <div key={section.id} style={{padding: '5px 10px', paddingLeft: indentAmount , display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', minWidth: '100%', width: 'auto'}}>
+          <div>
+            <input style={{cursor: 'pointer'}} type="checkbox" name="infoicon" id={uniqueSectionId} value='on' onChange={() => this.updateDocumentSectionList(section.id)} defaultChecked={true} />
+            {' '}
+          </div>
+  
+          <label htmlFor={uniqueSectionId} style={{cursor: 'pointer', marginLeft: '5px', textWrap: 'nowrap'}}>{section.title}</label>
+        </div>
+      );
+
+      if (section.children.length) {
+        this.renderTocList(section.children, true);
+      }
     }
-    return container;
-  };
+
+    if (!topLevelElement) {
+      this.setState((prevState) => {
+        return({ ...prevState, sections: this.sectionListElements });
+      });
+    }
+  }
 }
