@@ -46,7 +46,7 @@ export function buildSectionStructure(nodeList: Node[], styles: StoredStyle[]): 
 
 export function flattenStructure(structure: SectionNodeStructure[]): FlatSectionNodeStructure[] {
   const flattenedStructure: FlatSectionNodeStructure[] = [];
-  const mutatedStrucutre: SectionNodeStructure[] = JSON.parse(JSON.stringify(structure));
+  const mutatedStrucutre: SectionNodeStructure[] = structuredClone(structure);
 
   for (const section of mutatedStrucutre) {
     const baseSection = { ...section };
@@ -136,11 +136,12 @@ export function filterDocumentSections(
   storedStyles: StoredStyle[]
 ): HTMLElement {
   const proseMirrorContainer = renderedDoc.getElementsByClassName('ProseMirror')[0] ?? null;
-  const tempTocNodeList = JSON.parse(JSON.stringify(nodes));
 
   if (proseMirrorContainer) {
+    const tempTocNodeList = JSON.parse(JSON.stringify(nodes));
+
     for (const id of excludedNodes) {
-      const node = nodes.find(node => node.attrs.objectId === id) ?? null;
+      const node = nodes.find(node => node.attrs.objectId === id);
 
       if (node?.attrs?.styleName) {
         const nodeStyle = node.attrs.styleName;
@@ -178,11 +179,11 @@ export function buildListOfIdsToAdd(
   section.isChecked = true;
 
   const ids = addSelectedSection(flatStructure, sectionId);
-  let newNodeList = JSON.parse(JSON.stringify(currentListOfExcludedIds));
+  let newNodeList = structuredClone(currentListOfExcludedIds);
 
-  for (const id of ids) {
+  ids.map((id) => {
     newNodeList = newNodeList.filter(nodeId => nodeId !== id);
-  }
+  });
 
   return sortExcludeListByFlattenedSection(newNodeList, flatStructure);
 }
@@ -192,7 +193,7 @@ export function buildListOfIdsToRemove(
   currentListOfExcludedIds: string[],
   flatStructure: FlatSectionNodeStructure[]
 ): string[] {
-  let newNodeList = JSON.parse(JSON.stringify(currentListOfExcludedIds));
+  let newNodeList = structuredClone(currentListOfExcludedIds);
   const section = flatStructure.find(section => section.id === sectionId);
   section.isChecked = false;
 
@@ -205,11 +206,9 @@ export function buildListOfIdsToRemove(
 }
 
 function sortExcludeListByFlattenedSection(nodeList: string[], flatStructure: FlatSectionNodeStructure[]): string[] {
-  if (nodeList.length) {
-    nodeList.sort((a, b) => {
-      return flatStructure.findIndex(section => section.id === a) - flatStructure.findIndex(section => section.id === b);
-    });
-  }
+  nodeList.sort((a, b) => {
+    return flatStructure.findIndex(section => section.id === a) - flatStructure.findIndex(section => section.id === b);
+  });
 
   return nodeList;
 }

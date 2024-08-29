@@ -1,5 +1,5 @@
 import { getTableOfContentStyles, StoredStyle } from './table-of-contents-utils';
-import { sampleDocumentStyles } from '../test-data/document-styles';
+import { sampleDocumentStyles } from '../test-data/document-styles.test';
 
 describe('table of contents utilities', () => {
   describe('getTableOfContentStyles', () => {

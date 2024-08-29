@@ -19,7 +19,6 @@
   },
   "devDependencies": {
     "@cyclonedx/cyclonedx-npm": "^1.19.3",
-    "@modusoperandi/eslint-config": "^1.3.0",
     "@types/jest": "^29.5.12",
     "@types/node": "^22.1.0",
     "@types/react": "^18.3.3",
@@ -57,7 +56,6 @@
     "lint:fix": "npm run lint:css --fix & npm run lint:ts --fix",
     "build": "tsc --build && copyfiles --up 1 \"src/**/*.css\" dist  && copyfiles package.json dist",
     "ci:build": "tsc --build && copyfiles --up 1 \"src/**/*.css\" dist  && copyfiles package.json dist",
-    "postbuild": "cd ./dist/ && yalc push",
     "ci:bom": "cyclonedx-npm --ignore-npm-errors --short-PURLs --output-format XML --output-file dist/bom.xml"
   },
   "importSort": {

@@ -564,7 +564,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     }
   };
 
-  private renderTocList(structure: SectionNodeStructure[], topLevelElement = false): void {
+  private renderTocList(structure: SectionNodeStructure[], isChildElement = false): void {
     for (const section of structure) {
       const uniqueSectionId = `licit-pdf-export-${section.id}`
       const indentIncrement = 15;
@@ -590,7 +590,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       }
     }
 
-    if (!topLevelElement) {
+    if (!isChildElement) {
       this.setState((prevState) => {
         return({ ...prevState, sections: this.sectionListElements });
       });

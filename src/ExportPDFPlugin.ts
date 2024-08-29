@@ -11,14 +11,12 @@ export const KEY_EXPORT_PDF = makeKeyMapWithCommon(
 );
 
 export class ExportPDFPlugin extends Plugin {
-  private EXPORT_PDF: ExportPDFCommand;
+  private EXPORT_PDF = new ExportPDFCommand();
 
   constructor() {
     super({
       key: new PluginKey('exportPDF'),
     });
-
-    this.EXPORT_PDF = new ExportPDFCommand();
   }
 
   // Plugin method that supplies plugin schema to editor
@@ -47,10 +45,10 @@ export class ExportPDFPlugin extends Plugin {
 
   // this helps to invoke even in readonly mode.
   public perform(view: EditorView): boolean {
-    return ExportPDFPlugin.export(view, this.EXPORT_PDF);
+    return this.export(view);
   }
 
-  public static export(view: EditorView, exportdf: ExportPDFCommand): boolean {
-    return exportdf.execute(undefined, undefined, view);
+  public export(view: EditorView): boolean {
+    return this.EXPORT_PDF.execute(undefined, undefined, view);
   }
 }

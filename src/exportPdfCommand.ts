@@ -17,7 +17,6 @@ export class ExportPDFCommand extends UICommand {
     return true;
   };
 
-  /* eslint-disable @typescript-eslint/no-unused-vars */
   public waitForUserInput = (
     _state: EditorState,
     _dispatch?: (tr: Transform) => void,
@@ -35,7 +34,6 @@ export class ExportPDFCommand extends UICommand {
   ): boolean => {
     return false;
   };
-  /* eslint-enable @typescript-eslint/no-unused-vars */
 
   public cancel(): void {
     return null;
@@ -49,7 +47,7 @@ export class ExportPDFCommand extends UICommand {
     return this.exportPdf.exportPdf(view);
   };
 
-  public renderLabel(): null {
+  public renderLabel() {
     return null;
   }
 

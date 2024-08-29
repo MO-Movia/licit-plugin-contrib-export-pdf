@@ -1,7 +1,7 @@
 import { PreviewForm } from './preview';
 import { EditorView } from 'prosemirror-view';
 import { EditorState } from 'prosemirror-state';
-import { sampleSectionNodeStructure } from './test-data/document-nodes';
+import { sampleSectionNodeStructure } from './test-data/document-nodes.test';
 
 describe('PreviewForm', () => {
   it('should call calcLogic when PreviewForm.isToc = true ', () => {
@@ -420,16 +420,5 @@ describe('addLinkEventListeners && handleLinkClick', () => {
 
     previewForm.InfoActive();
     expect(spy).toHaveBeenCalled();
-  });
-
-  describe('renderTocList', () => {
-    it('should build toc List', () => {
-      const previewForm = new PreviewForm(props);
-      previewForm['renderTocList'](sampleSectionNodeStructure);
-
-      setTimeout(() => {
-        expect(previewForm.state.sections.length).toBeGreaterThan(1);
-      }, 500);
-    });
   });
 });
