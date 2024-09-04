@@ -1,30 +1,63 @@
 import React from 'react';
-import {EditorView} from 'prosemirror-view';
-import {Previewer, registerHandlers} from 'pagedjs';
-import {MyHandler} from './handlers';
-import {createPopUp, atViewportCenter} from '@modusoperandi/licit-ui-commands';
-import {Loader} from './loader';
+import { EditorView } from 'prosemirror-view';
+import { Previewer, registerHandlers } from 'pagedjs';
+import { MyHandler } from './handlers';
+import { createPopUp, atViewportCenter } from '@modusoperandi/licit-ui-commands';
+import { Loader } from './loader';
+import {
+  SectionNodeStructure,
+  FlatSectionNodeStructure,
+  buildSectionStructure,
+  flattenStructure,
+  toggleAllSectionChildElements,
+  filterDocumentSections,
+  buildListOfIdsToRemove,
+  buildListOfIdsToAdd
+} from './utils/document-section-utils';
+import { Node } from 'prosemirror-model';
+import { DocumentStyle, getTableOfContentStyles, StoredStyle } from './utils/table-of-contents-utils';
 
 interface Props {
   editorView: EditorView;
   onClose: () => void;
 }
 
-export class PreviewForm extends React.PureComponent<Props> {
+interface State {
+  sections: React.ReactElement<any>[];
+  sectionNodeStructure: SectionNodeStructure[];
+  flattenedSectionNodeStructure: FlatSectionNodeStructure[];
+  sectionNodesToExclude: string[];
+  storedStyles: StoredStyle[];
+}
+
+export class PreviewForm extends React.PureComponent<Props, State> {
   public static general: boolean = false;
   public static isToc: boolean = false;
   public static isCitation: boolean = false;
   public static isTitle: boolean = false;
   public static tocHeader = [];
-  _popUp = null;
+  public tocNodeList: Node[] = [];
+  public sectionListElements: React.ReactElement<any>[] = [];
+  private _popUp = null;
 
-  componentDidMount(): void {
+  constructor(props) {
+    super(props);
+    this.state = {
+      sections: [],
+      sectionNodeStructure: [],
+      flattenedSectionNodeStructure: [],
+      sectionNodesToExclude: [],
+      storedStyles: []
+    };
+  }
+
+  public componentDidMount(): void {
     const {editorView} = this.props;
     this.getToc(editorView);
     PreviewForm.general = true;
     registerHandlers(MyHandler);
     let divContainer = document.getElementById('holder');
-    const data = this.getContainer(editorView);
+    const data = editorView.dom.parentElement.parentElement;
     let data1 = data.cloneNode(true) as HTMLElement;
     let infoIcons = data1.querySelectorAll('.infoicon');
     infoIcons.forEach((infoIcon, index) => {
@@ -44,12 +77,11 @@ export class PreviewForm extends React.PureComponent<Props> {
     prosimer_cls_element.setAttribute('contenteditable', 'false');
     let paged = new Previewer();
     paged.preview(data1, [], divContainer).then((flow) => {
-      console.log('Rendered', flow.total, 'pages.');
       this.InfoActive();
     });
   }
 
-  showAlert() {
+  public showAlert(): void {
     const anchor = null;
     this._popUp = createPopUp(Loader, null, {
       anchor,
@@ -62,7 +94,7 @@ export class PreviewForm extends React.PureComponent<Props> {
     });
   }
 
-  replaceImageWidth = (imageElement): void => {
+  public replaceImageWidth = (imageElement): void => {
     // Get the original width of the image.
     const originalWidth = parseInt(imageElement.getAttribute('width'), 10);
 
@@ -71,26 +103,64 @@ export class PreviewForm extends React.PureComponent<Props> {
     }
   };
 
-  getToc = async (view) => {
-    let storeTOCvalue = [];
-    const stylePromise = view.runtime;
-    const styles = await stylePromise.getStylesAsync();
-    storeTOCvalue = styles
-      .filter((style) => style?.styles?.toc === true)
-      .map((style) => style?.styleName);
+  public getToc = async (view): Promise<void> => {
+    const styles = await view.runtime.getStylesAsync() as DocumentStyle[];
+    const storeTOCvalue = getTableOfContentStyles(styles);
 
-    view?.state?.tr?.doc.descendants((node) => {
+    view?.state?.tr?.doc.descendants((node: Node) => {
       if (node.attrs.styleName) {
         for (const tocValue of storeTOCvalue) {
-          if (tocValue === node.attrs.styleName) {
+          if (tocValue.name === node.attrs.styleName) {
+            this.tocNodeList.push(node);
             PreviewForm.tocHeader.push(node.attrs.styleName);
           }
         }
       }
     });
+
+    const sectionNodeStructure = buildSectionStructure(this.tocNodeList, storeTOCvalue);
+    const flattenedSectionNodeStructure = flattenStructure(sectionNodeStructure);
+
+    this.setState((prevState) => {
+      return({
+        ...prevState,
+        storedStyles: storeTOCvalue,
+        flattenedSectionNodeStructure,
+        sectionNodeStructure,
+      });
+    });
+
+    this.renderTocList(this.state.sectionNodeStructure);
   };
 
-  render(): React.ReactElement<any> {
+  public updateDocumentSectionList(sectionId: string): void {
+    const flattenedSectionNodeStructure = this.state.flattenedSectionNodeStructure;
+    let newNodeList: string[] = [];
+
+    if (this.state.sectionNodesToExclude.includes(sectionId)) {
+      newNodeList = buildListOfIdsToAdd(
+        sectionId,
+        this.state.sectionNodesToExclude,
+        flattenedSectionNodeStructure
+      );
+    } else {
+      toggleAllSectionChildElements(flattenedSectionNodeStructure, sectionId, true);
+      newNodeList = buildListOfIdsToRemove(
+        sectionId,
+        this.state.sectionNodesToExclude,
+        flattenedSectionNodeStructure
+      );
+    }
+
+    this.setState((prevState) => {
+      return({
+        ...prevState,
+        sectionNodesToExclude: newNodeList
+      });
+    }, () => { this.calcLogic(); });
+  }
+
+  public render(): React.ReactElement<any> {
     return (
       <div
         style={{
@@ -104,10 +174,7 @@ export class PreviewForm extends React.PureComponent<Props> {
           alignItems: 'center',
         }}
       >
-        <div
-          style={{border: 'solid', visibility: 'hidden'}}
-          className="exportpdf-preview-container"
-        >
+        <div style={{border: 'solid', visibility: 'hidden'}} className="exportpdf-preview-container">
           <div style={{display: 'flex', flexDirection: 'row'}}>
             <div
               id="holder"
@@ -116,82 +183,59 @@ export class PreviewForm extends React.PureComponent<Props> {
                 height: '90vh',
                 width: 'auto',
                 overflowY: 'auto',
-              }}
-            ></div>
-            <div
-              style={{
-                height: '90vh',
-                background: 'rgb(226 226 226)',
-                position: 'relative',
-              }}
-            >
-              <div style={{padding: '20px', color: '#000000'}}>
+              }}>
+            </div>
+
+            <div style={{ height: '90vh', background: 'rgb(226 226 226)', position: 'relative' }}>
+              <div style={{padding: '20px', color: '#000000' }}>
                 <h6>Options:</h6>
-                <div
-                  style={{
-                    marginTop: '20px',
-                    display: 'flex',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                  }}
-                >
+                <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
                   <div>
-                    <input
-                      type="checkbox"
-                      name="TOC"
-                      onChange={this.handleTOCChange}
-                    />{' '}
+                    <input type="checkbox" name="TOC" id="licit-pdf-export-toc-option" onChange={this.handleTOCChange} />
+                    {' '}
                   </div>
-                  <div style={{marginLeft: '5px'}}> Include TOC</div>
+
+                  <label htmlFor="licit-pdf-export-toc-option" style={{marginLeft: '5px'}}>Include TOC</label>
                 </div>
 
-                <div
-                  style={{
-                    marginTop: '8px',
-                    display: 'flex',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                  }}
-                >
+                <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
                   <div>
-                    <input
-                      type="checkbox"
-                      name="infoicon"
-                      onChange={this.handelDocumentTitle}
-                    />{' '}
+                    <input type="checkbox" name="infoicon" id="licit-pdf-export-title-option" onChange={this.handelDocumentTitle} />
+                    {' '}
                   </div>
-                  <div style={{marginLeft: '5px'}}>Document title</div>
+
+                  <label htmlFor="licit-pdf-export-title-option" style={{marginLeft: '5px'}}>Document title</label>
                 </div>
 
-                <div
-                  style={{
-                    marginTop: '8px',
-                    display: 'flex',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                  }}
-                >
+                <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
                   <div>
-                    <input
-                      type="checkbox"
-                      name="infoicon"
-                      onChange={this.handelCitation}
-                    />{' '}
+                    <input type="checkbox" name="infoicon" id="licit-pdf-export-citation-option" onChange={this.handelCitation} />
+                    {' '}
                   </div>
-                  <div style={{marginLeft: '5px'}}>Citation</div>
+
+                  <label htmlFor="licit-pdf-export-citation-option" style={{marginLeft: '5px'}}>Citation</label>
+                </div>
+
+                <h6 style={{ marginRight: 'auto', marginTop: '30px' }}>Document Sections:</h6>
+
+                <div key='{this.props.sections}' id='licit-pdf-export-sections-list' style={{
+                  borderRadius: '5px',
+                  marginTop: '10px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  background: '#fff',
+                  width: '300px',
+                  maxHeight: '200px',
+                  overflowY: 'auto',
+                  overflowX: 'auto',
+                  paddingLeft: '10px'
+                }}>
+                  {this.state.sections}
                 </div>
               </div>
 
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '0',
-                  right: '0',
-                  padding: '5px',
-                  display: 'flex',
-                  flexDirection: 'row',
-                }}
-              >
+              <div style={{ position: 'absolute', bottom: '0', right: '0', padding: '5px', display: 'flex', flexDirection: 'row' }}>
                 <button onClick={this.handleConfirm}>Confirm</button>
                 <button onClick={this.handleCancel}>Cancel</button>
               </div>
@@ -201,7 +245,8 @@ export class PreviewForm extends React.PureComponent<Props> {
       </div>
     );
   }
-  handelDocumentTitle = (event) => {
+
+  public handelDocumentTitle = (event): void => {
     if (event.target.checked) {
       this.documentTitleActive();
     } else {
@@ -209,7 +254,7 @@ export class PreviewForm extends React.PureComponent<Props> {
     }
   };
 
-  handelCitation = (event) => {
+  public handelCitation = (event): void => {
     if (event.target.checked) {
       this.citationActive();
     } else {
@@ -217,7 +262,7 @@ export class PreviewForm extends React.PureComponent<Props> {
     }
   };
 
-  handleTOCChange = (event) => {
+  public handleTOCChange = (event) => {
     if (event.target.checked) {
       this.tocActive();
     } else {
@@ -225,22 +270,22 @@ export class PreviewForm extends React.PureComponent<Props> {
     }
   };
 
-  documentTitleActive = (): void => {
+  public documentTitleActive = (): void => {
     PreviewForm.isTitle = true;
     this.calcLogic();
   };
 
-  documentTitleDeactive = (): void => {
+  public documentTitleDeactive = (): void => {
     PreviewForm.isTitle = false;
     this.calcLogic();
   };
 
-  citationActive = (): void => {
+  public citationActive = (): void => {
     PreviewForm.isCitation = true;
     this.calcLogic();
   };
 
-  insertFooters = (CitationIcons, trialHtml): void => {
+  public insertFooters = (CitationIcons, trialHtml): void => {
     const selector = trialHtml.querySelector('.ProseMirror');
     if (CitationIcons.length > 0) {
       for (let i = 0; i < 7; i++) {
@@ -326,22 +371,23 @@ export class PreviewForm extends React.PureComponent<Props> {
     });
   };
 
-  citationDeactive = (): void => {
+  public citationDeactive = (): void => {
     PreviewForm.isCitation = false;
     this.calcLogic();
   };
-  cloneModifyNode = (data: HTMLElement) => {
+
+  public cloneModifyNode = (data: HTMLElement) => {
     return data.cloneNode(true) as HTMLElement;
   };
 
-  addLinkEventListeners = (): void => {
+  public addLinkEventListeners = (): void => {
     const links = document.querySelectorAll('.toc-element a');
     links.forEach((link) => {
       link.addEventListener('click', this.handleLinkClick);
     });
   };
 
-  handleLinkClick = (event: MouseEvent): void => {
+  public handleLinkClick = (event: MouseEvent): void => {
     event.preventDefault();
     const targetId = (event.currentTarget as HTMLAnchorElement)
       .getAttribute('href')
@@ -354,11 +400,11 @@ export class PreviewForm extends React.PureComponent<Props> {
     }
   };
 
-  calcLogic = (): void => {
+  public calcLogic = (): void => {
     let divContainer = document.getElementById('holder');
     divContainer.innerHTML = '';
     const {editorView} = this.props;
-    const data = this.getContainer(editorView);
+    const data = editorView.dom.parentElement.parentElement;
     let data1 = this.cloneModifyNode(data);
     let prosimer_cls_element = data1.querySelector('.ProseMirror');
     prosimer_cls_element.setAttribute('contenteditable', 'false');
@@ -368,6 +414,14 @@ export class PreviewForm extends React.PureComponent<Props> {
       .forEach((span_) => {
         (span_ as HTMLElement).style.display = 'flex';
       });
+
+    data1 = filterDocumentSections(
+      data1,
+      this.tocNodeList,
+      this.state.sectionNodesToExclude,
+      this.state.storedStyles
+    );
+
     if (PreviewForm.isCitation) {
       let CitationIcons = data1.querySelectorAll('.citationnote');
       CitationIcons.forEach((CitationIcon, index) => {
@@ -377,6 +431,7 @@ export class PreviewForm extends React.PureComponent<Props> {
       });
       this.insertFooters(CitationIcons, data1);
     }
+
     if (PreviewForm.isToc && PreviewForm.isTitle) {
       let parentDiv = document.createElement('div');
       parentDiv.classList.add('titleHead');
@@ -410,6 +465,7 @@ export class PreviewForm extends React.PureComponent<Props> {
       parentDiv.appendChild(header);
       data1.insertBefore(parentDiv, data1.firstChild);
     }
+
     let infoIcons = data1.querySelectorAll('.infoicon');
     infoIcons.forEach((infoIcon, index) => {
       let superscript = document.createElement('sup');
@@ -433,25 +489,24 @@ export class PreviewForm extends React.PureComponent<Props> {
       (preview_container_ as HTMLElement).style.visibility = 'visible';
       this.addLinkEventListeners();
       this._popUp.close();
-      console.log('Rendered', flow.total, 'pages.');
     });
   };
 
-  tocActive = (): void => {
+  public tocActive = (): void => {
     PreviewForm.isToc = true;
     this.calcLogic();
   };
 
-  InfoActive = (): void => {
+  public InfoActive = (): void => {
     this.calcLogic();
   };
 
-  Tocdeactive = (): void => {
+  public Tocdeactive = (): void => {
     PreviewForm.isToc = false;
     this.calcLogic();
   };
 
-  handleCancel = (): void => {
+  public handleCancel = (): void => {
     PreviewForm.isToc = false;
     PreviewForm.general = false;
     PreviewForm.isTitle = false;
@@ -459,7 +514,7 @@ export class PreviewForm extends React.PureComponent<Props> {
     this.props.onClose();
   };
 
-  handleConfirm = (): void => {
+  public handleConfirm = (): void => {
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       let divContainer = document.getElementById('holder');
@@ -489,7 +544,8 @@ export class PreviewForm extends React.PureComponent<Props> {
     }
     this.props.onClose();
   };
-  prepareCSSRules = (doc): void => {
+
+  public prepareCSSRules = (doc): void => {
     const sheets = document.styleSheets;
     for (const sheet of sheets) {
       const rules = sheet.cssRules;
@@ -508,12 +564,36 @@ export class PreviewForm extends React.PureComponent<Props> {
     }
   };
 
-  getContainer = (view): HTMLElement => {
-    let comments = false;
-    let container;
-    if (!comments) {
-      container = view.dom.parentElement.parentElement;
+  private renderTocList(structure: SectionNodeStructure[], isChildElement = false): void {
+    for (const section of structure) {
+      const uniqueSectionId = `licit-pdf-export-${section.id}`
+      const indentIncrement = 15;
+      let indentAmount = '0';
+
+      if (section.level > 1) {
+        indentAmount = `${(section.level - 1) * indentIncrement}px`;
+      }
+
+      this.sectionListElements.push(
+        <div key={section.id} style={{padding: '5px 10px', paddingLeft: indentAmount , display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', minWidth: '100%', width: 'auto'}}>
+          <div>
+            <input style={{cursor: 'pointer'}} type="checkbox" name="infoicon" id={uniqueSectionId} value='on' onChange={() => this.updateDocumentSectionList(section.id)} defaultChecked={true} />
+            {' '}
+          </div>
+  
+          <label htmlFor={uniqueSectionId} style={{cursor: 'pointer', marginLeft: '5px', textWrap: 'nowrap'}}>{section.title}</label>
+        </div>
+      );
+
+      if (section.children.length) {
+        this.renderTocList(section.children, true);
+      }
     }
-    return container;
-  };
+
+    if (!isChildElement) {
+      this.setState((prevState) => {
+        return({ ...prevState, sections: this.sectionListElements });
+      });
+    }
+  }
 }

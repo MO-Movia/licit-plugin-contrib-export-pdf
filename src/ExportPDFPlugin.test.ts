@@ -1,7 +1,8 @@
-import {ExportPDFPlugin} from './ExportPDFPlugin';
-import {createEditor, doc, p} from 'jest-prosemirror';
+import { ExportPDFPlugin } from './ExportPDFPlugin';
+import { createEditor, doc, p } from 'jest-prosemirror';
 import moment from 'moment';
-import {Schema} from 'prosemirror-model';
+import { Schema } from 'prosemirror-model';
+import { EditorView } from 'prosemirror-view';
 jest.mock('html2canvas', () => {
   return jest.fn().mockResolvedValue(null);
 });
@@ -16,6 +17,7 @@ jest.mock('jspdf', () => {
 
   return mockConstructor;
 });
+
 describe('Export PDF Plugin', () => {
   let plugin: ExportPDFPlugin;
 
@@ -49,5 +51,12 @@ describe('Export PDF Plugin', () => {
   it('should return schema', () => {
     const schema = {} as unknown as Schema;
     expect(plugin.getEffectiveSchema(schema)).toBe(schema);
+  });
+
+  it('perform should return boolean', () => {
+    jest.spyOn(plugin['EXPORT_PDF'], 'execute').mockReturnValue(true);
+    const result = plugin.perform({} as unknown as EditorView);
+
+    expect(result).toEqual(true);
   });
 });

@@ -20,7 +20,7 @@ describe('Export PDF Command', () => {
     const mockEditorView = {} as EditorView;
     const result = exportPDFCommand.execute(
       mockEditorState,
-      (_tr: Transform) => {
+      () => {
         return null;
       },
       mockEditorView

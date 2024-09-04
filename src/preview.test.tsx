@@ -1,6 +1,7 @@
-import {PreviewForm} from './preview';
-import {EditorView} from 'prosemirror-view';
-import {EditorState} from 'prosemirror-state';
+import { PreviewForm } from './preview';
+import { EditorView } from 'prosemirror-view';
+import { EditorState } from 'prosemirror-state';
+import { sampleSectionNodeStructure } from './test-data/document-nodes.test';
 
 describe('PreviewForm', () => {
   it('should call calcLogic when PreviewForm.isToc = true ', () => {
@@ -25,6 +26,7 @@ describe('PreviewForm', () => {
     PreviewForm.isToc = true;
     expect(prevForm.calcLogic()).toBeUndefined();
   });
+
   it('should call calcLogic when PreviewForm.isTitle = true ', () => {
     const dommock = document.createElement('div');
     const parentelement = document.createElement('div');
@@ -51,6 +53,7 @@ describe('PreviewForm', () => {
     PreviewForm.isTitle = true;
     expect(prevForm.calcLogic()).toBeUndefined();
   });
+
   it('should call calcLogic when PreviewForm.isTitle = true and  PreviewForm.isToc = false', () => {
     const dommock = document.createElement('div');
     const parentelement = document.createElement('div');
@@ -134,6 +137,7 @@ describe('PreviewForm component', () => {
     expect(printWindowMock.print).toHaveBeenCalled();
     expect(onCloseMock).toHaveBeenCalled();
   });
+
   it('should handle handelDocumentTitle ', () => {
     const props = {
       editorState: {} as any,
@@ -148,6 +152,7 @@ describe('PreviewForm component', () => {
     previewForm.handelDocumentTitle({target: {checked: true}});
     expect(spy).toHaveBeenCalled();
   });
+
   it('should handle handelDocumentTitle when checked is false', () => {
     const props = {
       editorState: {} as any,
@@ -162,6 +167,7 @@ describe('PreviewForm component', () => {
     previewForm.handelDocumentTitle({target: {checked: false}});
     expect(spy).toHaveBeenCalled();
   });
+
   it('should handle handelCitation  ', () => {
     const props = {
       editorState: {} as any,
@@ -176,6 +182,7 @@ describe('PreviewForm component', () => {
     previewForm.handelCitation({target: {checked: true}});
     expect(spy).toHaveBeenCalled();
   });
+
   it('should handle handelCitation when checked is false', () => {
     const props = {
       editorState: {} as any,
@@ -190,6 +197,7 @@ describe('PreviewForm component', () => {
     previewForm.handelCitation({target: {checked: false}});
     expect(spy).toHaveBeenCalled();
   });
+
   it('should handle handleTOCChange   ', () => {
     const props = {
       editorState: {} as any,
@@ -204,6 +212,7 @@ describe('PreviewForm component', () => {
     previewForm.handleTOCChange({target: {checked: true}});
     expect(spy).toHaveBeenCalled();
   });
+
   it('should handle handleTOCChange  when checked is false', () => {
     const props = {
       editorState: {} as any,
@@ -218,6 +227,7 @@ describe('PreviewForm component', () => {
     previewForm.handleTOCChange({target: {checked: false}});
     expect(spy).toHaveBeenCalled();
   });
+
   it('should call the function handleCancel()', () => {
     const props = {
       editorState: {} as unknown as EditorState,
@@ -229,6 +239,7 @@ describe('PreviewForm component', () => {
     const Previewform = new PreviewForm(props);
     expect(Previewform.handleCancel()).toBeUndefined();
   });
+
   it('should handle insertFooters  ', () => {
     const spy = jest.spyOn(document, 'createTextNode');
     const props = {
@@ -280,6 +291,7 @@ describe('PreviewForm component', () => {
     const Previewform = new PreviewForm(props);
     expect(Previewform.render()).toBeDefined();
   });
+
   it('should call the function componentDidMount()', () => {
     const el = document.createElement('div');
     const prosimer_cls_element = document.createElement('div');
@@ -342,8 +354,10 @@ describe('PreviewForm component', () => {
     expect(imageElement.getAttribute('data-original-width')).toBe(null);
   });
 });
+
 describe('addLinkEventListeners && handleLinkClick', () => {
   let previewForm;
+
   beforeEach(() => {
     document.body.innerHTML = `
         <div class="toc-element">
@@ -352,6 +366,7 @@ describe('addLinkEventListeners && handleLinkClick', () => {
         <div id="section1">Content of Section 1</div>
       `;
   });
+
   const props = {
     editorState: {} as unknown as EditorState,
     editorView: {} as unknown as EditorView,
@@ -359,10 +374,13 @@ describe('addLinkEventListeners && handleLinkClick', () => {
       return;
     },
   };
+
   previewForm = new PreviewForm(props);
+
   afterEach(() => {
     document.body.innerHTML = '';
   });
+
   it('should call the function addLinkEventListeners()', () => {
     let test_ = previewForm.addLinkEventListeners();
     const link = document.querySelector('.toc-element a');
@@ -375,6 +393,7 @@ describe('addLinkEventListeners && handleLinkClick', () => {
     targetElement.scrollIntoView = scrollIntoView;
     expect(test_).toBeUndefined();
   });
+
   it('should call the function handleLinkClick()', () => {
     const link = document.createElement('a');
     link.setAttribute('href', '#section1');
@@ -393,6 +412,7 @@ describe('addLinkEventListeners && handleLinkClick', () => {
     expect(preventDefault).toHaveBeenCalled();
     expect(scrollIntoView).toHaveBeenCalledWith({behavior: 'smooth'});
   });
+
   it('should handle InfoActive and call calcLogic', () => {
     const spy = jest
       .spyOn(previewForm, 'calcLogic')
