@@ -10,8 +10,10 @@ export const KEY_EXPORT_PDF = makeKeyMapWithCommon(
   'Mod-Alt' + '-p'
 );
 
+// Does not really contain state
+const EXPORT_PDF = new ExportPDFCommand();
+
 export class ExportPDFPlugin extends Plugin {
-  private EXPORT_PDF = new ExportPDFCommand();
 
   constructor() {
     super({
@@ -27,7 +29,7 @@ export class ExportPDFPlugin extends Plugin {
   public initKeyCommands(): unknown {
     return createKeyMapPlugin(
       {
-        [KEY_EXPORT_PDF.common]: this.EXPORT_PDF.execute,
+        [KEY_EXPORT_PDF.common]: EXPORT_PDF.execute,
       },
       'ExportPDFKeyMap'
     );
@@ -35,7 +37,7 @@ export class ExportPDFPlugin extends Plugin {
 
   public initButtonCommands(): unknown {
     return {
-      '[picture_as_pdf] Export to PDF': this.EXPORT_PDF,
+      '[picture_as_pdf] Export to PDF': EXPORT_PDF,
     };
   }
 
@@ -45,10 +47,10 @@ export class ExportPDFPlugin extends Plugin {
 
   // this helps to invoke even in readonly mode.
   public perform(view: EditorView): boolean {
-    return this.export(view);
+    return ExportPDFPlugin.export(view);
   }
 
-  public export(view: EditorView): boolean {
-    return this.EXPORT_PDF.execute(undefined, undefined, view);
+  public static export(view: EditorView): boolean {
+    return EXPORT_PDF.execute(undefined, undefined, view);
   }
 }
