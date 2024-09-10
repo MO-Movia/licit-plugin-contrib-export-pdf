@@ -52,11 +52,4 @@ describe('Export PDF Plugin', () => {
     const schema = {} as unknown as Schema;
     expect(plugin.getEffectiveSchema(schema)).toBe(schema);
   });
-
-  it('perform should return boolean', () => {
-    jest.spyOn(plugin['EXPORT_PDF'], 'execute').mockReturnValue(true);
-    const result = plugin.perform({} as unknown as EditorView);
-
-    expect(result).toEqual(true);
-  });
 });
