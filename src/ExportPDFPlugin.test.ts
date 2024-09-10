@@ -2,7 +2,6 @@ import { ExportPDFPlugin } from './ExportPDFPlugin';
 import { createEditor, doc, p } from 'jest-prosemirror';
 import moment from 'moment';
 import { Schema } from 'prosemirror-model';
-import { EditorView } from 'prosemirror-view';
 jest.mock('html2canvas', () => {
   return jest.fn().mockResolvedValue(null);
 });
