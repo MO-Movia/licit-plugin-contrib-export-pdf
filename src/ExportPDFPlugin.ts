@@ -1,13 +1,13 @@
-import {Schema} from 'prosemirror-model';
-import {Plugin, PluginKey} from 'prosemirror-state';
+import { Schema } from 'prosemirror-model';
+import { Plugin, PluginKey } from 'prosemirror-state';
 import {
   makeKeyMapWithCommon,
   createKeyMapPlugin,
 } from '@modusoperandi/licit-doc-attrs-step';
 
-import {ExportPDFCommand} from './exportPdfCommand';
-import {EditorView} from 'prosemirror-view';
-import {ExportPDFDark, ExportPDFLight} from './images';
+import { ExportPDFCommand } from './exportPdfCommand';
+import { EditorView } from 'prosemirror-view';
+import {DarkThemeIcon, LightThemeIcon} from './images';
 
 export const KEY_EXPORT_PDF = makeKeyMapWithCommon(
   'exportPDF',
@@ -42,9 +42,9 @@ export class ExportPDFPlugin extends Plugin {
     if (this.showButton) {
       let image = null;
       if ('light' == theme) {
-        image = ExportPDFLight;
+        image = LightThemeIcon;
       } else {
-        image = ExportPDFDark;
+        image = DarkThemeIcon;
       }
 
       return {
@@ -54,9 +54,16 @@ export class ExportPDFPlugin extends Plugin {
       return {};
     }
   }
+  /**
+   * @deprecated Use ExportPDFPlugin.export(view) instead.
+   */
 
   // this helps to invoke even in readonly mode.
-  perform(view: EditorView): void {
-    EXPORT_PDF.execute(undefined, undefined, view);
+  perform(view: EditorView): boolean {
+    return ExportPDFPlugin.export(view);
+  }
+
+  static export(view: EditorView): boolean {
+    return EXPORT_PDF.execute(undefined, undefined, view);
   }
 }

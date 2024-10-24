@@ -13,7 +13,7 @@
 
 #### To use this in Licit
 
-- npm install *@modusoperandi/licit-export-pdf*
+- npm install _@modusoperandi/licit-export-pdf_
 
 Include plugin in licit component 
 

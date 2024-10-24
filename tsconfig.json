@@ -1,34 +1,23 @@
 {
   "compilerOptions": {
-    "target": "es6",
-    "module": "commonjs",
+    "target": "ES2022",
+    "module": "esnext",
     "moduleResolution": "node",
-    "lib": [
-      "es2017",
-      "dom",
-      "dom.Iterable"
-    ],
+    "lib": ["es2017", "dom", "dom.Iterable"],
     "outDir": "dist",
     "pretty": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "types": [
-      "jest"
-    ],
+    "types": ["jest"],
     // Ensure that .d.ts files are created by tsc, but not .js files
     "declaration": true,
-    "emitDeclarationOnly": true,
     // Ensure that Babel can safely transpile files in the TypeScript project
     "isolatedModules": true,
+    "jsx": "react"
   },
   "typeAcquisition": {
     "enable": true
   },
-  "include": [
-    "src/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "**/*.test.ts"
-  ],
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules", "**/*.test.ts"]
 }

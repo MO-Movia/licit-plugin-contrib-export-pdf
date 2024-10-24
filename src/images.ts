@@ -1,4 +1,4 @@
-import ExportPDFDark from '../images/dark/picture_as_pdf.svg';
-import ExportPDFLight from '../images/light/picture_as_pdf.svg';
+import DarkThemeIcon from './images/dark/Icon_pdf.svg';
+import LightThemeIcon from './images/light/Icon_pdf.svg';
 
-export {ExportPDFDark, ExportPDFLight};
+export {DarkThemeIcon, LightThemeIcon};
