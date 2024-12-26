@@ -1,7 +1,6 @@
 import { PreviewForm } from './preview';
 import { EditorView } from 'prosemirror-view';
 import { EditorState } from 'prosemirror-state';
-import { sampleSectionNodeStructure } from './test-data/document-nodes.test';
 
 describe('PreviewForm', () => {
   it('should call calcLogic when PreviewForm.isToc = true ', () => {
