@@ -181,9 +181,7 @@ export function buildListOfIdsToAdd(
   const ids = addSelectedSection(flatStructure, sectionId);
   let newNodeList = structuredClone(currentListOfExcludedIds);
 
-  ids.map((id) => {
-    newNodeList = newNodeList.filter(nodeId => nodeId !== id);
-  });
+  newNodeList = newNodeList.filter((nodeId) => !ids.includes(nodeId));
 
   return sortExcludeListByFlattenedSection(newNodeList, flatStructure);
 }
