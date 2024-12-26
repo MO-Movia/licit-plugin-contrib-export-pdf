@@ -184,6 +184,10 @@ padding-left: 6px;
 #list-toc-generated .toc-element a {
 right: 0;
 }
+.prosemirror-editor-wrapper.embedded .ProseMirror {
+ width : unset;
+}
+
 @page {
 .ProseMirror {
 box-shadow: none;
