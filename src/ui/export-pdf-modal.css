@@ -1,0 +1,139 @@
+.export-pdf-modal-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.export-pdf-modal {
+    height: 90vh;
+    border: solid 2px #ccc;
+    overflow: hidden;
+    border-radius: 10px;
+    position: relative;
+    visibility: hidden;
+    display: flex; 
+    flex-direction: row;
+}
+
+.export-pdf-preview {
+    position: relative;
+    height: 100%;
+    width: auto;
+    overflow-y: auto;
+    background-color: #ffffff;
+}
+
+.export-pdf-sidebar-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: rgb(226 226 226);
+    position: relative;
+    padding: 40px 10px 20px 10px;
+    color: #000000;
+}
+
+.export-pdf-sidebar-controls {
+    flex: 1;
+    margin-top: 20px;
+    padding: 0 10px 10px 10px;
+    height: 100%;
+    min-height: 200px;
+    overflow: auto;
+    overflow-y: auto;
+}
+
+.export-pdf-sidebar-toggle {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.export-pdf-sidebar-toggle > label {
+    margin-left: 5px;
+    cursor: pointer;
+}
+
+.export-pdf-sidebar-toggle > input {
+    margin-left: 5px;
+    cursor: pointer;
+}
+
+
+.export-pdf-sidebar-toggle:first-of-type {
+    margin-top: 10px;
+}
+
+.export-pdf-sections-list {
+    border-radius: 5px;
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    background-color: #ffffff;
+    width: 300px;
+    max-height: 200px;
+    overflow-y: auto;
+    overflow-x: auto;
+    padding-left: 10px;
+}
+
+.export-pdf-controls {
+    position: relative;
+    padding: 10px;
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.export-pdf-controls > button {
+    background: #ffffff;
+    padding: 5px 10px;
+    color: #000000;
+    cursor: pointer;
+    border: solid 2px #ccc;
+    border-radius: 5px;
+    font-size: 18px;
+    transition: all 150ms ease-in-out;
+}
+
+.export-pdf-controls > button:hover {
+    border: solid 2px #666666;
+}
+
+
+.export-pdf-controls > .confirm {
+    border: solid 2px #4C8CD8;
+    background-color: #4C8CD8;
+    color: #fff;
+}
+
+.export-pdf-controls > .confirm:hover {
+    border: solid 2px #005cc8;
+    background-color: #005cc8;
+}
+
+.export-pdf-close-modal-icon {
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    border: none;
+    cursor: pointer;
+    background: none;
+    padding: 5px;
+    font-size: 25px;
+    color: #002E64;
+    transition: all 100ms ease-in-out;
+}
+
+.export-pdf-close-modal-icon:hover {
+    transform: scale(1.2);
+}
