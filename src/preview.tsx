@@ -23,7 +23,7 @@ interface Props {
 }
 
 interface State {
-  sections: React.ReactElement<any>[];
+  sections: React.ReactNode[];
   sectionNodeStructure: SectionNodeStructure[];
   flattenedSectionNodeStructure: FlatSectionNodeStructure[];
   sectionNodesToExclude: string[];
@@ -37,7 +37,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   public static isTitle: boolean = false;
   public static tocHeader = [];
   public tocNodeList: Node[] = [];
-  public sectionListElements: React.ReactElement<any>[] = [];
+  public sectionListElements: React.ReactNode[] = [];
   private _popUp = null;
 
   constructor(props) {
@@ -56,12 +56,12 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     this.getToc(editorView);
     PreviewForm.general = true;
     registerHandlers(MyHandler);
-    let divContainer = document.getElementById('holder');
+    const divContainer = document.getElementById('holder');
     const data = editorView.dom.parentElement.parentElement;
-    let data1 = data.cloneNode(true) as HTMLElement;
-    let infoIcons = data1.querySelectorAll('.infoicon');
+    const data1 = data.cloneNode(true) as HTMLElement;
+    const infoIcons = data1.querySelectorAll('.infoicon');
     infoIcons.forEach((infoIcon, index) => {
-      let superscript = document.createElement('sup');
+      const superscript = document.createElement('sup');
       superscript.textContent = (index + 1).toString();
       infoIcon.textContent = '';
       infoIcon.appendChild(superscript);
@@ -73,9 +73,9 @@ export class PreviewForm extends React.PureComponent<Props, State> {
         this.replaceImageWidth(imageElement);
       }
     }
-    let prosimer_cls_element = data1.querySelector('.ProseMirror');
+    const prosimer_cls_element = data1.querySelector('.ProseMirror');
     prosimer_cls_element.setAttribute('contenteditable', 'false');
-    let paged = new Previewer();
+    const paged = new Previewer();
     paged.preview(data1, [], divContainer).then((flow) => {
       this.InfoActive();
     });
@@ -95,12 +95,9 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   }
 
   public replaceImageWidth = (imageElement): void => {
-    // Get the original width of the image.
     const originalWidth = parseInt(imageElement.getAttribute('width'), 10);
 
-    if (originalWidth > 600) {
-      imageElement.style.maxWidth = '600px';
-    }
+    if (originalWidth > 600) imageElement.style.maxWidth = '600px';
   };
 
   public getToc = async (view): Promise<void> => {
@@ -160,85 +157,43 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     }, () => { this.calcLogic(); });
   }
 
-  public render(): React.ReactElement<any> {
+  public render(): React.ReactNode {
     return (
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
-        <div style={{border: 'solid', visibility: 'hidden'}} className="exportpdf-preview-container">
-          <div style={{display: 'flex', flexDirection: 'row'}}>
-            <div
-              id="holder"
-              className="preview-container"
-              style={{
-                height: '90vh',
-                width: 'auto',
-                overflowY: 'auto',
-              }}>
+      <div className='export-pdf-modal-wrapper'>
+        <div className="export-pdf-modal">
+          <div className="export-pdf-preview" id="holder"></div>
+
+          <div className='export-pdf-sidebar-container'>
+            <button className='export-pdf-close-modal-icon' onClick={this.handleCancel}>&#x2716;</button>
+
+            <div className='export-pdf-sidebar-controls'>
+              <h6>Options:</h6>
+
+              <div className='export-pdf-sidebar-toggle'>
+                <input id="licit-pdf-export-toc-option" name="TOC" onChange={this.handleTOCChange} type="checkbox" />
+                <label htmlFor="licit-pdf-export-toc-option">Include TOC</label>
+              </div>
+
+              <div className='export-pdf-sidebar-toggle'>
+                <input id="licit-pdf-export-title-option" name="infoicon" onChange={this.handelDocumentTitle} type="checkbox" />
+                <label htmlFor="licit-pdf-export-title-option">Document title</label>
+              </div>
+
+              <div className='export-pdf-sidebar-toggle'>
+                <input id="licit-pdf-export-citation-option" name="infoicon" onChange={this.handelCitation} type="checkbox" />
+                <label htmlFor="licit-pdf-export-citation-option">Citation</label>
+              </div>
+
+              <h6 style={{ marginRight: 'auto', marginTop: '30px' }}>Document Sections:</h6>
+
+              <div className='export-pdf-sections-list' id='licit-pdf-export-sections-list' key='{this.props.sections}'>
+                {this.state.sections}
+              </div>
             </div>
 
-            <div style={{ height: '90vh', background: 'rgb(226 226 226)', position: 'relative' }}>
-              <div style={{padding: '20px', color: '#000000' }}>
-                <h6>Options:</h6>
-                <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-                  <div>
-                    <input type="checkbox" name="TOC" id="licit-pdf-export-toc-option" onChange={this.handleTOCChange} />
-                    {' '}
-                  </div>
-
-                  <label htmlFor="licit-pdf-export-toc-option" style={{marginLeft: '5px'}}>Include TOC</label>
-                </div>
-
-                <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-                  <div>
-                    <input type="checkbox" name="infoicon" id="licit-pdf-export-title-option" onChange={this.handelDocumentTitle} />
-                    {' '}
-                  </div>
-
-                  <label htmlFor="licit-pdf-export-title-option" style={{marginLeft: '5px'}}>Document title</label>
-                </div>
-
-                <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-                  <div>
-                    <input type="checkbox" name="infoicon" id="licit-pdf-export-citation-option" onChange={this.handelCitation} />
-                    {' '}
-                  </div>
-
-                  <label htmlFor="licit-pdf-export-citation-option" style={{marginLeft: '5px'}}>Citation</label>
-                </div>
-
-                <h6 style={{ marginRight: 'auto', marginTop: '30px' }}>Document Sections:</h6>
-
-                <div key='{this.props.sections}' id='licit-pdf-export-sections-list' style={{
-                  borderRadius: '5px',
-                  marginTop: '10px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
-                  background: '#fff',
-                  width: '300px',
-                  maxHeight: '200px',
-                  overflowY: 'auto',
-                  overflowX: 'auto',
-                  paddingLeft: '10px'
-                }}>
-                  {this.state.sections}
-                </div>
-              </div>
-
-              <div style={{ position: 'absolute', bottom: '0', right: '0', padding: '5px', display: 'flex', flexDirection: 'row' }}>
-                <button onClick={this.handleConfirm}>Confirm</button>
-                <button onClick={this.handleCancel}>Cancel</button>
-              </div>
+            <div className='export-pdf-controls'>
+              <button onClick={this.handleCancel}>Cancel</button>
+              <button className='confirm' onClick={this.handleConfirm}>Confirm</button>
             </div>
           </div>
         </div>
@@ -401,12 +356,12 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   };
 
   public calcLogic = (): void => {
-    let divContainer = document.getElementById('holder');
+    const divContainer = document.getElementById('holder');
     divContainer.innerHTML = '';
     const {editorView} = this.props;
     const data = editorView.dom.parentElement.parentElement;
     let data1 = this.cloneModifyNode(data);
-    let prosimer_cls_element = data1.querySelector('.ProseMirror');
+    const prosimer_cls_element = data1.querySelector('.ProseMirror');
     prosimer_cls_element.setAttribute('contenteditable', 'false');
     prosimer_cls_element.classList.remove('czi-prosemirror-editor');
     prosimer_cls_element
@@ -423,9 +378,9 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     );
 
     if (PreviewForm.isCitation) {
-      let CitationIcons = data1.querySelectorAll('.citationnote');
+      const CitationIcons = data1.querySelectorAll('.citationnote');
       CitationIcons.forEach((CitationIcon, index) => {
-        let superscript = document.createElement('sup');
+        const superscript = document.createElement('sup');
         superscript.textContent = `[${index + 1}]`;
         CitationIcon.parentNode?.replaceChild(superscript, CitationIcon);
       });
@@ -433,9 +388,9 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     }
 
     if (PreviewForm.isToc && PreviewForm.isTitle) {
-      let parentDiv = document.createElement('div');
+      const parentDiv = document.createElement('div');
       parentDiv.classList.add('titleHead');
-      let header = document.createElement('h4');
+      const header = document.createElement('h4');
       header.style.marginBottom = '40px';
       header.style.color = '#000000';
       header.textContent =
@@ -443,19 +398,19 @@ export class PreviewForm extends React.PureComponent<Props, State> {
           'http://www.w3.org/2000/01/rdf-schema#label'
         ] || 'DEFAULT TITLE';
 
-      let newDiv = document.createElement('div');
+      const newDiv = document.createElement('div');
       newDiv.classList.add('tocHead');
       parentDiv.appendChild(header);
       parentDiv.appendChild(newDiv);
       data1.insertBefore(parentDiv, data1.firstChild);
     } else if (PreviewForm.isToc) {
-      let newDiv = document.createElement('div');
+      const newDiv = document.createElement('div');
       newDiv.classList.add('tocHead');
       data1.insertBefore(newDiv, data1.firstChild);
     } else if (PreviewForm.isTitle) {
-      let parentDiv = document.createElement('div');
+      const parentDiv = document.createElement('div');
       parentDiv.classList.add('titleHead');
-      let header = document.createElement('h4');
+      const header = document.createElement('h4');
       header.style.marginBottom = '40px';
       header.style.color = '#000000';
       header.textContent =
@@ -466,9 +421,9 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       data1.insertBefore(parentDiv, data1.firstChild);
     }
 
-    let infoIcons = data1.querySelectorAll('.infoicon');
+    const infoIcons = data1.querySelectorAll('.infoicon');
     infoIcons.forEach((infoIcon, index) => {
-      let superscript = document.createElement('sup');
+      const superscript = document.createElement('sup');
       superscript.textContent = (index + 1).toString();
       infoIcon.textContent = '';
       infoIcon.appendChild(superscript);
@@ -480,12 +435,10 @@ export class PreviewForm extends React.PureComponent<Props, State> {
         this.replaceImageWidth(imageElement);
       }
     }
-    let paged = new Previewer();
+    const paged = new Previewer();
     this.showAlert();
     paged.preview(data1, [], divContainer).then((flow) => {
-      const preview_container_ = document.querySelector(
-        '.exportpdf-preview-container'
-      );
+      const preview_container_ = document.querySelector('.export-pdf-modal');
       (preview_container_ as HTMLElement).style.visibility = 'visible';
       this.addLinkEventListeners();
       this._popUp.close();
@@ -517,10 +470,10 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   public handleConfirm = (): void => {
     const printWindow = window.open('', '_blank');
     if (printWindow) {
-      let divContainer = document.getElementById('holder');
+      const divContainer = document.getElementById('holder');
       printWindow.document.open();
       printWindow.document.write(
-        `<!DOCTYPE html><html><head><title>LICIT</title></head><body></body></html>`
+        '<!DOCTYPE html><html><head><title>LICIT</title></head><body></body></html>'
       );
 
       while (printWindow.document.documentElement.firstChild) {
@@ -566,7 +519,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
   private renderTocList(structure: SectionNodeStructure[], isChildElement = false): void {
     for (const section of structure) {
-      const uniqueSectionId = `licit-pdf-export-${section.id}`
+      const uniqueSectionId = `licit-pdf-export-${section.id}`;
       const indentIncrement = 15;
       let indentAmount = '0';
 
@@ -577,10 +530,10 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       this.sectionListElements.push(
         <div key={section.id} style={{padding: '5px 10px', paddingLeft: indentAmount , display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', minWidth: '100%', width: 'auto'}}>
           <div>
-            <input style={{cursor: 'pointer'}} type="checkbox" name="infoicon" id={uniqueSectionId} value='on' onChange={() => this.updateDocumentSectionList(section.id)} defaultChecked={true} />
+            <input defaultChecked={true} id={uniqueSectionId} name="infoicon" onChange={() => this.updateDocumentSectionList(section.id)} style={{cursor: 'pointer'}} type="checkbox" value='on' />
             {' '}
           </div>
-  
+
           <label htmlFor={uniqueSectionId} style={{cursor: 'pointer', marginLeft: '5px', textWrap: 'nowrap'}}>{section.title}</label>
         </div>
       );
