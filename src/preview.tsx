@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { ChangeEvent } from 'react';
 import { EditorView } from 'prosemirror-view';
 import { Previewer, registerHandlers } from 'pagedjs';
 import { MyHandler } from './handlers';
@@ -12,10 +12,19 @@ import {
   toggleAllSectionChildElements,
   filterDocumentSections,
   buildListOfIdsToRemove,
-  buildListOfIdsToAdd
+  buildListOfIdsToAdd,
+  filterDocumentNodes,
 } from './utils/document-section-utils';
 import { Node } from 'prosemirror-model';
 import { DocumentStyle, getTableOfContentStyles, StoredStyle } from './utils/table-of-contents-utils';
+
+export const classificaitonToNumericLevelMap = new Map<string, number>([
+  ['U', 0],
+  ['CUI', 1],
+  ['C', 2],
+  ['S', 3],
+  ['TS', 4],
+]);
 
 interface Props {
   editorView: EditorView;
@@ -23,9 +32,12 @@ interface Props {
 }
 
 interface State {
+  flattenedCompleteNodeStructure: FlatSectionNodeStructure[];
+  flattenedSectionNodeStructure: FlatSectionNodeStructure[];
+  sanitizedNodes: string[];
+  sanitizedTocNodes: string[];
   sections: React.ReactNode[];
   sectionNodeStructure: SectionNodeStructure[];
-  flattenedSectionNodeStructure: FlatSectionNodeStructure[];
   sectionNodesToExclude: string[];
   storedStyles: StoredStyle[];
 }
@@ -37,15 +49,19 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   public static isTitle: boolean = false;
   public static tocHeader = [];
   public tocNodeList: Node[] = [];
+  public allDocumentNodes: Node[] = [];
   public sectionListElements: React.ReactNode[] = [];
   private _popUp = null;
 
   constructor(props) {
     super(props);
     this.state = {
+      flattenedCompleteNodeStructure: [],
+      flattenedSectionNodeStructure: [],
+      sanitizedNodes: [],
+      sanitizedTocNodes: [],
       sections: [],
       sectionNodeStructure: [],
-      flattenedSectionNodeStructure: [],
       sectionNodesToExclude: [],
       storedStyles: []
     };
@@ -106,6 +122,8 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
     view?.state?.tr?.doc.descendants((node: Node) => {
       if (node.attrs.styleName) {
+        this.allDocumentNodes.push(node);
+
         for (const tocValue of storeTOCvalue) {
           if (tocValue.name === node.attrs.styleName) {
             this.tocNodeList.push(node);
@@ -117,11 +135,14 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
     const sectionNodeStructure = buildSectionStructure(this.tocNodeList, storeTOCvalue);
     const flattenedSectionNodeStructure = flattenStructure(sectionNodeStructure);
+    const completeNodeStructure = buildSectionStructure(this.allDocumentNodes, storeTOCvalue);
+    const flattenedCompleteNodeStructure = flattenStructure(completeNodeStructure);
 
     this.setState((prevState) => {
       return({
         ...prevState,
         storedStyles: storeTOCvalue,
+        flattenedCompleteNodeStructure,
         flattenedSectionNodeStructure,
         sectionNodeStructure,
       });
@@ -184,10 +205,24 @@ export class PreviewForm extends React.PureComponent<Props, State> {
                 <label htmlFor="licit-pdf-export-citation-option">Citation</label>
               </div>
 
-              <h6 style={{ marginRight: 'auto', marginTop: '30px' }}>Document Sections:</h6>
+              <h6>Document Sections:</h6>
 
               <div className='export-pdf-sections-list' id='licit-pdf-export-sections-list' key='{this.props.sections}'>
                 {this.state.sections}
+              </div>
+
+              <h6>Sanitization:</h6>
+
+              <div className='export-pdf-classification-sanitization'>
+                <label htmlFor="classification-sanitization">Classification</label>
+                <select defaultValue="" id="classification-sanitization" onChange={(event) => this.sanitizeByClassification(event.target.value)} title="priority">
+                  <option value="">None</option>
+                  <option value="U">UNCLASSIFIED</option>
+                  <option value="CUI">CONTROLLED UNCLASSIFIED INFORMATION</option>
+                  <option value="C">CONFIDENTIAL</option>
+                  <option value="S">SECRET</option>
+                  <option value="TS">TOPSECRET</option>
+                </select>
               </div>
             </div>
 
@@ -199,6 +234,77 @@ export class PreviewForm extends React.PureComponent<Props, State> {
         </div>
       </div>
     );
+  }
+
+  public sanitizeByClassification(value: string): void {
+    const flattenedCompleteNodeStructure = this.state.flattenedCompleteNodeStructure;
+    let sanitizationLevel = 0;
+    const newNodeList: string[] = [];
+    let newTocNodeList: string[] = [];
+
+    if (value) {
+      sanitizationLevel = classificaitonToNumericLevelMap.get(value) ?? 0;
+      const tocList = this.state.flattenedSectionNodeStructure;
+
+      for (const node of flattenedCompleteNodeStructure) {
+        const isTocNode = tocList.some(tocNode => tocNode.id === node.id);
+
+        if (node.capco) {
+          const nodeClassification = node.capco.ism.classification[0] ?? 'U';
+          const nodeClassificationLevel = classificaitonToNumericLevelMap.get(nodeClassification) ?? 0;
+
+          if (nodeClassificationLevel > sanitizationLevel) {
+            if (isTocNode) {
+              newTocNodeList.push(node.id);
+            } else {
+              newNodeList.push(node.id);
+            }
+          }
+        }
+      }
+    }
+
+    newTocNodeList = this.calculateTocDiff(newTocNodeList);
+
+    console.log('new toc list ', newTocNodeList);
+
+    this.setState((prevState) => {
+      return({
+        ...prevState,
+        sanitizedNodes: newNodeList,
+        sanitizedTocNodes: newTocNodeList,
+      });
+    }, () => { this.calcLogic(); });
+  }
+
+  public calculateTocDiff(newTocList: string[]): string[] {
+    const flattenedSectionNodeStructure = this.state.flattenedSectionNodeStructure;
+    let sanitizedNodes: string[] = [];
+
+    for (const node of this.state.flattenedSectionNodeStructure) {
+      if (!newTocList.includes(node.id) && node.isSanitized) {
+        node.isSanitized = false;
+        sanitizedNodes = buildListOfIdsToAdd(
+          node.id,
+          this.state.sanitizedTocNodes,
+          flattenedSectionNodeStructure,
+        );
+      }
+    }
+
+    for (const nodeId of newTocList) {
+      toggleAllSectionChildElements(flattenedSectionNodeStructure, nodeId, true);
+      sanitizedNodes = buildListOfIdsToRemove(
+        nodeId,
+        sanitizedNodes,
+        flattenedSectionNodeStructure,
+      );
+    }
+
+
+    console.log(flattenedSectionNodeStructure);
+
+    return sanitizedNodes;
   }
 
   public handelDocumentTitle = (event): void => {
@@ -370,11 +476,24 @@ export class PreviewForm extends React.PureComponent<Props, State> {
         (span_ as HTMLElement).style.display = 'flex';
       });
 
+    // reEvaluateAllSections(this.state.flattenedCompleteNodeStructure);\
+
+    // console.log('section: ', this.state.sectionNodesToExclude);
+    console.log('toc: ', this.state.sanitizedTocNodes);
+    // console.log('sanitized: ', this.state.sanitizedNodes);
+
+
     data1 = filterDocumentSections(
       data1,
       this.tocNodeList,
-      this.state.sectionNodesToExclude,
+      [...new Set([...this.state.sectionNodesToExclude, ...this.state.sanitizedTocNodes])],
       this.state.storedStyles
+    );
+
+    data1 = filterDocumentNodes(
+      data1,
+      this.allDocumentNodes,
+      this.state.sanitizedNodes,
     );
 
     if (PreviewForm.isCitation) {

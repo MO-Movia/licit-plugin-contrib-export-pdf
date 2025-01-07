@@ -2,22 +2,44 @@ import { Fragment, Node } from 'prosemirror-model';
 import { getStyleLevel } from './document-style-utils';
 import { StoredStyle } from './table-of-contents-utils';
 
+type NodeCapco = {
+  finalmarking: string;
+  ism: {
+    atomicEnergyMarkings: string[];
+    classification: string[];
+    disseminationControls: string[];
+    fgiSourceOpen: string[];
+    nonICmarkings: string[];
+    ownerProducer: string[];
+    releasableTo: string[];
+    sarIdentifiers: string[];
+    sciControls: string[];
+    version: string;
+  }
+}
+
 export type SectionNodeStructure = {
-  id: string;
-  title: string;
-  style: string;
-  level: number | null;
-  isChecked: boolean;
+  capco: NodeCapco;
   children: SectionNodeStructure[];
+  id: string;
+  isChecked: boolean;
+  disabledBySection: boolean;
+  isSanitized: boolean;
+  level: number | null;
+  style: string;
+  title: string;
 }
 
 export type FlatSectionNodeStructure = {
-  id: string;
-  title: string;
-  style: string;
-  level: number | null;
-  isChecked: boolean;
+  capco: NodeCapco;
   childrenIds: string[];
+  id: string;
+  isChecked: boolean;
+  disabledBySection: boolean;
+  isSanitized: boolean;
+  level: number | null;
+  style: string;
+  title: string;
 }
 
 type NodeContent = Fragment & { content: { text: string }[] }
@@ -28,13 +50,18 @@ export function buildSectionStructure(nodeList: Node[], styles: StoredStyle[]): 
     const level = getStyleLevel(style, styles) ?? 1;
     const nodeContent = node.content as NodeContent;
     const content = nodeContent.content ?? [];
+    const capcoString = node.attrs.capco;
     const value = {
+      capco: capcoString ? JSON.parse(capcoString) : null,
+      children: [],
       id: node.attrs.objectId,
-      title: content.length ? content[0].text ?? '' : '',
-      style,
-      level,
       isChecked: true,
-      children: []
+      disabledBySection: false,
+      isSanitized: false,
+      level,
+      style,
+      title: content.length ? content[0].text ?? '' : '',
+
     };
     nodes[level] = value.children;
     nodes[level - 1].push(value);
@@ -81,7 +108,7 @@ function addSelectedSection(
   const sectionIdsToAdd = [sectionId];
 
   if (isChildId) {
-    toggleDisableInput(sectionId, false);
+    toggleDisableInput(section, false);
   }
 
   if (section.childrenIds.length) {
@@ -117,13 +144,15 @@ function getCheckedChildSection(section: FlatSectionNodeStructure, flatStructure
 export function toggleAllSectionChildElements(
   flatStructure: FlatSectionNodeStructure[],
   sectionId: string,
-  isDisabled: boolean
+  isDisabled: boolean,
 ): void {
   const section = flatStructure.find(section => section.id === sectionId);
 
   if (section?.childrenIds.length && section?.isChecked) {
     for (const id of section.childrenIds) {
-      toggleDisableInput(id, isDisabled);
+      const childSection = flatStructure.find(section => section.id === id);
+      childSection.disabledBySection = isDisabled;
+      toggleDisableInput(childSection, isDisabled);
       toggleAllSectionChildElements(flatStructure, id, isDisabled);
     }
   }
@@ -176,7 +205,8 @@ export function buildListOfIdsToAdd(
   flatStructure: FlatSectionNodeStructure[]
 ): string [] {
   const section = flatStructure.find(section => section.id === sectionId);
-  section.isChecked = true;
+  toggleCheckedInput(section, true);
+
 
   const ids = addSelectedSection(flatStructure, sectionId);
   let newNodeList = structuredClone(currentListOfExcludedIds);
@@ -189,11 +219,11 @@ export function buildListOfIdsToAdd(
 export function buildListOfIdsToRemove(
   sectionId: string,
   currentListOfExcludedIds: string[],
-  flatStructure: FlatSectionNodeStructure[]
+  flatStructure: FlatSectionNodeStructure[],
 ): string[] {
   let newNodeList = structuredClone(currentListOfExcludedIds);
   const section = flatStructure.find(section => section.id === sectionId);
-  section.isChecked = false;
+  toggleCheckedInput(section, false);
 
   const allNewIds = getAllSectionIds(section, flatStructure);
 
@@ -201,6 +231,87 @@ export function buildListOfIdsToRemove(
   newNodeList = [...new Set(newNodeList)];
 
   return sortExcludeListByFlattenedSection(newNodeList, flatStructure);
+}
+
+export function filterDocumentNodes(
+  renderedDoc: HTMLElement,
+  nodes: Node[],
+  excludedNodes: string[],
+): HTMLElement {
+  const proseMirrorContainer = renderedDoc.getElementsByClassName('ProseMirror')[0] ?? null;
+  if (proseMirrorContainer) {
+    const tempTocNodeList = JSON.parse(JSON.stringify(nodes));
+    for (const id of excludedNodes) {
+      const node = nodes.find(node => node.attrs.objectId === id);
+      if (node?.attrs?.styleName) {
+        const nodeStyle = node.attrs.styleName;
+        const workingIndexes = tempTocNodeList.filter(node => node.attrs.styleName === nodeStyle);
+        const workingSection = workingIndexes.findIndex(node => node.attrs.objectId === id);
+        const sectionElements = proseMirrorContainer.children;
+        const collectionArray = Array.from(sectionElements);
+        const nodeIndexs = getIndexBySectionName(collectionArray, nodeStyle);
+        const startingIndex = nodeIndexs[workingSection];
+        if (!sectionElements[startingIndex]) break;
+        sectionElements[startingIndex].remove();
+        if (!sectionElements[startingIndex]) break;
+      }
+      const removedSection = tempTocNodeList.findIndex(node => node.attrs.objectId === id);
+      tempTocNodeList.splice(removedSection, 1);
+    }
+  }
+  return renderedDoc;
+}
+
+// export function reEvaluateAllSections(
+//   flatStructure: FlatSectionNodeStructure[],
+//   section?: FlatSectionNodeStructure,
+// ): void {
+//   if (section) {
+//     const shouldDisable = section.isSanitized || section.isDisabled;
+//     toggleDisableInput(section, shouldDisable);
+//     if (section.childrenIds) {
+//       for (const childId of section.childrenIds) {
+//         const childSection = flatStructure.find(section => section.id === childId);
+//         reEvaluateAllSections(flatStructure, childSection);
+//       }
+//     }
+//   } else {
+//     for (const parentSection of flatStructure) {
+//       const shouldDisable = parentSection.isSanitized || parentSection.isDisabled;
+
+//       console.log('should disable ', shouldDisable);
+//       console.log('is sanitized ', parentSection.isSanitized);
+//       console.log('is disabled ', parentSection.isDisabled);
+
+//       toggleDisableInput(parentSection, shouldDisable);
+//       if (parentSection.childrenIds) {
+//         for (const childId of parentSection.childrenIds) {
+//           const childSection = flatStructure.find(section => section.id === childId);
+//           reEvaluateAllSections(flatStructure, childSection);
+//         }
+//       }
+//     }
+//   }
+// }
+
+export function toggleDisableInput(section: FlatSectionNodeStructure, isDisabled: boolean): void {
+  const uniqueSectionId = `licit-pdf-export-${section.id}`;
+  const input = document.getElementById(uniqueSectionId) as HTMLInputElement;
+
+  if (input) {
+    section.disabledBySection = isDisabled;
+    input.disabled = isDisabled;
+  }
+}
+
+export function toggleCheckedInput(section: FlatSectionNodeStructure, isChecked: boolean): void {
+  const uniqueSectionId = `licit-pdf-export-${section.id}`;
+  const input = document.getElementById(uniqueSectionId) as HTMLInputElement;
+
+  if (input) {
+    section.isChecked = isChecked;
+    input.checked = isChecked;
+  }
 }
 
 function sortExcludeListByFlattenedSection(nodeList: string[], flatStructure: FlatSectionNodeStructure[]): string[] {
@@ -223,15 +334,6 @@ function getAllSectionIds(section: FlatSectionNodeStructure, flatStructure: Flat
   }
 
   return [section.id , ...allChildIds];
-}
-
-function toggleDisableInput(id: string, isChecked: boolean): void {
-  const uniqueSectionId = `licit-pdf-export-${id}`;
-  const input = document.getElementById(uniqueSectionId) as HTMLInputElement;
-
-  if (input) {
-    input.disabled = isChecked;
-  }
 }
 
 function deleteDocumentChildElements(

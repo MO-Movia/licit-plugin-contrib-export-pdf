@@ -14,7 +14,6 @@ export const KEY_EXPORT_PDF = makeKeyMapWithCommon(
 const EXPORT_PDF = new ExportPDFCommand();
 
 export class ExportPDFPlugin extends Plugin {
-
   constructor() {
     super({
       key: new PluginKey('exportPDF'),
