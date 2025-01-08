@@ -1,4 +1,4 @@
-import React, { ChangeEvent } from 'react';
+import React from 'react';
 import { EditorView } from 'prosemirror-view';
 import { Previewer, registerHandlers } from 'pagedjs';
 import { MyHandler } from './handlers';
@@ -14,6 +14,7 @@ import {
   buildListOfIdsToRemove,
   buildListOfIdsToAdd,
   filterDocumentNodes,
+  toggleDisableInput,
 } from './utils/document-section-utils';
 import { Node } from 'prosemirror-model';
 import { DocumentStyle, getTableOfContentStyles, StoredStyle } from './utils/table-of-contents-utils';
@@ -153,15 +154,20 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
   public updateDocumentSectionList(sectionId: string): void {
     const flattenedSectionNodeStructure = this.state.flattenedSectionNodeStructure;
+    const section = flattenedSectionNodeStructure.find(section => section.id === sectionId);
     let newNodeList: string[] = [];
 
     if (this.state.sectionNodesToExclude.includes(sectionId)) {
+      section.isManuallyDisabled = false;
+      section.isChecked = true;
       newNodeList = buildListOfIdsToAdd(
         sectionId,
         this.state.sectionNodesToExclude,
         flattenedSectionNodeStructure
       );
     } else {
+      section.isManuallyDisabled = true;
+      section.isChecked = false;
       toggleAllSectionChildElements(flattenedSectionNodeStructure, sectionId, true);
       newNodeList = buildListOfIdsToRemove(
         sectionId,
@@ -254,6 +260,8 @@ export class PreviewForm extends React.PureComponent<Props, State> {
           const nodeClassificationLevel = classificaitonToNumericLevelMap.get(nodeClassification) ?? 0;
 
           if (nodeClassificationLevel > sanitizationLevel) {
+            node.isSanitized = true;
+
             if (isTocNode) {
               newTocNodeList.push(node.id);
             } else {
@@ -266,8 +274,6 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
     newTocNodeList = this.calculateTocDiff(newTocNodeList);
 
-    console.log('new toc list ', newTocNodeList);
-
     this.setState((prevState) => {
       return({
         ...prevState,
@@ -277,13 +283,28 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     }, () => { this.calcLogic(); });
   }
 
+  public updateSanitization(
+    section: FlatSectionNodeStructure,
+    flattenedSectionNodeStructure: FlatSectionNodeStructure[],
+    isSanitized: boolean,
+  ): void {
+    section.isSanitized = isSanitized;
+
+    if (section.childrenIds) {
+      for(const id of section.childrenIds) {
+        const section = flattenedSectionNodeStructure.find(section => section.id === id);
+        this.updateSanitization(section, flattenedSectionNodeStructure, isSanitized);
+      }
+    }
+  }
+
   public calculateTocDiff(newTocList: string[]): string[] {
     const flattenedSectionNodeStructure = this.state.flattenedSectionNodeStructure;
     let sanitizedNodes: string[] = [];
 
     for (const node of this.state.flattenedSectionNodeStructure) {
       if (!newTocList.includes(node.id) && node.isSanitized) {
-        node.isSanitized = false;
+        this.updateSanitization(node, flattenedSectionNodeStructure, false);
         sanitizedNodes = buildListOfIdsToAdd(
           node.id,
           this.state.sanitizedTocNodes,
@@ -293,16 +314,17 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     }
 
     for (const nodeId of newTocList) {
+      const section = flattenedSectionNodeStructure.find(section => section.id === nodeId);
+      this.updateSanitization(section, flattenedSectionNodeStructure, true);
+      toggleDisableInput(section, true);
       toggleAllSectionChildElements(flattenedSectionNodeStructure, nodeId, true);
+
       sanitizedNodes = buildListOfIdsToRemove(
         nodeId,
         sanitizedNodes,
         flattenedSectionNodeStructure,
       );
     }
-
-
-    console.log(flattenedSectionNodeStructure);
 
     return sanitizedNodes;
   }
@@ -476,12 +498,11 @@ export class PreviewForm extends React.PureComponent<Props, State> {
         (span_ as HTMLElement).style.display = 'flex';
       });
 
-    // reEvaluateAllSections(this.state.flattenedCompleteNodeStructure);\
-
-    // console.log('section: ', this.state.sectionNodesToExclude);
-    console.log('toc: ', this.state.sanitizedTocNodes);
-    // console.log('sanitized: ', this.state.sanitizedNodes);
-
+    data1 = filterDocumentNodes(
+      data1,
+      this.allDocumentNodes,
+      this.state.sanitizedNodes,
+    );
 
     data1 = filterDocumentSections(
       data1,
@@ -490,11 +511,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       this.state.storedStyles
     );
 
-    data1 = filterDocumentNodes(
-      data1,
-      this.allDocumentNodes,
-      this.state.sanitizedNodes,
-    );
+
 
     if (PreviewForm.isCitation) {
       const CitationIcons = data1.querySelectorAll('.citationnote');

@@ -23,7 +23,8 @@ export type SectionNodeStructure = {
   children: SectionNodeStructure[];
   id: string;
   isChecked: boolean;
-  disabledBySection: boolean;
+  isManuallyDisabled: boolean;
+  isDisabled: boolean;
   isSanitized: boolean;
   level: number | null;
   style: string;
@@ -35,7 +36,8 @@ export type FlatSectionNodeStructure = {
   childrenIds: string[];
   id: string;
   isChecked: boolean;
-  disabledBySection: boolean;
+  isManuallyDisabled: boolean;
+  isDisabled: boolean;
   isSanitized: boolean;
   level: number | null;
   style: string;
@@ -56,7 +58,8 @@ export function buildSectionStructure(nodeList: Node[], styles: StoredStyle[]): 
       children: [],
       id: node.attrs.objectId,
       isChecked: true,
-      disabledBySection: false,
+      isManuallyDisabled: false,
+      isDisabled: false,
       isSanitized: false,
       level,
       style,
@@ -144,19 +147,32 @@ function getCheckedChildSection(section: FlatSectionNodeStructure, flatStructure
 export function toggleAllSectionChildElements(
   flatStructure: FlatSectionNodeStructure[],
   sectionId: string,
-  isDisabled: boolean,
+  parentIsDisabled = false,
+  isChild = false,
 ): void {
   const section = flatStructure.find(section => section.id === sectionId);
 
-  if (section?.childrenIds.length && section?.isChecked) {
+  if (isChild && parentIsDisabled) {
+    section.isDisabled = true;
+    toggleDisableInput(section, true);
+
+  }
+
+  if (section?.childrenIds.length && (section.isChecked && !section.isSanitized && !parentIsDisabled)) {
     for (const id of section.childrenIds) {
       const childSection = flatStructure.find(section => section.id === id);
-      childSection.disabledBySection = isDisabled;
-      toggleDisableInput(childSection, isDisabled);
-      toggleAllSectionChildElements(flatStructure, id, isDisabled);
+      toggleDisableInput(childSection, false);
+      toggleAllSectionChildElements(flatStructure, id, section.isDisabled, true);
+    }
+  } else {
+    for (const id of section.childrenIds) {
+      const childSection = flatStructure.find(section => section.id === id);
+      toggleDisableInput(childSection, true);
+      toggleAllSectionChildElements(flatStructure, id, section.isDisabled, true);
     }
   }
 }
+
 
 export function filterDocumentSections(
   renderedDoc: HTMLElement,
@@ -202,15 +218,10 @@ export function filterDocumentSections(
 export function buildListOfIdsToAdd(
   sectionId: string,
   currentListOfExcludedIds: string[],
-  flatStructure: FlatSectionNodeStructure[]
+  flatStructure: FlatSectionNodeStructure[],
 ): string [] {
-  const section = flatStructure.find(section => section.id === sectionId);
-  toggleCheckedInput(section, true);
-
-
   const ids = addSelectedSection(flatStructure, sectionId);
   let newNodeList = structuredClone(currentListOfExcludedIds);
-
   newNodeList = newNodeList.filter((nodeId) => !ids.includes(nodeId));
 
   return sortExcludeListByFlattenedSection(newNodeList, flatStructure);
@@ -223,7 +234,6 @@ export function buildListOfIdsToRemove(
 ): string[] {
   let newNodeList = structuredClone(currentListOfExcludedIds);
   const section = flatStructure.find(section => section.id === sectionId);
-  toggleCheckedInput(section, false);
 
   const allNewIds = getAllSectionIds(section, flatStructure);
 
@@ -240,66 +250,45 @@ export function filterDocumentNodes(
 ): HTMLElement {
   const proseMirrorContainer = renderedDoc.getElementsByClassName('ProseMirror')[0] ?? null;
   if (proseMirrorContainer) {
-    const tempTocNodeList = JSON.parse(JSON.stringify(nodes));
+    const tempNodeList = JSON.parse(JSON.stringify(nodes));
+
     for (const id of excludedNodes) {
       const node = nodes.find(node => node.attrs.objectId === id);
+
       if (node?.attrs?.styleName) {
         const nodeStyle = node.attrs.styleName;
-        const workingIndexes = tempTocNodeList.filter(node => node.attrs.styleName === nodeStyle);
+        const workingIndexes = tempNodeList.filter(node => node.attrs.styleName === nodeStyle);
         const workingSection = workingIndexes.findIndex(node => node.attrs.objectId === id);
         const sectionElements = proseMirrorContainer.children;
         const collectionArray = Array.from(sectionElements);
         const nodeIndexs = getIndexBySectionName(collectionArray, nodeStyle);
         const startingIndex = nodeIndexs[workingSection];
-        if (!sectionElements[startingIndex]) break;
-        sectionElements[startingIndex].remove();
-        if (!sectionElements[startingIndex]) break;
+
+        if (sectionElements[startingIndex]) {
+          sectionElements[startingIndex].remove();
+        }
       }
-      const removedSection = tempTocNodeList.findIndex(node => node.attrs.objectId === id);
-      tempTocNodeList.splice(removedSection, 1);
+      const removedSection = tempNodeList.findIndex(node => node.attrs.objectId === id);
+      tempNodeList.splice(removedSection, 1);
     }
   }
+
   return renderedDoc;
 }
-
-// export function reEvaluateAllSections(
-//   flatStructure: FlatSectionNodeStructure[],
-//   section?: FlatSectionNodeStructure,
-// ): void {
-//   if (section) {
-//     const shouldDisable = section.isSanitized || section.isDisabled;
-//     toggleDisableInput(section, shouldDisable);
-//     if (section.childrenIds) {
-//       for (const childId of section.childrenIds) {
-//         const childSection = flatStructure.find(section => section.id === childId);
-//         reEvaluateAllSections(flatStructure, childSection);
-//       }
-//     }
-//   } else {
-//     for (const parentSection of flatStructure) {
-//       const shouldDisable = parentSection.isSanitized || parentSection.isDisabled;
-
-//       console.log('should disable ', shouldDisable);
-//       console.log('is sanitized ', parentSection.isSanitized);
-//       console.log('is disabled ', parentSection.isDisabled);
-
-//       toggleDisableInput(parentSection, shouldDisable);
-//       if (parentSection.childrenIds) {
-//         for (const childId of parentSection.childrenIds) {
-//           const childSection = flatStructure.find(section => section.id === childId);
-//           reEvaluateAllSections(flatStructure, childSection);
-//         }
-//       }
-//     }
-//   }
-// }
 
 export function toggleDisableInput(section: FlatSectionNodeStructure, isDisabled: boolean): void {
   const uniqueSectionId = `licit-pdf-export-${section.id}`;
   const input = document.getElementById(uniqueSectionId) as HTMLInputElement;
 
   if (input) {
-    section.disabledBySection = isDisabled;
+    if (section.isSanitized) {
+      input.disabled = true;
+      section.isDisabled = true;
+      return;
+    }
+
+    section.isManuallyDisabled = isDisabled;
+    section.isDisabled = isDisabled;
     input.disabled = isDisabled;
   }
 }
