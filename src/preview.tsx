@@ -1,9 +1,9 @@
 import React from 'react';
-import { EditorView } from 'prosemirror-view';
-import { Previewer, registerHandlers } from 'pagedjs';
-import { MyHandler } from './handlers';
-import { createPopUp, atViewportCenter } from '@modusoperandi/licit-ui-commands';
-import { Loader } from './loader';
+import {EditorView} from 'prosemirror-view';
+import {Previewer, registerHandlers} from 'pagedjs';
+import {MyHandler} from './handlers';
+import {createPopUp, atViewportCenter} from '@modusoperandi/licit-ui-commands';
+import {Loader} from './loader';
 import {
   SectionNodeStructure,
   FlatSectionNodeStructure,
@@ -12,10 +12,14 @@ import {
   toggleAllSectionChildElements,
   filterDocumentSections,
   buildListOfIdsToRemove,
-  buildListOfIdsToAdd
+  buildListOfIdsToAdd,
 } from './utils/document-section-utils';
-import { Node } from 'prosemirror-model';
-import { DocumentStyle, getTableOfContentStyles, StoredStyle } from './utils/table-of-contents-utils';
+import {Node} from 'prosemirror-model';
+import {
+  DocumentStyle,
+  getTableOfContentStyles,
+  StoredStyle,
+} from './utils/table-of-contents-utils';
 
 interface Props {
   editorView: EditorView;
@@ -47,7 +51,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       sectionNodeStructure: [],
       flattenedSectionNodeStructure: [],
       sectionNodesToExclude: [],
-      storedStyles: []
+      storedStyles: [],
     };
   }
 
@@ -104,7 +108,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   };
 
   public getToc = async (view): Promise<void> => {
-    const styles = await view.runtime.getStylesAsync() as DocumentStyle[];
+    const styles = (await view.runtime.getStylesAsync()) as DocumentStyle[];
     const storeTOCvalue = getTableOfContentStyles(styles);
 
     view?.state?.tr?.doc.descendants((node: Node) => {
@@ -118,23 +122,28 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       }
     });
 
-    const sectionNodeStructure = buildSectionStructure(this.tocNodeList, storeTOCvalue);
-    const flattenedSectionNodeStructure = flattenStructure(sectionNodeStructure);
+    const sectionNodeStructure = buildSectionStructure(
+      this.tocNodeList,
+      storeTOCvalue
+    );
+    const flattenedSectionNodeStructure =
+      flattenStructure(sectionNodeStructure);
 
     this.setState((prevState) => {
-      return({
+      return {
         ...prevState,
         storedStyles: storeTOCvalue,
         flattenedSectionNodeStructure,
         sectionNodeStructure,
-      });
+      };
     });
 
     this.renderTocList(this.state.sectionNodeStructure);
   };
 
   public updateDocumentSectionList(sectionId: string): void {
-    const flattenedSectionNodeStructure = this.state.flattenedSectionNodeStructure;
+    const flattenedSectionNodeStructure =
+      this.state.flattenedSectionNodeStructure;
     let newNodeList: string[] = [];
 
     if (this.state.sectionNodesToExclude.includes(sectionId)) {
@@ -144,7 +153,11 @@ export class PreviewForm extends React.PureComponent<Props, State> {
         flattenedSectionNodeStructure
       );
     } else {
-      toggleAllSectionChildElements(flattenedSectionNodeStructure, sectionId, true);
+      toggleAllSectionChildElements(
+        flattenedSectionNodeStructure,
+        sectionId,
+        true
+      );
       newNodeList = buildListOfIdsToRemove(
         sectionId,
         this.state.sectionNodesToExclude,
@@ -152,12 +165,17 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       );
     }
 
-    this.setState((prevState) => {
-      return({
-        ...prevState,
-        sectionNodesToExclude: newNodeList
-      });
-    }, () => { this.calcLogic(); });
+    this.setState(
+      (prevState) => {
+        return {
+          ...prevState,
+          sectionNodesToExclude: newNodeList,
+        };
+      },
+      () => {
+        this.calcLogic();
+      }
+    );
   }
 
   public render(): React.ReactElement<any> {
@@ -174,7 +192,10 @@ export class PreviewForm extends React.PureComponent<Props, State> {
           alignItems: 'center',
         }}
       >
-        <div style={{border: 'solid', visibility: 'hidden'}} className="exportpdf-preview-container">
+        <div
+          style={{border: 'solid', visibility: 'hidden'}}
+          className="exportpdf-preview-container"
+        >
           <div style={{display: 'flex', flexDirection: 'row'}}>
             <div
               id="holder"
@@ -183,59 +204,128 @@ export class PreviewForm extends React.PureComponent<Props, State> {
                 height: '90vh',
                 width: 'auto',
                 overflowY: 'auto',
-              }}>
-            </div>
+              }}
+            ></div>
 
-            <div style={{ height: '90vh', background: 'rgb(226 226 226)', position: 'relative' }}>
-              <div style={{padding: '20px', color: '#000000' }}>
+            <div
+              style={{
+                height: '90vh',
+                background: 'rgb(226 226 226)',
+                position: 'relative',
+              }}
+            >
+              <div style={{padding: '20px', color: '#000000'}}>
                 <h6>Options:</h6>
-                <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                <div
+                  style={{
+                    marginTop: '10px',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                  }}
+                >
                   <div>
-                    <input type="checkbox" name="TOC" id="licit-pdf-export-toc-option" onChange={this.handleTOCChange} />
-                    {' '}
+                    <input
+                      type="checkbox"
+                      name="TOC"
+                      id="licit-pdf-export-toc-option"
+                      onChange={this.handleTOCChange}
+                    />{' '}
                   </div>
 
-                  <label htmlFor="licit-pdf-export-toc-option" style={{marginLeft: '5px'}}>Include TOC</label>
+                  <label
+                    htmlFor="licit-pdf-export-toc-option"
+                    style={{marginLeft: '5px'}}
+                  >
+                    Include TOC
+                  </label>
                 </div>
 
-                <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                <div
+                  style={{
+                    marginTop: '8px',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                  }}
+                >
                   <div>
-                    <input type="checkbox" name="infoicon" id="licit-pdf-export-title-option" onChange={this.handelDocumentTitle} />
-                    {' '}
+                    <input
+                      type="checkbox"
+                      name="infoicon"
+                      id="licit-pdf-export-title-option"
+                      onChange={this.handelDocumentTitle}
+                    />{' '}
                   </div>
 
-                  <label htmlFor="licit-pdf-export-title-option" style={{marginLeft: '5px'}}>Document title</label>
+                  <label
+                    htmlFor="licit-pdf-export-title-option"
+                    style={{marginLeft: '5px'}}
+                  >
+                    Document title
+                  </label>
                 </div>
 
-                <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                <div
+                  style={{
+                    marginTop: '8px',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                  }}
+                >
                   <div>
-                    <input type="checkbox" name="infoicon" id="licit-pdf-export-citation-option" onChange={this.handelCitation} />
-                    {' '}
+                    <input
+                      type="checkbox"
+                      name="infoicon"
+                      id="licit-pdf-export-citation-option"
+                      onChange={this.handelCitation}
+                    />{' '}
                   </div>
 
-                  <label htmlFor="licit-pdf-export-citation-option" style={{marginLeft: '5px'}}>Citation</label>
+                  <label
+                    htmlFor="licit-pdf-export-citation-option"
+                    style={{marginLeft: '5px'}}
+                  >
+                    Citation
+                  </label>
                 </div>
 
-                <h6 style={{ marginRight: 'auto', marginTop: '30px' }}>Document Sections:</h6>
+                <h6 style={{marginRight: 'auto', marginTop: '30px'}}>
+                  Document Sections:
+                </h6>
 
-                <div key='{this.props.sections}' id='licit-pdf-export-sections-list' style={{
-                  borderRadius: '5px',
-                  marginTop: '10px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
-                  background: '#fff',
-                  width: '300px',
-                  maxHeight: '200px',
-                  overflowY: 'auto',
-                  overflowX: 'auto',
-                  paddingLeft: '10px'
-                }}>
+                <div
+                  key="{this.props.sections}"
+                  id="licit-pdf-export-sections-list"
+                  style={{
+                    borderRadius: '5px',
+                    marginTop: '10px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    background: '#fff',
+                    width: '300px',
+                    maxHeight: '200px',
+                    overflowY: 'auto',
+                    overflowX: 'auto',
+                    paddingLeft: '10px',
+                  }}
+                >
                   {this.state.sections}
                 </div>
               </div>
 
-              <div style={{ position: 'absolute', bottom: '0', right: '0', padding: '5px', display: 'flex', flexDirection: 'row' }}>
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: '0',
+                  right: '0',
+                  padding: '5px',
+                  display: 'flex',
+                  flexDirection: 'row',
+                }}
+              >
                 <button onClick={this.handleConfirm}>Confirm</button>
                 <button onClick={this.handleCancel}>Cancel</button>
               </div>
@@ -438,10 +528,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       let header = document.createElement('h4');
       header.style.marginBottom = '40px';
       header.style.color = '#000000';
-      header.textContent =
-        editorView?.state?.doc?.attrs?.objectMetaData?.customEntity[
-          'http://www.w3.org/2000/01/rdf-schema#label'
-        ] || 'DEFAULT TITLE';
+      header.textContent = editorView?.state?.doc?.attrs?.objectMetaData?.name;
 
       let newDiv = document.createElement('div');
       newDiv.classList.add('tocHead');
@@ -458,10 +545,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       let header = document.createElement('h4');
       header.style.marginBottom = '40px';
       header.style.color = '#000000';
-      header.textContent =
-        editorView?.state?.doc?.attrs?.objectMetaData?.customEntity[
-          'http://www.w3.org/2000/01/rdf-schema#label'
-        ] || 'DEFAULT TITLE';
+      header.textContent = editorView?.state?.doc?.attrs?.objectMetaData?.name;
       parentDiv.appendChild(header);
       data1.insertBefore(parentDiv, data1.firstChild);
     }
@@ -564,9 +648,12 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     }
   };
 
-  private renderTocList(structure: SectionNodeStructure[], isChildElement = false): void {
+  private renderTocList(
+    structure: SectionNodeStructure[],
+    isChildElement = false
+  ): void {
     for (const section of structure) {
-      const uniqueSectionId = `licit-pdf-export-${section.id}`
+      const uniqueSectionId = `licit-pdf-export-${section.id}`;
       const indentIncrement = 15;
       let indentAmount = '0';
 
@@ -575,13 +662,37 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       }
 
       this.sectionListElements.push(
-        <div key={section.id} style={{padding: '5px 10px', paddingLeft: indentAmount , display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', minWidth: '100%', width: 'auto'}}>
+        <div
+          key={section.id}
+          style={{
+            padding: '5px 10px',
+            paddingLeft: indentAmount,
+            display: 'flex',
+            flexDirection: 'row',
+            flexWrap: 'nowrap',
+            alignItems: 'center',
+            minWidth: '100%',
+            width: 'auto',
+          }}
+        >
           <div>
-            <input style={{cursor: 'pointer'}} type="checkbox" name="infoicon" id={uniqueSectionId} value='on' onChange={() => this.updateDocumentSectionList(section.id)} defaultChecked={true} />
-            {' '}
+            <input
+              style={{cursor: 'pointer'}}
+              type="checkbox"
+              name="infoicon"
+              id={uniqueSectionId}
+              value="on"
+              onChange={() => this.updateDocumentSectionList(section.id)}
+              defaultChecked={true}
+            />{' '}
           </div>
-  
-          <label htmlFor={uniqueSectionId} style={{cursor: 'pointer', marginLeft: '5px', textWrap: 'nowrap'}}>{section.title}</label>
+
+          <label
+            htmlFor={uniqueSectionId}
+            style={{cursor: 'pointer', marginLeft: '5px', textWrap: 'nowrap'}}
+          >
+            {section.title}
+          </label>
         </div>
       );
 
@@ -592,7 +703,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
     if (!isChildElement) {
       this.setState((prevState) => {
-        return({ ...prevState, sections: this.sectionListElements });
+        return {...prevState, sections: this.sectionListElements};
       });
     }
   }
