@@ -272,7 +272,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       }
     }
 
-    newTocNodeList = this.calculateTocDiff(newTocNodeList);
+    newTocNodeList = this.calculateTocDiff(newTocNodeList, newNodeList);
 
     this.setState((prevState) => {
       return({
@@ -298,12 +298,13 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     }
   }
 
-  public calculateTocDiff(newTocList: string[]): string[] {
+  public calculateTocDiff(newTocList: string[], newNodeList: string[]): string[] {
     const flattenedSectionNodeStructure = this.state.flattenedSectionNodeStructure;
+    const tocList = this.getEmptyTocSetions(newTocList, newNodeList);
     let sanitizedNodes: string[] = [];
 
     for (const node of this.state.flattenedSectionNodeStructure) {
-      if (!newTocList.includes(node.id) && node.isSanitized) {
+      if (!tocList.includes(node.id) && node.isSanitized) {
         this.updateSanitization(node, flattenedSectionNodeStructure, false);
         sanitizedNodes = buildListOfIdsToAdd(
           node.id,
@@ -313,7 +314,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       }
     }
 
-    for (const nodeId of newTocList) {
+    for (const nodeId of tocList) {
       const section = flattenedSectionNodeStructure.find(section => section.id === nodeId);
       this.updateSanitization(section, flattenedSectionNodeStructure, true);
       toggleDisableInput(section, true);
@@ -327,6 +328,23 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     }
 
     return sanitizedNodes;
+  }
+
+  public getEmptyTocSetions(currentTocList: string[], currentNodeList: string[]): string[] {
+    const flattenedCompleteNodeStructure = this.state.flattenedCompleteNodeStructure;
+    const emptyNodes: string[] = [...currentTocList];
+
+    for (const section of flattenedCompleteNodeStructure) {
+      if (section.isSectionTitle && section?.childNodeIds.length && currentNodeList.length) {
+        const noChildrenToRender = section.childNodeIds.every(v => currentNodeList.includes(v));
+
+        if (noChildrenToRender) {
+          emptyNodes.push(section.id);
+        }
+      }
+    }
+
+    return emptyNodes;
   }
 
   public handelDocumentTitle = (event): void => {
@@ -510,8 +528,6 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       [...new Set([...this.state.sectionNodesToExclude, ...this.state.sanitizedTocNodes])],
       this.state.storedStyles
     );
-
-
 
     if (PreviewForm.isCitation) {
       const CitationIcons = data1.querySelectorAll('.citationnote');

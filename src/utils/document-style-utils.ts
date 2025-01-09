@@ -8,3 +8,7 @@ export function getStyleLevel(styleName: string, styles: StoredStyle[]): number 
   const level = Number(style.level);
   return isNaN(level) ? 1 : level;
 }
+
+export function isTocStyle(styleName: string, styles: StoredStyle[]): boolean {
+  return styles.some(style => style.name === styleName);
+}

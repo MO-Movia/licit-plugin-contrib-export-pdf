@@ -1,5 +1,5 @@
 import { Fragment, Node } from 'prosemirror-model';
-import { getStyleLevel } from './document-style-utils';
+import { getStyleLevel, isTocStyle } from './document-style-utils';
 import { StoredStyle } from './table-of-contents-utils';
 
 type NodeCapco = {
@@ -21,11 +21,13 @@ type NodeCapco = {
 export type SectionNodeStructure = {
   capco: NodeCapco;
   children: SectionNodeStructure[];
+  childNodes: SectionNodeStructure[];
   id: string;
   isChecked: boolean;
   isManuallyDisabled: boolean;
   isDisabled: boolean;
   isSanitized: boolean;
+  isSectionTitle: boolean;
   level: number | null;
   style: string;
   title: string;
@@ -34,11 +36,13 @@ export type SectionNodeStructure = {
 export type FlatSectionNodeStructure = {
   capco: NodeCapco;
   childrenIds: string[];
+  childNodeIds: string[];
   id: string;
   isChecked: boolean;
   isManuallyDisabled: boolean;
   isDisabled: boolean;
   isSanitized: boolean;
+  isSectionTitle: boolean;
   level: number | null;
   style: string;
   title: string;
@@ -47,8 +51,11 @@ export type FlatSectionNodeStructure = {
 type NodeContent = Fragment & { content: { text: string }[] }
 
 export function buildSectionStructure(nodeList: Node[], styles: StoredStyle[]): SectionNodeStructure[] {
+  let currentTitleSection: SectionNodeStructure | null = null;
+
   const structure = nodeList.reduce((nodes, { ...node }) => {
     const style = node.attrs.styleName;
+    const isSectionTitle = isTocStyle(style, styles);
     const level = getStyleLevel(style, styles) ?? 1;
     const nodeContent = node.content as NodeContent;
     const content = nodeContent.content ?? [];
@@ -56,18 +63,26 @@ export function buildSectionStructure(nodeList: Node[], styles: StoredStyle[]): 
     const value = {
       capco: capcoString ? JSON.parse(capcoString) : null,
       children: [],
+      childNodes: [],
       id: node.attrs.objectId,
       isChecked: true,
       isManuallyDisabled: false,
       isDisabled: false,
       isSanitized: false,
+      isSectionTitle,
       level,
       style,
       title: content.length ? content[0].text ?? '' : '',
-
     };
-    nodes[level] = value.children;
-    nodes[level - 1].push(value);
+
+    if (isSectionTitle) {
+      currentTitleSection = value;
+      nodes[level] = value.children;
+      nodes[level - 1].push(value);
+    } else if (currentTitleSection) {
+      currentTitleSection.childNodes.push(value);
+    }
+
     return nodes;
   }, [[]]).shift();
 
@@ -81,21 +96,37 @@ export function flattenStructure(structure: SectionNodeStructure[]): FlatSection
   for (const section of mutatedStrucutre) {
     const baseSection = { ...section };
     delete baseSection.children;
+    delete baseSection.childNodes;
     const flattenedSection: FlatSectionNodeStructure = {
       ...baseSection,
       childrenIds: [],
+      childNodeIds: [],
     };
+
+    if (section.childNodes.length) {
+      for (const child of section.childNodes) {
+        flattenedSection.childNodeIds.push(child.id);
+      }
+    } else {
+      delete section.childNodes;
+    }
 
     if (section.children.length) {
       for (const child of section.children) {
         flattenedSection.childrenIds.push(child.id);
       }
-
-      flattenedStructure.push(flattenedSection);
-      flattenedStructure.push(...flattenStructure(section.children));
     } else {
       delete section.children;
-      flattenedStructure.push(flattenedSection);
+    }
+
+    flattenedStructure.push(flattenedSection);
+
+    if (section?.childNodes?.length) {
+      flattenedStructure.push(...flattenStructure(section.childNodes));
+    }
+
+    if (section?.children?.length) {
+      flattenedStructure.push(...flattenStructure(section.children));
     }
   }
 
