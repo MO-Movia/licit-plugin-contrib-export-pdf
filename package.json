@@ -21,7 +21,7 @@
     "@cyclonedx/cyclonedx-npm": "^1.19.3",
     "@types/jest": "^29.5.12",
     "@types/node": "^22.1.0",
-    "@types/react": "^18.3.3",
+    "@types/react": "^19.0.4",
     "@typescript-eslint/eslint-plugin": "^8.4.0",
     "@typescript-eslint/parser": "^8.13.0",
     "copyfiles": "^2.4.1",
