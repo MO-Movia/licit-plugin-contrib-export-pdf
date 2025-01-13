@@ -1,54 +1,8 @@
-import { Fragment, Node } from 'prosemirror-model';
+import { Node } from 'prosemirror-model';
 import { getStyleLevel, isTocStyle } from './document-style-utils';
 import { StoredStyle } from './table-of-contents-utils';
+import { SectionNodeStructure, NodeContent, FlatSectionNodeStructure } from './document-section-types';
 
-type NodeCapco = {
-  finalmarking: string;
-  ism: {
-    atomicEnergyMarkings: string[];
-    classification: string[];
-    disseminationControls: string[];
-    fgiSourceOpen: string[];
-    nonICmarkings: string[];
-    ownerProducer: string[];
-    releasableTo: string[];
-    sarIdentifiers: string[];
-    sciControls: string[];
-    version: string;
-  }
-}
-
-export type SectionNodeStructure = {
-  capco: NodeCapco;
-  children: SectionNodeStructure[];
-  childNodes: SectionNodeStructure[];
-  id: string;
-  isChecked: boolean;
-  isManuallyDisabled: boolean;
-  isDisabled: boolean;
-  isSanitized: boolean;
-  isSectionTitle: boolean;
-  level: number | null;
-  style: string;
-  title: string;
-}
-
-export type FlatSectionNodeStructure = {
-  capco: NodeCapco;
-  childrenIds: string[];
-  childNodeIds: string[];
-  id: string;
-  isChecked: boolean;
-  isManuallyDisabled: boolean;
-  isDisabled: boolean;
-  isSanitized: boolean;
-  isSectionTitle: boolean;
-  level: number | null;
-  style: string;
-  title: string;
-}
-
-type NodeContent = Fragment & { content: { text: string }[] }
 
 export function buildSectionStructure(nodeList: Node[], styles: StoredStyle[]): SectionNodeStructure[] {
   let currentTitleSection: SectionNodeStructure | null = null;
@@ -62,22 +16,23 @@ export function buildSectionStructure(nodeList: Node[], styles: StoredStyle[]): 
     const capcoString = node.attrs.capco;
     const value = {
       capco: capcoString ? JSON.parse(capcoString) : null,
-      children: [],
+      childSections: [],
       childNodes: [],
       id: node.attrs.objectId,
-      isChecked: true,
-      isManuallyDisabled: false,
-      isDisabled: false,
-      isSanitized: false,
-      isSectionTitle,
       level,
+      state: {
+        isChecked: true,
+        isDisabled: false,
+        isSanitized: false,
+        isSectionTitle,
+      },
       style,
       title: content.length ? content[0].text ?? '' : '',
     };
 
     if (isSectionTitle) {
       currentTitleSection = value;
-      nodes[level] = value.children;
+      nodes[level] = value.childSections;
       nodes[level - 1].push(value);
     } else if (currentTitleSection) {
       currentTitleSection.childNodes.push(value);
@@ -95,11 +50,11 @@ export function flattenStructure(structure: SectionNodeStructure[]): FlatSection
 
   for (const section of mutatedStrucutre) {
     const baseSection = { ...section };
-    delete baseSection.children;
+    delete baseSection.childSections;
     delete baseSection.childNodes;
     const flattenedSection: FlatSectionNodeStructure = {
       ...baseSection,
-      childrenIds: [],
+      childSectionIds: [],
       childNodeIds: [],
     };
 
@@ -111,12 +66,12 @@ export function flattenStructure(structure: SectionNodeStructure[]): FlatSection
       delete section.childNodes;
     }
 
-    if (section.children.length) {
-      for (const child of section.children) {
-        flattenedSection.childrenIds.push(child.id);
+    if (section.childSections.length) {
+      for (const child of section.childSections) {
+        flattenedSection.childSectionIds.push(child.id);
       }
     } else {
-      delete section.children;
+      delete section.childSections;
     }
 
     flattenedStructure.push(flattenedSection);
@@ -125,8 +80,8 @@ export function flattenStructure(structure: SectionNodeStructure[]): FlatSection
       flattenedStructure.push(...flattenStructure(section.childNodes));
     }
 
-    if (section?.children?.length) {
-      flattenedStructure.push(...flattenStructure(section.children));
+    if (section?.childSections?.length) {
+      flattenedStructure.push(...flattenStructure(section.childSections));
     }
   }
 
@@ -137,6 +92,7 @@ function addSelectedSection(
   flatStructure: FlatSectionNodeStructure[],
   sectionId: string,
   isChildId = false,
+  wasSanitized = false,
 ): string[] {
   const section = flatStructure.find(section => section.id === sectionId);
   const sectionIdsToAdd = [sectionId];
@@ -145,15 +101,17 @@ function addSelectedSection(
     toggleDisableInput(section, false);
   }
 
-  if (section.childrenIds.length) {
+  if (section.childSectionIds.length) {
     toggleAllSectionChildElements(flatStructure, sectionId, false);
     sectionIdsToAdd.push(...getCheckedChildSection(section, flatStructure));
   }
 
-  for (const section of flatStructure) {
-    if (section.childrenIds.includes(sectionId)) {
-      section.isChecked = true;
-      sectionIdsToAdd.push(...addSelectedSection(flatStructure, section.id, true));
+  for (const nodeSection of flatStructure) {
+    if (nodeSection.childSectionIds.includes(sectionId)) {
+      if (!wasSanitized) {
+        nodeSection.state.isChecked = true;
+      }
+      sectionIdsToAdd.push(...addSelectedSection(flatStructure, nodeSection.id, true, wasSanitized));
     }
   }
 
@@ -163,10 +121,10 @@ function addSelectedSection(
 function getCheckedChildSection(section: FlatSectionNodeStructure, flatStructure: FlatSectionNodeStructure[]): string [] {
   const checkedChildSection: string[] = [];
 
-  for (const id of section.childrenIds) {
+  for (const id of section.childSectionIds) {
     const childSection = flatStructure.find(section => section.id === id);
 
-    if (childSection?.isChecked) {
+    if (childSection?.state.isChecked) {
       checkedChildSection.push(childSection.id);
       checkedChildSection.push(...getCheckedChildSection(childSection, flatStructure));
     }
@@ -184,22 +142,22 @@ export function toggleAllSectionChildElements(
   const section = flatStructure.find(section => section.id === sectionId);
 
   if (isChild && parentIsDisabled) {
-    section.isDisabled = true;
+    section.state.isDisabled = true;
     toggleDisableInput(section, true);
 
   }
 
-  if (section?.childrenIds.length && (section.isChecked && !section.isSanitized && !parentIsDisabled)) {
-    for (const id of section.childrenIds) {
+  if (section?.childSectionIds.length && (section.state.isChecked && !section.state.isSanitized && !parentIsDisabled)) {
+    for (const id of section.childSectionIds) {
       const childSection = flatStructure.find(section => section.id === id);
       toggleDisableInput(childSection, false);
-      toggleAllSectionChildElements(flatStructure, id, section.isDisabled, true);
+      toggleAllSectionChildElements(flatStructure, id, section.state.isDisabled, true);
     }
   } else {
-    for (const id of section.childrenIds) {
+    for (const id of section.childSectionIds) {
       const childSection = flatStructure.find(section => section.id === id);
       toggleDisableInput(childSection, true);
-      toggleAllSectionChildElements(flatStructure, id, section.isDisabled, true);
+      toggleAllSectionChildElements(flatStructure, id, section.state.isDisabled, true);
     }
   }
 }
@@ -250,8 +208,9 @@ export function buildListOfIdsToAdd(
   sectionId: string,
   currentListOfExcludedIds: string[],
   flatStructure: FlatSectionNodeStructure[],
+  wasSanitized = false,
 ): string [] {
-  const ids = addSelectedSection(flatStructure, sectionId);
+  const ids = addSelectedSection(flatStructure, sectionId, false, wasSanitized);
   let newNodeList = structuredClone(currentListOfExcludedIds);
   newNodeList = newNodeList.filter((nodeId) => !ids.includes(nodeId));
 
@@ -312,14 +271,13 @@ export function toggleDisableInput(section: FlatSectionNodeStructure, isDisabled
   const input = document.getElementById(uniqueSectionId) as HTMLInputElement;
 
   if (input) {
-    if (section.isSanitized) {
+    if (section.state.isSanitized) {
       input.disabled = true;
-      section.isDisabled = true;
+      section.state.isDisabled = true;
       return;
     }
 
-    section.isManuallyDisabled = isDisabled;
-    section.isDisabled = isDisabled;
+    section.state.isDisabled = isDisabled;
     input.disabled = isDisabled;
   }
 }
@@ -329,7 +287,7 @@ export function toggleCheckedInput(section: FlatSectionNodeStructure, isChecked:
   const input = document.getElementById(uniqueSectionId) as HTMLInputElement;
 
   if (input) {
-    section.isChecked = isChecked;
+    section.state.isChecked = isChecked;
     input.checked = isChecked;
   }
 }
@@ -345,8 +303,8 @@ function sortExcludeListByFlattenedSection(nodeList: string[], flatStructure: Fl
 function getAllSectionIds(section: FlatSectionNodeStructure, flatStructure: FlatSectionNodeStructure[]): string[] {
   let allChildIds = [];
 
-  if (section.childrenIds.length) {
-    for (const id of section.childrenIds) {
+  if (section.childSectionIds.length) {
+    for (const id of section.childSectionIds) {
       const childSection = flatStructure.find(section => section.id === id);
       const nestedIds = getAllSectionIds(childSection, flatStructure);
       allChildIds = [...allChildIds, ...nestedIds];

@@ -5,8 +5,6 @@ import { MyHandler } from './handlers';
 import { createPopUp, atViewportCenter } from '@modusoperandi/licit-ui-commands';
 import { Loader } from './loader';
 import {
-  SectionNodeStructure,
-  FlatSectionNodeStructure,
   buildSectionStructure,
   flattenStructure,
   toggleAllSectionChildElements,
@@ -18,6 +16,7 @@ import {
 } from './utils/document-section-utils';
 import { Node } from 'prosemirror-model';
 import { DocumentStyle, getTableOfContentStyles, StoredStyle } from './utils/table-of-contents-utils';
+import { FlatSectionNodeStructure, SectionNodeStructure } from './utils/document-section-types';
 
 export const classificaitonToNumericLevelMap = new Map<string, number>([
   ['U', 0],
@@ -153,21 +152,19 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   };
 
   public updateDocumentSectionList(sectionId: string): void {
-    const flattenedSectionNodeStructure = this.state.flattenedSectionNodeStructure;
+    const flattenedSectionNodeStructure = this.state.flattenedCompleteNodeStructure;
     const section = flattenedSectionNodeStructure.find(section => section.id === sectionId);
     let newNodeList: string[] = [];
 
     if (this.state.sectionNodesToExclude.includes(sectionId)) {
-      section.isManuallyDisabled = false;
-      section.isChecked = true;
+      section.state.isChecked = true;
       newNodeList = buildListOfIdsToAdd(
         sectionId,
         this.state.sectionNodesToExclude,
         flattenedSectionNodeStructure
       );
     } else {
-      section.isManuallyDisabled = true;
-      section.isChecked = false;
+      section.state.isChecked = false;
       toggleAllSectionChildElements(flattenedSectionNodeStructure, sectionId, true);
       newNodeList = buildListOfIdsToRemove(
         sectionId,
@@ -245,24 +242,22 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   public sanitizeByClassification(value: string): void {
     const flattenedCompleteNodeStructure = this.state.flattenedCompleteNodeStructure;
     let sanitizationLevel = 0;
-    const newNodeList: string[] = [];
     let newTocNodeList: string[] = [];
+    const newNodeList: string[] = [];
+    const hasFilter = !!value;
 
-    if (value) {
+    if (hasFilter) {
       sanitizationLevel = classificaitonToNumericLevelMap.get(value) ?? 0;
-      const tocList = this.state.flattenedSectionNodeStructure;
 
       for (const node of flattenedCompleteNodeStructure) {
-        const isTocNode = tocList.some(tocNode => tocNode.id === node.id);
-
         if (node.capco) {
           const nodeClassification = node.capco.ism.classification[0] ?? 'U';
           const nodeClassificationLevel = classificaitonToNumericLevelMap.get(nodeClassification) ?? 0;
 
           if (nodeClassificationLevel > sanitizationLevel) {
-            node.isSanitized = true;
+            node.state.isSanitized = true;
 
-            if (isTocNode) {
+            if (node.state.isSectionTitle) {
               newTocNodeList.push(node.id);
             } else {
               newNodeList.push(node.id);
@@ -272,7 +267,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       }
     }
 
-    newTocNodeList = this.calculateTocDiff(newTocNodeList, newNodeList);
+    newTocNodeList = this.calculateTocDiff(newTocNodeList, newNodeList, flattenedCompleteNodeStructure);
 
     this.setState((prevState) => {
       return({
@@ -288,30 +283,29 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     flattenedSectionNodeStructure: FlatSectionNodeStructure[],
     isSanitized: boolean,
   ): void {
-    section.isSanitized = isSanitized;
+    section.state.isSanitized = isSanitized;
 
-    if (section.childrenIds) {
-      for(const id of section.childrenIds) {
+    if (section.childSectionIds) {
+      for(const id of section.childSectionIds) {
         const section = flattenedSectionNodeStructure.find(section => section.id === id);
         this.updateSanitization(section, flattenedSectionNodeStructure, isSanitized);
       }
     }
   }
 
-  public calculateTocDiff(newTocList: string[], newNodeList: string[]): string[] {
-    const flattenedSectionNodeStructure = this.state.flattenedSectionNodeStructure;
+  public calculateTocDiff(newTocList: string[], newNodeList: string[], flattenedSectionNodeStructure: FlatSectionNodeStructure[]): string[] {
     const tocList = this.getEmptyTocSetions(newTocList, newNodeList);
     let sanitizedNodes: string[] = [];
 
-    for (const node of this.state.flattenedSectionNodeStructure) {
-      if (!tocList.includes(node.id) && node.isSanitized) {
-        this.updateSanitization(node, flattenedSectionNodeStructure, false);
-        sanitizedNodes = buildListOfIdsToAdd(
-          node.id,
-          this.state.sanitizedTocNodes,
-          flattenedSectionNodeStructure,
-        );
-      }
+    for (const id of this.state.sanitizedTocNodes) {
+      const node = flattenedSectionNodeStructure.find(section => section.id === id);
+      this.updateSanitization(node, flattenedSectionNodeStructure, false);
+      sanitizedNodes = buildListOfIdsToAdd(
+        node.id,
+        this.state.sanitizedTocNodes,
+        flattenedSectionNodeStructure,
+        true
+      );
     }
 
     for (const nodeId of tocList) {
@@ -335,7 +329,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     const emptyNodes: string[] = [...currentTocList];
 
     for (const section of flattenedCompleteNodeStructure) {
-      if (section.isSectionTitle && section?.childNodeIds.length && currentNodeList.length) {
+      if (section.state.isSectionTitle && section?.childNodeIds.length && currentNodeList.length) {
         const noChildrenToRender = section.childNodeIds.every(v => currentNodeList.includes(v));
 
         if (noChildrenToRender) {
@@ -690,8 +684,8 @@ export class PreviewForm extends React.PureComponent<Props, State> {
         </div>
       );
 
-      if (section.children.length) {
-        this.renderTocList(section.children, true);
+      if (section.childSections.length) {
+        this.renderTocList(section.childSections, true);
       }
     }
 

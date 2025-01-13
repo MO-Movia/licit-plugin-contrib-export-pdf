@@ -32,7 +32,7 @@ describe('document section utilities', () => {
           style: 'someStyleThatShouldNOTExist',
           level: 1,
           isChecked: true,
-          children: []
+          childSections: []
         }
       ];
 
@@ -48,7 +48,7 @@ describe('document section utilities', () => {
           style: 'H1',
           level: 1,
           isChecked: true,
-          children: []
+          childSections: []
         }
       ];
 
@@ -64,7 +64,7 @@ describe('document section utilities', () => {
           style: 'H1',
           level: 1,
           isChecked: true,
-          children: []
+          childSections: []
         }
       ];
 

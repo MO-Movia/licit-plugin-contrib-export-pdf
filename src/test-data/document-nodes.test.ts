@@ -66,21 +66,21 @@ export const sampleSectionNodeStructure: SectionNodeStructure[] = [
     style: 'H1',
     level: 1,
     isChecked: true,
-    children: [
+    childSections: [
       {
         id: '2',
         title: 'H2-1',
         style: 'H2',
         level: 2,
         isChecked: true,
-        children: [
+        childSections: [
           {
             id: '3',
             title: 'H3-1',
             style: 'H3',
             level: 3,
             isChecked: true,
-            children: []
+            childSections: []
           },
         ]
       },
@@ -90,7 +90,7 @@ export const sampleSectionNodeStructure: SectionNodeStructure[] = [
         style: 'H2',
         level: 2,
         isChecked: true,
-        children: []
+        childSections: []
       },
     ]
   },
@@ -100,7 +100,7 @@ export const sampleSectionNodeStructure: SectionNodeStructure[] = [
     style: 'H1',
     level: 1,
     isChecked: true,
-    children: []
+    childSections: []
   }
 ];
 
@@ -111,7 +111,7 @@ export const sampleFlattenedStructure: FlatSectionNodeStructure[] = [
     style: 'H1',
     level: 1,
     isChecked: true,
-    childrenIds: ['2', '4']
+    childSectionIds: ['2', '4']
   },
   {
     id: '2',
@@ -119,7 +119,7 @@ export const sampleFlattenedStructure: FlatSectionNodeStructure[] = [
     style: 'H2',
     level: 2,
     isChecked: true,
-    childrenIds: ['3']
+    childSectionIds: ['3']
   },
   {
     id: '3',
@@ -127,7 +127,7 @@ export const sampleFlattenedStructure: FlatSectionNodeStructure[] = [
     style: 'H3',
     level: 3,
     isChecked: true,
-    childrenIds: []
+    childSectionIds: []
   },
   {
     id: '4',
@@ -135,7 +135,7 @@ export const sampleFlattenedStructure: FlatSectionNodeStructure[] = [
     style: 'H2',
     level: 2,
     isChecked: true,
-    childrenIds: []
+    childSectionIds: []
   },
   {
     id: '5',
@@ -143,7 +143,7 @@ export const sampleFlattenedStructure: FlatSectionNodeStructure[] = [
     style: 'H1',
     level: 1,
     isChecked: true,
-    childrenIds: []
+    childSectionIds: []
   }
 ];
 
