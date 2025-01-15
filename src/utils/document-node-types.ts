@@ -30,14 +30,31 @@ type BaseNodeStructure = {
   title: string;
 }
 
-export type SectionNodeStructure = {
-  childSections: SectionNodeStructure[];
-  childNodes: SectionNodeStructure[];
+export const classificaitonToNumericLevelMap = new Map<string, number>([
+  ['U', 0],
+  ['CUI', 1],
+  ['C', 2],
+  ['S', 3],
+  ['TS', 4],
+]);
+
+export type SanitizedNodes = {
+  tocNodes: string[],
+  normalNodes: string[],
+}
+
+export type NodeStructure = {
+  children: {
+    normalNodes: NodeStructure[];
+    tocNodes: NodeStructure[];
+  }
 } & BaseNodeStructure;
 
-export type FlatSectionNodeStructure = {
-  childSectionIds: string[];
-  childNodeIds: string[];
+export type FlatNodeStructure = {
+  children: {
+    normalNodeIds: string[];
+    tocNodeIds: string[];
+  }
 } & BaseNodeStructure;
 
 export type NodeContent = Fragment & { content: { text: string }[] }

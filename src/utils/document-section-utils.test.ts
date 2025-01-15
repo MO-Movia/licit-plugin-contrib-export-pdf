@@ -4,8 +4,6 @@ import {
   buildSectionStructure,
   filterDocumentSections,
   flattenStructure,
-  SectionNodeStructure,
-  toggleAllSectionChildElements
 } from './document-section-utils';
 import { sampleStoredStyles } from '../test-data/document-styles.test';
 import {
@@ -16,6 +14,8 @@ import {
   sampleNodeListWithoutTextContent,
   sampleSectionNodeStructure
 } from '../test-data/document-nodes.test';
+import { SectionNodeStructure } from './document-node-types';
+import { toggleAllSectionChildElements } from './document-state-utils';
 
 describe('document section utilities', () => {
   describe('buildSectionStructure', () => {

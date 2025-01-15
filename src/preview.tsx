@@ -5,26 +5,17 @@ import { MyHandler } from './handlers';
 import { createPopUp, atViewportCenter } from '@modusoperandi/licit-ui-commands';
 import { Loader } from './loader';
 import {
-  buildSectionStructure,
-  flattenStructure,
-  toggleAllSectionChildElements,
-  filterDocumentSections,
   buildListOfIdsToRemove,
   buildListOfIdsToAdd,
   filterDocumentNodes,
-  toggleDisableInput,
-} from './utils/document-section-utils';
+  sortNodesByClassification,
+  buildSanitizedNodes,
+} from './utils/document-filter-utils';
 import { Node } from 'prosemirror-model';
 import { DocumentStyle, getTableOfContentStyles, StoredStyle } from './utils/table-of-contents-utils';
-import { FlatSectionNodeStructure, SectionNodeStructure } from './utils/document-section-types';
-
-export const classificaitonToNumericLevelMap = new Map<string, number>([
-  ['U', 0],
-  ['CUI', 1],
-  ['C', 2],
-  ['S', 3],
-  ['TS', 4],
-]);
+import { classificaitonToNumericLevelMap, FlatNodeStructure, NodeStructure, SanitizedNodes } from './utils/document-node-types';
+import { toggleAllSectionChildElements } from './utils/document-state-utils';
+import { buildNodeStructure, flattenNodeStructure } from './utils/document-structure-utils';
 
 interface Props {
   editorView: EditorView;
@@ -32,12 +23,10 @@ interface Props {
 }
 
 interface State {
-  flattenedCompleteNodeStructure: FlatSectionNodeStructure[];
-  flattenedSectionNodeStructure: FlatSectionNodeStructure[];
+  flattenedNodeStructure: FlatNodeStructure[];
   sanitizedNodes: string[];
   sanitizedTocNodes: string[];
   sections: React.ReactNode[];
-  sectionNodeStructure: SectionNodeStructure[];
   sectionNodesToExclude: string[];
   storedStyles: StoredStyle[];
 }
@@ -56,12 +45,10 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   constructor(props) {
     super(props);
     this.state = {
-      flattenedCompleteNodeStructure: [],
-      flattenedSectionNodeStructure: [],
+      flattenedNodeStructure: [],
       sanitizedNodes: [],
       sanitizedTocNodes: [],
       sections: [],
-      sectionNodeStructure: [],
       sectionNodesToExclude: [],
       storedStyles: []
     };
@@ -133,27 +120,24 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       }
     });
 
-    const sectionNodeStructure = buildSectionStructure(this.tocNodeList, storeTOCvalue);
-    const flattenedSectionNodeStructure = flattenStructure(sectionNodeStructure);
-    const completeNodeStructure = buildSectionStructure(this.allDocumentNodes, storeTOCvalue);
-    const flattenedCompleteNodeStructure = flattenStructure(completeNodeStructure);
+    const sectionNodeStructure = buildNodeStructure(this.tocNodeList, storeTOCvalue);
+    const nodeStructure = buildNodeStructure(this.allDocumentNodes, storeTOCvalue);
+    const flattenedNodeStructure = flattenNodeStructure(nodeStructure);
 
     this.setState((prevState) => {
       return({
         ...prevState,
         storedStyles: storeTOCvalue,
-        flattenedCompleteNodeStructure,
-        flattenedSectionNodeStructure,
-        sectionNodeStructure,
+        flattenedNodeStructure,
       });
     });
 
-    this.renderTocList(this.state.sectionNodeStructure);
+    this.renderTocList(sectionNodeStructure);
   };
 
   public updateDocumentSectionList(sectionId: string): void {
-    const flattenedSectionNodeStructure = this.state.flattenedCompleteNodeStructure;
-    const section = flattenedSectionNodeStructure.find(section => section.id === sectionId);
+    const flattenedNodeStructure = this.state.flattenedNodeStructure;
+    const section = flattenedNodeStructure.find(section => section.id === sectionId);
     let newNodeList: string[] = [];
 
     if (this.state.sectionNodesToExclude.includes(sectionId)) {
@@ -161,15 +145,15 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       newNodeList = buildListOfIdsToAdd(
         sectionId,
         this.state.sectionNodesToExclude,
-        flattenedSectionNodeStructure
+        flattenedNodeStructure
       );
     } else {
       section.state.isChecked = false;
-      toggleAllSectionChildElements(flattenedSectionNodeStructure, sectionId, true);
+      toggleAllSectionChildElements(flattenedNodeStructure, sectionId, true);
       newNodeList = buildListOfIdsToRemove(
         sectionId,
         this.state.sectionNodesToExclude,
-        flattenedSectionNodeStructure
+        flattenedNodeStructure
       );
     }
 
@@ -177,6 +161,35 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       return({
         ...prevState,
         sectionNodesToExclude: newNodeList
+      });
+    }, () => { this.calcLogic(); });
+  }
+
+  public sanitizeByClassification(value: string): void {
+    const flattenedNodeStructure = this.state.flattenedNodeStructure;
+    let nodesToSanitize: SanitizedNodes = {
+      tocNodes: [],
+      normalNodes: [],
+    };
+    const hasFilter = !!value;
+
+    if (hasFilter) {
+      const sanitizationLevel = classificaitonToNumericLevelMap.get(value) ?? 0;
+      nodesToSanitize = sortNodesByClassification(flattenedNodeStructure, sanitizationLevel);
+    }
+
+    nodesToSanitize.tocNodes = buildSanitizedNodes(
+      nodesToSanitize.tocNodes,
+      nodesToSanitize.normalNodes,
+      flattenedNodeStructure,
+      this.state.sanitizedTocNodes,
+    );
+
+    this.setState((prevState) => {
+      return({
+        ...prevState,
+        sanitizedNodes: nodesToSanitize.normalNodes,
+        sanitizedTocNodes: nodesToSanitize.tocNodes,
       });
     }, () => { this.calcLogic(); });
   }
@@ -237,108 +250,6 @@ export class PreviewForm extends React.PureComponent<Props, State> {
         </div>
       </div>
     );
-  }
-
-  public sanitizeByClassification(value: string): void {
-    const flattenedCompleteNodeStructure = this.state.flattenedCompleteNodeStructure;
-    let sanitizationLevel = 0;
-    let newTocNodeList: string[] = [];
-    const newNodeList: string[] = [];
-    const hasFilter = !!value;
-
-    if (hasFilter) {
-      sanitizationLevel = classificaitonToNumericLevelMap.get(value) ?? 0;
-
-      for (const node of flattenedCompleteNodeStructure) {
-        if (node.capco) {
-          const nodeClassification = node.capco.ism.classification[0] ?? 'U';
-          const nodeClassificationLevel = classificaitonToNumericLevelMap.get(nodeClassification) ?? 0;
-
-          if (nodeClassificationLevel > sanitizationLevel) {
-            node.state.isSanitized = true;
-
-            if (node.state.isSectionTitle) {
-              newTocNodeList.push(node.id);
-            } else {
-              newNodeList.push(node.id);
-            }
-          }
-        }
-      }
-    }
-
-    newTocNodeList = this.calculateTocDiff(newTocNodeList, newNodeList, flattenedCompleteNodeStructure);
-
-    this.setState((prevState) => {
-      return({
-        ...prevState,
-        sanitizedNodes: newNodeList,
-        sanitizedTocNodes: newTocNodeList,
-      });
-    }, () => { this.calcLogic(); });
-  }
-
-  public updateSanitization(
-    section: FlatSectionNodeStructure,
-    flattenedSectionNodeStructure: FlatSectionNodeStructure[],
-    isSanitized: boolean,
-  ): void {
-    section.state.isSanitized = isSanitized;
-
-    if (section.childSectionIds) {
-      for(const id of section.childSectionIds) {
-        const section = flattenedSectionNodeStructure.find(section => section.id === id);
-        this.updateSanitization(section, flattenedSectionNodeStructure, isSanitized);
-      }
-    }
-  }
-
-  public calculateTocDiff(newTocList: string[], newNodeList: string[], flattenedSectionNodeStructure: FlatSectionNodeStructure[]): string[] {
-    const tocList = this.getEmptyTocSetions(newTocList, newNodeList);
-    let sanitizedNodes: string[] = [];
-
-    for (const id of this.state.sanitizedTocNodes) {
-      const node = flattenedSectionNodeStructure.find(section => section.id === id);
-      this.updateSanitization(node, flattenedSectionNodeStructure, false);
-      sanitizedNodes = buildListOfIdsToAdd(
-        node.id,
-        this.state.sanitizedTocNodes,
-        flattenedSectionNodeStructure,
-        true
-      );
-    }
-
-    for (const nodeId of tocList) {
-      const section = flattenedSectionNodeStructure.find(section => section.id === nodeId);
-      this.updateSanitization(section, flattenedSectionNodeStructure, true);
-      toggleDisableInput(section, true);
-      toggleAllSectionChildElements(flattenedSectionNodeStructure, nodeId, true);
-
-      sanitizedNodes = buildListOfIdsToRemove(
-        nodeId,
-        sanitizedNodes,
-        flattenedSectionNodeStructure,
-      );
-    }
-
-    return sanitizedNodes;
-  }
-
-  public getEmptyTocSetions(currentTocList: string[], currentNodeList: string[]): string[] {
-    const flattenedCompleteNodeStructure = this.state.flattenedCompleteNodeStructure;
-    const emptyNodes: string[] = [...currentTocList];
-
-    for (const section of flattenedCompleteNodeStructure) {
-      if (section.state.isSectionTitle && section?.childNodeIds.length && currentNodeList.length) {
-        const noChildrenToRender = section.childNodeIds.every(v => currentNodeList.includes(v));
-
-        if (noChildrenToRender) {
-          emptyNodes.push(section.id);
-        }
-      }
-    }
-
-    return emptyNodes;
   }
 
   public handelDocumentTitle = (event): void => {
@@ -514,13 +425,15 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       data1,
       this.allDocumentNodes,
       this.state.sanitizedNodes,
+      []
     );
 
-    data1 = filterDocumentSections(
+    data1 = filterDocumentNodes(
       data1,
       this.tocNodeList,
       [...new Set([...this.state.sectionNodesToExclude, ...this.state.sanitizedTocNodes])],
-      this.state.storedStyles
+      this.state.storedStyles,
+      true
     );
 
     if (PreviewForm.isCitation) {
@@ -663,7 +576,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     }
   };
 
-  private renderTocList(structure: SectionNodeStructure[], isChildElement = false): void {
+  private renderTocList(structure: NodeStructure[], isChildElement = false): void {
     for (const section of structure) {
       const uniqueSectionId = `licit-pdf-export-${section.id}`;
       const indentIncrement = 15;
@@ -684,8 +597,8 @@ export class PreviewForm extends React.PureComponent<Props, State> {
         </div>
       );
 
-      if (section.childSections.length) {
-        this.renderTocList(section.childSections, true);
+      if (section.children.tocNodes.length) {
+        this.renderTocList(section.children.tocNodes, true);
       }
     }
 
