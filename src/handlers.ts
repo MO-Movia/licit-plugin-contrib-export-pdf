@@ -1,7 +1,7 @@
-import { Handler } from 'pagedjs';
-import { createToc } from './exportPdf';
+import {Handler} from 'pagedjs';
+import {createToc} from './exportPdf';
 export const info_Icons = [];
-import { PreviewForm } from './preview';
+import {PreviewForm} from './preview';
 
 export class MyHandler extends Handler {
   public done;
@@ -79,7 +79,8 @@ export class MyHandler extends Handler {
   }
 
   public async doIT(): Promise<void> {
-    const opt2 = '.ProseMirror  infoicon { string-set: chapTitled content(text); }';
+    const opt2 =
+      '.ProseMirror  infoicon { string-set: chapTitled content(text); }';
     const opt = `@bottom-center {
   content: string(chapTitled, last);
   text-align: right;
@@ -183,6 +184,7 @@ padding-left: 6px;
 
 #list-toc-generated .toc-element a {
 right: 0;
+color: blue;
 }
 .prosemirror-editor-wrapper.embedded .ProseMirror {
  width : unset;
