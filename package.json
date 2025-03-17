@@ -1,6 +1,6 @@
 {
   "name": "@modusoperandi/licit-export-pdf",
-  "version": "1.2.2",
+  "version": "1.2.5",
   "type": "module",
   "description": "MO's Export To PDF ProseMirror Plugin",
   "main": "index.js",
@@ -11,8 +11,8 @@
     "url": "git+https://github.com/MO-Movia/licit-plugin-contrib-export-pdf.git"
   },
   "peerDependencies": {
-    "@modusoperandi/licit-doc-attrs-step": "^1.0.2",
-    "@modusoperandi/licit-ui-commands": "^1.0.3",
+    "@modusoperandi/licit-doc-attrs-step": "^1.0.3",
+    "@modusoperandi/licit-ui-commands": "^1.0.8",
     "pagedjs": "^0.4.3",
     "prosemirror-model": "^1.22.2",
     "react": "^18.3.1"
@@ -21,7 +21,7 @@
     "@cyclonedx/cyclonedx-npm": "^1.19.3",
     "@types/jest": "^29.5.12",
     "@types/node": "^22.1.0",
-    "@types/react": "^18.3.3",
+    "@types/react": "^19.0.10",
     "@typescript-eslint/eslint-plugin": "^8.4.0",
     "@typescript-eslint/parser": "^8.13.0",
     "copyfiles": "^2.4.1",
@@ -35,12 +35,12 @@
     "jest-environment-jsdom": "^29.7.0",
     "jest-junit": "^16.0.0",
     "jest-prosemirror": "^3.0.0",
-    "jspdf": "^2.5.1",
+    "jspdf": "^3.0.0",
     "lint-staged": "^15.2.7",
     "moment": "^2.30.1",
     "ts-jest": "^29.2.3",
     "ts-node": "^10.9.2",
-    "typescript": "^5.5.4"
+    "typescript": "5.5.4"
   },
   "overrides": {
     "libxmljs2": "^1.0.0"
@@ -56,7 +56,8 @@
     "lint:fix": "npm run lint:css --fix & npm run lint:ts --fix",
     "build": "tsc --build && copyfiles --up 1 \"src/**/*.css\" dist  && copyfiles package.json dist",
     "ci:build": "tsc --build && copyfiles --up 1 \"src/**/*.css\" dist  && copyfiles package.json dist",
-    "ci:bom": "cyclonedx-npm --ignore-npm-errors --short-PURLs --output-format XML --output-file dist/bom.xml"
+    "ci:bom": "cyclonedx-npm --ignore-npm-errors --short-PURLs --output-format XML --output-file dist/bom.xml",
+    "verify": "npm run lint -- --fix && npm run ci:build && npm run test:coverage && echo 'All Tests Passed!'"
   },
   "importSort": {
     ".js": {
