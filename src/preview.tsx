@@ -20,6 +20,7 @@ import {
   getTableOfContentStyles,
   StoredStyle,
 } from './utils/table-of-contents-utils';
+import { ExportPDFCommand } from './exportPdfCommand';
 
 interface Props {
   editorView: EditorView;
@@ -595,6 +596,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     PreviewForm.general = false;
     PreviewForm.isTitle = false;
     PreviewForm.isCitation = false;
+    ExportPDFCommand.closePreviewForm();
     this.props.onClose();
   };
 
@@ -626,6 +628,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       printWindow.document.close();
       printWindow.print();
     }
+    ExportPDFCommand.closePreviewForm();
     this.props.onClose();
   };
 
