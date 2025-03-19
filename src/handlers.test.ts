@@ -14,14 +14,14 @@ describe('MyHandler', () => {
       },
     };
 
-    PreviewForm.isToc = true;
+    PreviewForm['isToc'] = true;
     const test_ = handler.beforeParsed(toc_data);
     expect(test_).toBeUndefined();
   });
 
   it('beforeParsed sets up pageFooters if PreviewForm.isToc == true', () => {
-    PreviewForm.isToc = true;
-    PreviewForm.general = true;
+    PreviewForm['isToc'] = true;
+    PreviewForm['general'] = true;
 
     const el = document.createElement('infoicon');
     el.setAttribute('description', 'text');
@@ -40,8 +40,8 @@ describe('MyHandler', () => {
   });
 
   it('afterPageLayout sets up pageFooters if PreviewForm.isToc == false', () => {
-    PreviewForm.isToc = false;
-    PreviewForm.general = true;
+    PreviewForm['isToc'] = false;
+    PreviewForm['general'] = true;
     const el = document.createElement('infoicon');
     el.setAttribute('description', 'text');
     const el1 = document.createElement('infoicon');
@@ -76,25 +76,25 @@ describe('MyHandler - doIT', () => {
   const myHandler = new MyHandler(chunker, polisher, caller);
 
   it('Should call convertViaSheet and insert with correct arguments when Option includes 3 and 2', async () => {
-    PreviewForm.isToc = true;
+    PreviewForm['isToc'] = true;
     myHandler.beforePageLayout();
     expect(myHandler.done).toBe(false);
   });
 
   it('Should call convertViaSheet and insert with correct arguments when Option includes 3', async () => {
-    PreviewForm.isToc = false;
+    PreviewForm['isToc'] = false;
     myHandler.beforePageLayout();
     expect(myHandler.done).toBe(true);
   });
 
   it('Should call convertViaSheet and insert with correct arguments when Option includes 2', async () => {
-    PreviewForm.isToc = true;
+    PreviewForm['isToc'] = true;
     myHandler.beforePageLayout();
     expect(myHandler.done).toBe(true);
   });
 
   it('Should call convertViaSheet and insert with correct arguments when Option includes 1', async () => {
-    PreviewForm.isToc = false;
+    PreviewForm['isToc'] = false;
     myHandler.beforePageLayout();
     expect(myHandler.done).toBe(true);
   });

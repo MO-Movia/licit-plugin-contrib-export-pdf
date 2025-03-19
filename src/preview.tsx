@@ -36,11 +36,11 @@ interface State {
 }
 
 export class PreviewForm extends React.PureComponent<Props, State> {
-  public static general: boolean = false;
-  public static isToc: boolean = false;
-  public static isCitation: boolean = false;
-  public static isTitle: boolean = false;
-  public static tocHeader = [];
+  private static general: boolean = false;
+  private static isToc: boolean = false;
+  private static isCitation: boolean = false;
+  private static isTitle: boolean = false;
+  private static readonly tocHeader = [];
   public tocNodeList: Node[] = [];
   public sectionListElements: React.ReactElement<any>[] = [];
   private _popUp = null;
