@@ -91,9 +91,21 @@ export class MyHandler extends Handler {
   }
   `;
 
+  let lastUpdatedStyle = '';
+  if (PreviewForm['lastUpdated']) {
+    lastUpdatedStyle = `@top-right {
+        content: "${'Last Updated On: ' + PreviewForm['formattedDate']}";
+        text-align: right;
+        font-size: 11px;
+        font-weight: bold;
+        color: #000000;
+      }`;
+  }
+
     if (!this.done) {
       const text = await this['polisher'].convertViaSheet(`@media print {@page {
 ${opt}
+${lastUpdatedStyle}
 }
 ${opt2}
 /* set the style for the list numbering to none */
