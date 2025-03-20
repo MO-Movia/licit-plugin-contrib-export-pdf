@@ -6,6 +6,8 @@ import { ExportPDF } from './exportPdf';
 import React from 'react';
 
 export class ExportPDFCommand extends UICommand {
+  private static isPreviewFormOpen = false;
+
   public exportPdf: ExportPDF;
 
   constructor() {
@@ -44,6 +46,10 @@ export class ExportPDFCommand extends UICommand {
     _dispatch: (tr: Transform) => void,
     view: EditorView
   ): boolean => {
+    if (ExportPDFCommand.isPreviewFormOpen) {
+      return false;
+    }
+    ExportPDFCommand.isPreviewFormOpen = true;
     return this.exportPdf.exportPdf(view);
   };
 
@@ -57,5 +63,9 @@ export class ExportPDFCommand extends UICommand {
 
   public executeCustom(_state: EditorState, tr: Transform): Transform {
     return tr;
+  }
+
+  public static closePreviewForm(): void {
+    ExportPDFCommand.isPreviewFormOpen = false;
   }
 }
