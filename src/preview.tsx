@@ -45,6 +45,26 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   public sectionListElements: React.ReactElement<any>[] = [];
   private _popUp = null;
 
+  static isGeneral() {
+    return PreviewForm.general;
+  }
+
+  static showToc() {
+    return PreviewForm.isToc;
+  }
+
+  static showTitle() {
+    return PreviewForm.isTitle;
+  }
+
+  static showCitation() {
+    return PreviewForm.isCitation;
+  }
+
+  static getHeaders() {
+    return [...this.tocHeader];
+  }
+
   constructor(props) {
     super(props);
     this.state = {
