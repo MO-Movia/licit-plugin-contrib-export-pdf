@@ -20,6 +20,7 @@ import {
   getTableOfContentStyles,
   StoredStyle,
 } from './utils/table-of-contents-utils';
+import { ExportPDFCommand } from './exportPdfCommand';
 
 interface Props {
   editorView: EditorView;
@@ -35,14 +36,34 @@ interface State {
 }
 
 export class PreviewForm extends React.PureComponent<Props, State> {
-  public static general: boolean = false;
-  public static isToc: boolean = false;
-  public static isCitation: boolean = false;
-  public static isTitle: boolean = false;
-  public static tocHeader = [];
+  private static general: boolean = false;
+  private static isToc: boolean = false;
+  private static isCitation: boolean = false;
+  private static isTitle: boolean = false;
+  private static readonly tocHeader = [];
   public tocNodeList: Node[] = [];
   public sectionListElements: React.ReactElement<any>[] = [];
   private _popUp = null;
+
+  static isGeneral() {
+    return PreviewForm.general;
+  }
+
+  static showToc() {
+    return PreviewForm.isToc;
+  }
+
+  static showTitle() {
+    return PreviewForm.isTitle;
+  }
+
+  static showCitation() {
+    return PreviewForm.isCitation;
+  }
+
+  static getHeaders() {
+    return [...this.tocHeader];
+  }
 
   constructor(props) {
     super(props);
@@ -595,6 +616,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     PreviewForm.general = false;
     PreviewForm.isTitle = false;
     PreviewForm.isCitation = false;
+    ExportPDFCommand.closePreviewForm();
     this.props.onClose();
   };
 
@@ -626,6 +648,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       printWindow.document.close();
       printWindow.print();
     }
+    ExportPDFCommand.closePreviewForm();
     this.props.onClose();
   };
 

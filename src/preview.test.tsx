@@ -22,7 +22,7 @@ describe('PreviewForm', () => {
       onClose: () => {},
     };
     const prevForm = new PreviewForm(props);
-    PreviewForm.isToc = true;
+    PreviewForm['isToc'] = true;
     expect(prevForm.calcLogic()).toBeUndefined();
   });
 
@@ -49,7 +49,7 @@ describe('PreviewForm', () => {
     };
     const prevForm = new PreviewForm(props);
 
-    PreviewForm.isTitle = true;
+    PreviewForm['isTitle'] = true;
     expect(prevForm.calcLogic()).toBeUndefined();
   });
 
@@ -77,9 +77,9 @@ describe('PreviewForm', () => {
     const prevForm = new PreviewForm(props);
     jest.spyOn(prevForm, 'insertFooters').mockImplementation(() => {});
 
-    PreviewForm.isToc = false;
-    PreviewForm.isTitle = true;
-    PreviewForm.isCitation = true;
+    PreviewForm['isToc'] = false;
+    PreviewForm['isTitle'] = true;
+    PreviewForm['isCitation'] = true;
 
     expect(prevForm.calcLogic()).toBeUndefined();
   });
