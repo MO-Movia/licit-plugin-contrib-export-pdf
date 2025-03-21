@@ -15,11 +15,11 @@ export class MyHandler extends Handler {
 
   public beforeParsed(content): void {
     this.pageFooters = [];
-    if (PreviewForm.isToc) {
+    if (PreviewForm.showToc()) {
       createToc({
         content: content,
         tocElement: '.tocHead',
-        titleElements: PreviewForm.tocHeader,
+        titleElements: PreviewForm.getHeaders(),
       });
     }
   }
@@ -29,7 +29,7 @@ export class MyHandler extends Handler {
     const infoIcons_ = info_Icons[0];
     if (infoIcons_) {
       infoIcons_.forEach((obj) => {
-        const isTitleOrToc = PreviewForm.isTitle || PreviewForm.isToc;
+        const isTitleOrToc = PreviewForm.showTitle() || PreviewForm.showToc();
         const isMatchingPageNumber = obj.key == pageFragment.dataset.pageNumber;
 
         if (
@@ -48,7 +48,7 @@ export class MyHandler extends Handler {
 
   public afterRendered(pages): void {
     info_Icons.pop();
-    if (PreviewForm.general) {
+    if (PreviewForm.isGeneral()) {
       const infoIcon_initial = [];
       let count = 0;
       for (let i = 0; i < pages.length; i++) {
@@ -59,8 +59,7 @@ export class MyHandler extends Handler {
         tocElements.forEach((element) => {
           count++;
           const description = element.attributes['description'].textContent;
-          const cleanedDescription =
-            ' ' + count + '. ' + description.replace(/<[^>]*>/g, '');
+          const cleanedDescription = ' ' + count + '. ' + description.replace(/<\/?[\w\s="'./:;#-]+>/gi, '');
           const infoIcon_text_obj = {
             key: i + 1,
             value: cleanedDescription,
