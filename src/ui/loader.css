@@ -36,3 +36,14 @@
   font-size: 20px;
   font-weight: bold;
 }
+
+.export-pdf-mode .ProseMirror ol:not([data-counter-reset='none']) {
+  counter-reset: var(--czi-counter-name) var(--czi-counter-reset);
+}
+
+.export-pdf-mode .ProseMirror ol, .ProseMirror ul {
+  column-span: none;
+  break-inside: auto;
+  list-style-type: decimal;
+  display: block;
+}
