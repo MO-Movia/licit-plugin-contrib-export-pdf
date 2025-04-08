@@ -12,7 +12,7 @@ export class ExportPDF {
    * @returns boolean
    */
   public exportPdf(view: EditorView): boolean {
-    document.body.classList.add("export-pdf-mode");
+    document.body.classList.add('export-pdf-mode');
     const viewPops = {
       editorState: view.state,
       editorView: view,
@@ -20,7 +20,7 @@ export class ExportPDF {
         if (this._popUp) {
           this._popUp.close();
           this._popUp = null;
-          document.body.classList.remove("export-pdf-mode");
+          document.body.classList.remove('export-pdf-mode');
         }
       },
     };
