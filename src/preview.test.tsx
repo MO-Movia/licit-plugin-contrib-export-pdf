@@ -420,4 +420,151 @@ describe('addLinkEventListeners && handleLinkClick', () => {
     previewForm.InfoActive();
     expect(spy).toHaveBeenCalled();
   });
+
+describe('Last updated checkbox tests', () => {
+  let onCloseMock: jest.Mock;
+
+  beforeEach(() => {
+    onCloseMock = jest.fn();
+    jest
+      .spyOn(document, 'getElementById')
+      .mockReturnValue(document.createElement('div'));
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should handle lastUpdatedActive and lastUpdatedDeactive', () => {
+    const props = {
+      editorView: {} as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    const calcLogicSpy = jest
+      .spyOn(previewForm, 'calcLogic')
+      .mockImplementation(() => {});
+
+    previewForm.lastUpdatedActive();
+    expect(PreviewForm['lastUpdated']).toBe(true);
+    expect(calcLogicSpy).toHaveBeenCalledTimes(1);
+
+    previewForm.lastUpdatedDeactive();
+    expect(PreviewForm['lastUpdated']).toBe(false);
+    expect(calcLogicSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('should handle handleLastUpdated correctly', () => {
+    const props = {
+      editorView: {} as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    const lastUpdatedActiveSpy = jest
+      .spyOn(previewForm, 'lastUpdatedActive')
+      .mockImplementation(() => {});
+    const lastUpdatedDeactiveSpy = jest
+      .spyOn(previewForm, 'lastUpdatedDeactive')
+      .mockImplementation(() => {});
+
+    previewForm.handleLastUpdated({target: {checked: true}});
+    expect(lastUpdatedActiveSpy).toHaveBeenCalledTimes(1);
+    expect(lastUpdatedDeactiveSpy).not.toHaveBeenCalled();
+
+    previewForm.handleLastUpdated({target: {checked: false}});
+    expect(lastUpdatedDeactiveSpy).toHaveBeenCalledTimes(1);
+    expect(lastUpdatedActiveSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should correctly clone and modify nodes', () => {
+    const props = {
+      editorView: {} as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    const testElement = document.createElement('div');
+    testElement.innerHTML = '<span>Test Content</span>';
+    testElement.setAttribute('data-test', 'value');
+
+    const clonedElement = previewForm.cloneModifyNode(testElement);
+
+    expect(clonedElement).not.toBe(testElement);
+    expect(clonedElement.innerHTML).toBe(testElement.innerHTML);
+    expect(clonedElement.getAttribute('data-test')).toBe('value');
+  });
+
+  it('should handle calcLogic correctly when lastUpdated is true', () => {
+    const mockEditorView = {
+      dom: {
+        parentElement: {
+          parentElement: document.createElement('div'),
+        },
+      },
+      state: {
+        doc: {
+          attrs: {
+            objectMetaData: {
+              lastEditedOn: '2025-03-20T12:00:00Z',
+              name: 'Test Document',
+            },
+          },
+        },
+      },
+    } as unknown as EditorView;
+
+    const props = {
+      editorView: mockEditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    const showAlertSpy = jest
+      .spyOn(previewForm, 'showAlert')
+      .mockImplementation(() => {});
+    PreviewForm['lastUpdated'] = true;
+    previewForm?.calcLogic();
+
+    expect(PreviewForm['formattedDate']).toBeDefined();
+    expect(showAlertSpy).toHaveBeenCalled();
+  });
+
+  it('should handle calcLogic correctly when both isToc and isTitle are true', () => {
+    const mockEditorView = {
+      dom: {
+        parentElement: {
+          parentElement: document.createElement('div'),
+        },
+      },
+      state: {
+        doc: {
+          attrs: {
+            objectMetaData: {
+              lastEditedOn: '2025-03-20T12:00:00Z',
+              name: 'Test Document',
+            },
+          },
+        },
+      },
+    } as unknown as EditorView;
+
+    const props = {
+      editorView: mockEditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    const showAlertSpy = jest
+      .spyOn(previewForm, 'showAlert')
+      .mockImplementation(() => {});
+
+    PreviewForm.isToc = true;
+    PreviewForm.isTitle = true;
+
+    previewForm?.calcLogic();
+    expect(showAlertSpy).toHaveBeenCalled();
+  });
+});
 });
