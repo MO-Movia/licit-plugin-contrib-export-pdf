@@ -37,9 +37,11 @@ interface State {
 
 export class PreviewForm extends React.PureComponent<Props, State> {
   private static general: boolean = false;
+  private static formattedDate: string;
   private static isToc: boolean = false;
   private static isCitation: boolean = false;
   private static isTitle: boolean = false;
+  private static lastUpdated: boolean = false;
   private static readonly tocHeader = [];
   public tocNodeList: Node[] = [];
   public sectionListElements: React.ReactElement<any>[] = [];
@@ -312,6 +314,31 @@ export class PreviewForm extends React.PureComponent<Props, State> {
                   </label>
                 </div>
 
+                <div
+                  style={{
+                    marginTop: '8px',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                  }}
+                >
+                  <div>
+                    <input
+                      type="checkbox"
+                      name="infoicon"
+                      id="licit-pdf-export-last-updated-option"
+                      onClick={this.handleLastUpdated}
+                    />{' '}
+                  </div>
+
+                  <label
+                    htmlFor="licit-pdf-export-citation-option"
+                    style={{marginLeft: '5px'}}
+                  >
+                    Last updated
+                  </label>
+                </div>
+
                 <h6 style={{marginRight: 'auto', marginTop: '30px'}}>
                   Document Sections:
                 </h6>
@@ -365,6 +392,14 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     }
   };
 
+  public handleLastUpdated = (event): void => {
+    if (event.target.checked) {
+      this.lastUpdatedActive();
+    } else {
+      this.lastUpdatedDeactive();
+    }
+  };
+
   public handelCitation = (event): void => {
     if (event.target.checked) {
       this.citationActive();
@@ -390,6 +425,17 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     PreviewForm.isTitle = false;
     this.calcLogic();
   };
+
+  public lastUpdatedActive = (): void =>{
+    PreviewForm.lastUpdated = true;
+    this.calcLogic();
+  }
+
+  public lastUpdatedDeactive = (): void =>{
+    PreviewForm.lastUpdated = false;
+    this.calcLogic();
+  }
+
 
   public citationActive = (): void => {
     PreviewForm.isCitation = true;
@@ -518,10 +564,10 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     const data = editorView.dom.parentElement.parentElement;
     let data1 = this.cloneModifyNode(data);
     let prosimer_cls_element = data1.querySelector('.ProseMirror');
-    prosimer_cls_element.setAttribute('contenteditable', 'false');
-    prosimer_cls_element.classList.remove('czi-prosemirror-editor');
+    prosimer_cls_element?.setAttribute('contenteditable', 'false');
+    prosimer_cls_element?.classList.remove('czi-prosemirror-editor');
     prosimer_cls_element
-      .querySelectorAll('.molm-czi-image-view-body-img-clip span')
+      ?.querySelectorAll('.molm-czi-image-view-body-img-clip span')
       .forEach((span_) => {
         (span_ as HTMLElement).style.display = 'flex';
       });
@@ -541,6 +587,24 @@ export class PreviewForm extends React.PureComponent<Props, State> {
         CitationIcon.parentNode?.replaceChild(superscript, CitationIcon);
       });
       this.insertFooters(CitationIcons, data1);
+    }
+
+    if (PreviewForm.lastUpdated) {
+      let parentDiv = document.createElement('div');
+      parentDiv.classList.add('lastUpdatedTitle');
+
+      const date = new Date(
+        editorView?.state?.doc?.attrs?.objectMetaData?.lastEditedOn
+      );
+      PreviewForm.formattedDate = date.toLocaleString('en-GB', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      });
     }
 
     if (PreviewForm.isToc && PreviewForm.isTitle) {
