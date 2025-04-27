@@ -44,13 +44,14 @@ export class ExportPDFCommand extends UICommand {
   public execute = (
     _state: EditorState,
     _dispatch: (tr: Transform) => void,
-    view: EditorView
+    view: EditorView,
+    doc: unknown
   ): boolean => {
     if (ExportPDFCommand.isPreviewFormOpen) {
       return false;
     }
     ExportPDFCommand.isPreviewFormOpen = true;
-    return this.exportPdf.exportPdf(view);
+    return this.exportPdf.exportPdf(view, doc);
   };
 
   public renderLabel() {

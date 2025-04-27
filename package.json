@@ -55,7 +55,7 @@
     "lint": "npm run lint:css & npm run lint:ts",
     "lint:fix": "npm run lint:css --fix & npm run lint:ts --fix",
     "build": "tsc --build && copyfiles --up 1 \"src/**/*.css\" dist  && copyfiles package.json dist",
-    "ci:build": "tsc --build && copyfiles --up 1 \"src/**/*.css\" dist  && copyfiles package.json dist",
+    "ci:build": "tsc --build && copyfiles --up 1 \"src/**/*.css\" dist && copyfiles --up 1 \"src/assets/**\" dist && copyfiles package.json dist",
     "ci:bom": "cyclonedx-npm --ignore-npm-errors --short-PURLs --output-format XML --output-file dist/bom.xml",
     "verify": "npm run lint -- --fix && npm run ci:build && npm run test:coverage && echo 'All Tests Passed!'"
   },

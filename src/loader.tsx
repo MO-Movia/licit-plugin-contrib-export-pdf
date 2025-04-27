@@ -1,14 +1,16 @@
+
 import * as React from 'react';
 
-export class Loader extends React.PureComponent<any, any> {
-  render(): React.ReactElement<any> {
+export class Loader extends React.PureComponent {
+  render(): React.ReactElement {
     return (
-      <div className="epdf-loader-container">
-        <div className="epdf-loader"></div>
-        <span>Loading ....</span>
+      <div className="epdf-loader-fullscreen">
+        <img
+          className="epdf-loader-image"
+          src="assets/images/modus-loading.gif"
+          alt="Loading..."
+        />
       </div>
     );
   }
 }
-
-
