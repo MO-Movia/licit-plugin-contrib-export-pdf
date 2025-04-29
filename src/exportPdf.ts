@@ -1,4 +1,5 @@
 import { EditorView } from 'prosemirror-view';
+import { EditorState } from 'prosemirror-state';
 import { createPopUp } from '@modusoperandi/licit-ui-commands';
 import { PreviewForm } from './preview';
 
@@ -11,16 +12,26 @@ export class ExportPDF {
    * @param  {EditorView} view
    * @returns boolean
    */
-  public exportPdf(view: EditorView): boolean {
+  public exportPdf(view: EditorView, doc: unknown): boolean {
+    const originalState = view.state;
+    const newDoc = view.state?.schema.nodeFromJSON(doc);
+
+    const fullDocState = EditorState.create({
+      doc: newDoc,
+      schema: originalState.schema,
+      plugins: originalState.plugins,
+    });
     document.body.classList.add('export-pdf-mode');
+    view.updateState(fullDocState);
     const viewPops = {
-      editorState: view.state,
+      editorState: fullDocState,
       editorView: view,
       onClose: (): void => {
         if (this._popUp) {
           this._popUp.close();
           this._popUp = null;
           document.body.classList.remove('export-pdf-mode');
+          view.updateState(originalState);
         }
       },
     };

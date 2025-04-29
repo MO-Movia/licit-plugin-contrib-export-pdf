@@ -1,9 +1,9 @@
 import React from 'react';
-import {EditorView} from 'prosemirror-view';
-import {Previewer, registerHandlers} from 'pagedjs';
-import {MyHandler} from './handlers';
-import {createPopUp, atViewportCenter} from '@modusoperandi/licit-ui-commands';
-import {Loader} from './loader';
+import { EditorView } from 'prosemirror-view';
+import { Previewer, registerHandlers } from 'pagedjs';
+import { MyHandler } from './handlers';
+import { createPopUp, atViewportCenter } from '@modusoperandi/licit-ui-commands';
+import { Loader } from './loader';
 import {
   SectionNodeStructure,
   FlatSectionNodeStructure,
@@ -14,7 +14,7 @@ import {
   buildListOfIdsToRemove,
   buildListOfIdsToAdd,
 } from './utils/document-section-utils';
-import {Node} from 'prosemirror-model';
+import { Node } from 'prosemirror-model';
 import {
   DocumentStyle,
   getTableOfContentStyles,
@@ -79,7 +79,9 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   }
 
   public componentDidMount(): void {
-    const {editorView} = this.props;
+    let paged = new Previewer();
+    this.showAlert();
+    const { editorView } = this.props;
     this.getToc(editorView);
     PreviewForm.general = true;
     registerHandlers(MyHandler);
@@ -101,8 +103,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       }
     }
     let prosimer_cls_element = data1.querySelector('.ProseMirror');
-    prosimer_cls_element.setAttribute('contenteditable', 'false');
-    let paged = new Previewer();
+    prosimer_cls_element?.setAttribute('contenteditable', 'false');
     paged.preview(data1, [], divContainer).then((flow) => {
       this.InfoActive();
     });
@@ -112,6 +113,8 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     const anchor = null;
     this._popUp = createPopUp(Loader, null, {
       anchor,
+      modal: true,
+      autoDismiss: false,
       position: atViewportCenter,
       onClose: () => {
         if (this._popUp) {
@@ -216,10 +219,10 @@ export class PreviewForm extends React.PureComponent<Props, State> {
         }}
       >
         <div
-          style={{border: 'solid', visibility: 'hidden'}}
+          style={{ border: 'solid', visibility: 'hidden' }}
           className="exportpdf-preview-container"
         >
-          <div style={{display: 'flex', flexDirection: 'row'}}>
+          <div style={{ display: 'flex', flexDirection: 'row' }}>
             <div
               id="holder"
               className="preview-container"
@@ -237,7 +240,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
                 position: 'relative',
               }}
             >
-              <div style={{padding: '20px', color: '#000000'}}>
+              <div style={{ padding: '20px', color: '#000000' }}>
                 <h6>Options:</h6>
                 <div
                   style={{
@@ -258,7 +261,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
                   <label
                     htmlFor="licit-pdf-export-toc-option"
-                    style={{marginLeft: '5px'}}
+                    style={{ marginLeft: '5px' }}
                   >
                     Include TOC
                   </label>
@@ -283,7 +286,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
                   <label
                     htmlFor="licit-pdf-export-title-option"
-                    style={{marginLeft: '5px'}}
+                    style={{ marginLeft: '5px' }}
                   >
                     Document title
                   </label>
@@ -308,7 +311,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
                   <label
                     htmlFor="licit-pdf-export-citation-option"
-                    style={{marginLeft: '5px'}}
+                    style={{ marginLeft: '5px' }}
                   >
                     Citation
                   </label>
@@ -333,13 +336,13 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
                   <label
                     htmlFor="licit-pdf-export-citation-option"
-                    style={{marginLeft: '5px'}}
+                    style={{ marginLeft: '5px' }}
                   >
                     Last updated
                   </label>
                 </div>
 
-                <h6 style={{marginRight: 'auto', marginTop: '30px'}}>
+                <h6 style={{ marginRight: 'auto', marginTop: '30px' }}>
                   Document Sections:
                 </h6>
 
@@ -426,12 +429,12 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     this.calcLogic();
   };
 
-  public lastUpdatedActive = (): void =>{
+  public lastUpdatedActive = (): void => {
     PreviewForm.lastUpdated = true;
     this.calcLogic();
   }
 
-  public lastUpdatedDeactive = (): void =>{
+  public lastUpdatedDeactive = (): void => {
     PreviewForm.lastUpdated = false;
     this.calcLogic();
   }
@@ -552,7 +555,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     if (targetId) {
       const targetElement = document.getElementById(targetId);
       if (targetElement) {
-        targetElement.scrollIntoView({behavior: 'smooth'});
+        targetElement.scrollIntoView({ behavior: 'smooth' });
       }
     }
   };
@@ -560,7 +563,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   public calcLogic = (): void => {
     let divContainer = document.getElementById('holder');
     divContainer.innerHTML = '';
-    const {editorView} = this.props;
+    const { editorView } = this.props;
     const data = editorView.dom.parentElement.parentElement;
     let data1 = this.cloneModifyNode(data);
     let prosimer_cls_element = data1.querySelector('.ProseMirror');
@@ -650,6 +653,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       }
     }
     let paged = new Previewer();
+    this._popUp?.close();
     this.showAlert();
     paged.preview(data1, [], divContainer).then((flow) => {
       const preview_container_ = document.querySelector(
@@ -726,7 +730,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
         styles.push(rule.cssText);
         const attributes = (sheet.ownerNode as HTMLElement)?.attributes;
         for (const attribute of attributes ?? []) {
-          styleElement.setAttribute(attribute.name, attribute.value);
+          styleElement?.setAttribute(attribute.name, attribute.value);
         }
       }
       const styleText = styles.join('\n');
@@ -764,7 +768,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
         >
           <div>
             <input
-              style={{cursor: 'pointer'}}
+              style={{ cursor: 'pointer' }}
               type="checkbox"
               name="infoicon"
               id={uniqueSectionId}
@@ -776,7 +780,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
           <label
             htmlFor={uniqueSectionId}
-            style={{cursor: 'pointer', marginLeft: '5px', textWrap: 'nowrap'}}
+            style={{ cursor: 'pointer', marginLeft: '5px', textWrap: 'nowrap' }}
           >
             {section.title}
           </label>
@@ -790,7 +794,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
     if (!isChildElement) {
       this.setState((prevState) => {
-        return {...prevState, sections: this.sectionListElements};
+        return { ...prevState, sections: this.sectionListElements };
       });
     }
   }

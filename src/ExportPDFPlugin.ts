@@ -1,12 +1,12 @@
-import {Schema} from 'prosemirror-model';
-import {Plugin, PluginKey} from 'prosemirror-state';
+import { Schema } from 'prosemirror-model';
+import { Plugin, PluginKey } from 'prosemirror-state';
 import {
   makeKeyMapWithCommon,
   createKeyMapPlugin,
 } from '@modusoperandi/licit-doc-attrs-step';
 
-import {ExportPDFCommand} from './exportPdfCommand';
-import {EditorView} from 'prosemirror-view';
+import { ExportPDFCommand } from './exportPdfCommand';
+import { EditorView } from 'prosemirror-view';
 
 export const KEY_EXPORT_PDF = makeKeyMapWithCommon(
   'exportPDF',
@@ -43,10 +43,10 @@ export class ExportPDFPlugin extends Plugin {
 
   // this helps to invoke even in readonly mode.
   public perform(view: EditorView): boolean {
-    return ExportPDFPlugin.export(view);
+    return ExportPDFPlugin.export(view, null);
   }
 
-  public static export(view: EditorView): boolean {
-    return EXPORT_PDF.execute(undefined, undefined, view);
+  public static export(view: EditorView, doc: unknown): boolean {
+    return EXPORT_PDF.execute(undefined, undefined, view, doc);
   }
 }
