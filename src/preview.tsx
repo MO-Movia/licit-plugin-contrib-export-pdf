@@ -5,6 +5,8 @@ import {MyHandler} from './handlers';
 import {createPopUp, atViewportCenter} from '@modusoperandi/licit-ui-commands';
 import {Loader} from './loader';
 
+import './ui/style.css'
+
 interface Props {
   editorView: EditorView;
   onClose: () => void;
@@ -119,13 +121,9 @@ export class PreviewForm extends React.PureComponent<Props> {
               }}
             ></div>
             <div
-              style={{
-                height: '90vh',
-                background: 'rgb(226 226 226)',
-                position: 'relative',
-              }}
+              className='export-pdf-cont'
             >
-              <div style={{padding: '20px', color: '#000000'}}>
+              <div className='export-pdf-cont-sub'>
                 <h6>Options:</h6>
                 <div
                   style={{

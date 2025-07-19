@@ -22,8 +22,8 @@
     "@types/jest": "^29.5.12",
     "@types/node": "^22.1.0",
     "@types/react": "^18.3.3",
-    "@typescript-eslint/eslint-plugin": "^7.17.0",
-    "@typescript-eslint/parser": "^7.17.0",
+    "@typescript-eslint/eslint-plugin": "^8.4.0",
+    "@typescript-eslint/parser": "^8.13.0",
     "copyfiles": "^2.4.1",
     "eslint": "^8.57.0",
     "eslint-plugin-jest": "^28.6.0",
@@ -40,7 +40,7 @@
     "moment": "^2.30.1",
     "ts-jest": "^29.2.3",
     "ts-node": "^10.9.2",
-    "typescript": "^5.5.4"
+    "typescript": "5.5.4"
   },
   "overrides": {
     "libxmljs2": "^1.0.0"
@@ -53,6 +53,7 @@
     "lint:ts": "eslint src --ext .ts --fix",
     "lint:css": "stylelint \"**/*.css\" --fix",
     "lint": "npm run lint:css & npm run lint:ts",
+    "lint:fix": "npm run lint:css --fix & npm run lint:ts --fix",
     "ci:build": "tsc --build && copyfiles --up 1 \"src/**/*.css\" dist && copyfiles --up 1 \"src/assets/**\" dist  && copyfiles package.json dist",
     "ci:bom": "cyclonedx-npm --ignore-npm-errors --short-PURLs --output-format XML --output-file dist/bom.xml"
   },

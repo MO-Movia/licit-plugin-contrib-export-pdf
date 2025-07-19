@@ -1,0 +1,9 @@
+.export-pdf-cont{
+    height: 90vh;
+    background: var(--czi-bg);
+    position: relative;
+}
+.export-pdf-cont-sub{
+    padding: 20px;
+    color: var(--czi-text-color);
+}
