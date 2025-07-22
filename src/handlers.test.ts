@@ -9,10 +9,13 @@ describe('MyHandler', () => {
 
   it('beforeParsed sets up pageFooters if Option includes 2', () => {
     const toc_data = {
+      querySelector: () => {
+        return {
       querySelector: (): string => {
-        return '.tocHead';
-      },
-    };
+        return '.tocHead'
+      }
+      }
+    }};
 
     PreviewForm['isToc'] = true;
     const test_ = handler.beforeParsed(toc_data);

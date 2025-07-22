@@ -136,37 +136,6 @@ describe('PreviewForm component', () => {
     expect(printWindowMock.print).toHaveBeenCalled();
     expect(onCloseMock).toHaveBeenCalled();
   });
-
-  it('should handle handelDocumentTitle ', () => {
-    const props = {
-      editorState: {} as any,
-      editorView: {} as any,
-      onClose: onCloseMock,
-    };
-
-    const previewForm = new PreviewForm(props);
-    const spy = jest
-      .spyOn(previewForm, 'calcLogic')
-      .mockImplementation(() => {});
-    previewForm.handelDocumentTitle({target: {checked: true}});
-    expect(spy).toHaveBeenCalled();
-  });
-
-  it('should handle handelDocumentTitle when checked is false', () => {
-    const props = {
-      editorState: {} as any,
-      editorView: {} as any,
-      onClose: onCloseMock,
-    };
-
-    const previewForm = new PreviewForm(props);
-    const spy = jest
-      .spyOn(previewForm, 'calcLogic')
-      .mockImplementation(() => {});
-    previewForm.handelDocumentTitle({target: {checked: false}});
-    expect(spy).toHaveBeenCalled();
-  });
-
   it('should handle handelCitation  ', () => {
     const props = {
       editorState: {} as any,
@@ -194,36 +163,6 @@ describe('PreviewForm component', () => {
       .spyOn(previewForm, 'calcLogic')
       .mockImplementation(() => {});
     previewForm.handelCitation({target: {checked: false}});
-    expect(spy).toHaveBeenCalled();
-  });
-
-  it('should handle handleTOCChange   ', () => {
-    const props = {
-      editorState: {} as any,
-      editorView: {} as any,
-      onClose: onCloseMock,
-    };
-
-    const previewForm = new PreviewForm(props);
-    const spy = jest
-      .spyOn(previewForm, 'calcLogic')
-      .mockImplementation(() => {});
-    previewForm.handleTOCChange({target: {checked: true}});
-    expect(spy).toHaveBeenCalled();
-  });
-
-  it('should handle handleTOCChange  when checked is false', () => {
-    const props = {
-      editorState: {} as any,
-      editorView: {} as any,
-      onClose: onCloseMock,
-    };
-
-    const previewForm = new PreviewForm(props);
-    const spy = jest
-      .spyOn(previewForm, 'calcLogic')
-      .mockImplementation(() => {});
-    previewForm.handleTOCChange({target: {checked: false}});
     expect(spy).toHaveBeenCalled();
   });
 
@@ -308,7 +247,7 @@ describe('PreviewForm component', () => {
       },
     };
     const Previewform = new PreviewForm(props);
-    const spy = jest.spyOn(Previewform, 'getToc').mockReturnValue(null);
+    const spy = jest.spyOn(Previewform, 'getToc').mockReturnValue(null as unknown as Promise<void>);
     Previewform.componentDidMount();
     expect(spy).toHaveBeenCalled();
   });
@@ -383,7 +322,7 @@ describe('addLinkEventListeners && handleLinkClick', () => {
   it('should call the function addLinkEventListeners()', () => {
     let test_ = previewForm.addLinkEventListeners();
     const link = document.querySelector('.toc-element a');
-    const targetElement = document.getElementById('section1');
+    const targetElement = document.getElementById('section1') as HTMLElement;
     const preventDefault = jest.fn();
     const event = new MouseEvent('click', {bubbles: true});
     Object.defineProperty(event, 'currentTarget', {value: link});
@@ -402,7 +341,7 @@ describe('addLinkEventListeners && handleLinkClick', () => {
     Object.defineProperty(event, 'currentTarget', {value: link});
     Object.defineProperty(event, 'preventDefault', {value: preventDefault});
 
-    const targetElement = document.getElementById('section1');
+    const targetElement = document.getElementById('section1') as HTMLElement;
     const scrollIntoView = jest.fn();
     targetElement.scrollIntoView = scrollIntoView;
 
@@ -559,9 +498,6 @@ describe('Last updated checkbox tests', () => {
     const showAlertSpy = jest
       .spyOn(previewForm, 'showAlert')
       .mockImplementation(() => {});
-
-    PreviewForm.isToc = true;
-    PreviewForm.isTitle = true;
 
     previewForm?.calcLogic();
     expect(showAlertSpy).toHaveBeenCalled();

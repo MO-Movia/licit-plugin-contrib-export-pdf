@@ -21,17 +21,20 @@ export type DocumentStyle = {
     nextLineStyleName: boolean;
     styleLevel: string;
     toc: boolean;
+    tof: boolean;
+    tot: boolean;
   };
   toc: boolean;
 }
 
-export function getTableOfContentStyles(documentStyles: DocumentStyle[]): StoredStyle[] {
+export function getTableStyles(
+  documentStyles: DocumentStyle[],
+  styleKey: 'toc' | 'tof' | 'tot'
+): StoredStyle[] {
   return documentStyles
-    .filter((style) => style?.styles?.toc === true)
-    .map((style) => {
-      return {
-        name: style.styleName,
-        level: style.styles.styleLevel
-      };
-    });
+    .filter((style) => style?.styles?.[styleKey] === true)
+    .map((style) => ({
+      name: style.styleName,
+      level: style.styles.styleLevel,
+    }));
 }

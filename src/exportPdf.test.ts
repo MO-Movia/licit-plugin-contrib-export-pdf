@@ -1,5 +1,5 @@
 // exportPDF.test.ts
-import { createToc } from './exportPdf';
+import { createTable } from './exportPdf';
 import { createPopUp } from '@modusoperandi/licit-ui-commands';
 
 // Mock createPopUp
@@ -55,7 +55,7 @@ describe('ExportPDF', () => {
       h4.textContent = 'Title Two';
       content.appendChild(h4);
 
-      createToc({
+      createTable({
         content,
         tocElement: '.toc-container',
         titleElements: ['Heading1', 'Heading2'],
@@ -91,7 +91,7 @@ describe('ExportPDF', () => {
 
       const appendChildSpy = jest.spyOn(existingToc.parentElement!, 'appendChild');
 
-      createToc({
+      createTable({
         content,
         tocElement: '.toc-container',
         titleElements: ['Heading1'],
@@ -106,7 +106,7 @@ describe('ExportPDF', () => {
       p.textContent = 'A very very very very very very very very very very very very very very very long title that exceeds 70 characters';
       content.appendChild(p);
 
-      createToc({
+      createTable({
         content,
         tocElement: '.toc-container',
         titleElements: ['Heading1'],
