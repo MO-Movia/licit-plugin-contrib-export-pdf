@@ -92,6 +92,10 @@ export function createTable(config): void {
 }
 
 
+function escapeCSSId(id: string): string {
+  return CSS.escape ? CSS.escape(id) : id.replace(/^[0-9]/, '_$&').replace(/[^a-zA-Z0-9\-_:.]/g, '_');
+}
+
 function generateList({
   content,
   containerSelector,
@@ -140,7 +144,10 @@ function generateList({
       text = text.substring(0, text.lastIndexOf(' '));
     }
 
-    newEntry.innerHTML = `<a href="#${el.id}">${text}</a>`;
+    // ⛑ Escape the ID before using in href
+    const safeId = escapeCSSId(el.id);
+
+    newEntry.innerHTML = `<a href="#${safeId}">${text}</a>`;
     listDiv.appendChild(newEntry);
   });
 }
