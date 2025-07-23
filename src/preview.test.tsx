@@ -18,7 +18,7 @@ describe('PreviewForm', () => {
       .mockReturnValue(document.createElement('div'));
     const props = {
       editorState: {doc: {attrs: {gg: null}}} as unknown as EditorState,
-      editorView: {dom: dommock} as unknown as EditorView,
+      editorView: {dom: dommock,dispatch:()=>{},state:{tr:{setMeta:()=>{return {};}}}} as unknown as EditorView,
       onClose: () => {},
     };
     const prevForm = new PreviewForm(props);
@@ -44,6 +44,7 @@ describe('PreviewForm', () => {
       editorView: {
         dom: dommock,
         state: {doc: {attrs: {gg: null}}},
+        dispatch:()=>{}
       } as unknown as EditorView,
       onClose: () => {},
     };
@@ -71,6 +72,7 @@ describe('PreviewForm', () => {
       editorView: {
         dom: dommock,
         state: {doc: {attrs: {gg: null}}},
+        dispatch:()=>{}
       } as unknown as EditorView,
       onClose: () => {},
     };
@@ -241,6 +243,7 @@ describe('PreviewForm component', () => {
       editorState: {} as unknown as EditorState,
       editorView: {
         dom: {parentElement: {parentElement: el}},
+        dispatch:()=>{}
       } as unknown as EditorView,
       onClose() {
         return;
@@ -452,6 +455,7 @@ describe('Last updated checkbox tests', () => {
           },
         },
       },
+      dispatch:()=>{}
     } as unknown as EditorView;
 
     const props = {
@@ -487,6 +491,7 @@ describe('Last updated checkbox tests', () => {
           },
         },
       },
+      dispatch:()=>{}
     } as unknown as EditorView;
 
     const props = {

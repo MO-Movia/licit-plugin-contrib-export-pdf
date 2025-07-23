@@ -136,7 +136,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     }
     let prosimer_cls_element = data1.querySelector('.ProseMirror');
     prosimer_cls_element?.setAttribute('contenteditable', 'false');
-    editorView.dispatch(editorView.state.tr.setMeta('suppressOnChange', true));
+    editorView.dispatch(editorView.state?.tr.setMeta('suppressOnChange', true));
     paged.preview(data1, [], divContainer).then((flow) => {
       this.InfoActive();
     });
@@ -621,7 +621,7 @@ const storeTOTvalue = getTableStyles(styles, 'tot');
     let paged = new Previewer();
     this._popUp?.close();
     this.showAlert();
-    editorView.dispatch(editorView.state.tr.setMeta('suppressOnChange', true));
+    editorView.dispatch(editorView.state.tr?.setMeta('suppressOnChange', true));
     paged.preview(data1, [], divContainer).then((flow) => {
       const preview_container_ = document.querySelector(
         '.exportpdf-preview-container'

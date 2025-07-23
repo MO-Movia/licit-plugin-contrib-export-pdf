@@ -93,7 +93,7 @@ export function createTable(config): void {
 
 
 function escapeCSSId(id: string): string {
-  return CSS.escape ? CSS.escape(id) : id.replace(/^[0-9]/, '_$&').replace(/[^a-zA-Z0-9\-_:.]/g, '_');
+  return CSS?.escape ? CSS.escape(id) : id.replace(/^[0-9]/, '_$&').replace(/[^a-zA-Z0-9\-_:.]/g, '_');
 }
 
 function generateList({

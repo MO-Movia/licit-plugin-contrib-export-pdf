@@ -7,7 +7,7 @@ export class MyHandler extends Handler {
   public done;
   public countTOC = 0;
   public pageFooters: Array<HTMLElement> = [];
-  public caller: any;
+  public caller;
 
   constructor(chunker, polisher, caller) {
     super(chunker, polisher, caller);
@@ -32,7 +32,7 @@ export class MyHandler extends Handler {
      if (tocNodeList && tocNodeList.length >= 1) {
       const tocElementDiv = content.querySelector('.tocHead');
       if (tocElementDiv && !tocElementDiv.querySelector('h4')) {
-      let headerTOC = document.createElement('h4');
+      const headerTOC = document.createElement('h4');
       headerTOC.style.marginBottom = '40px';
       headerTOC.style.color = '#000000';
       headerTOC.textContent = 'TABLE OF CONTENTS';
@@ -42,7 +42,7 @@ export class MyHandler extends Handler {
      if (tofNodeList && tofNodeList.length >= 1) {
       const tofElementDiv = content.querySelector('.tofHead');
       if (tofElementDiv && !tofElementDiv.querySelector('h4')) {
-      let headerTOF = document.createElement('h4');
+      const headerTOF = document.createElement('h4');
       headerTOF.style.marginBottom = '40px';
       headerTOF.style.color = '#000000';
       headerTOF.textContent = 'TABLE OF FIGURES';
@@ -52,7 +52,7 @@ export class MyHandler extends Handler {
          if (totNodeList && totNodeList.length >= 1) {
       const totElementDiv = content.querySelector('.totHead');
       if (totElementDiv && !totElementDiv.querySelector('h4')) {
-      let headerTOT = document.createElement('h4');
+      const headerTOT = document.createElement('h4');
       headerTOT.style.marginBottom = '40px';
       headerTOT.style.color = '#000000';
       headerTOT.textContent = 'TABLE OF TABLES';

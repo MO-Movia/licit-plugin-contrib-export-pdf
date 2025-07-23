@@ -44,7 +44,8 @@ describe('ExportPDF', () => {
     });
 
     it('should create TOC when no existing TOC', () => {
-      // Add title elements
+      global.CSS = global.CSS || {};
+      global.CSS.escape = jest.fn((str) => `escaped(${str})`);
       const p1 = document.createElement('p');
       p1.setAttribute('stylename', 'Heading1');
       p1.textContent = 'Title One';
@@ -85,6 +86,8 @@ describe('ExportPDF', () => {
     });
 
     it('should not create TOC if #list-toc-generated exists', () => {
+      global.CSS = global.CSS || {};
+      global.CSS.escape = jest.fn((str) => `escaped(${str})`);
       const existingToc = document.createElement('div');
       existingToc.id = 'list-toc-generated';
       content.querySelector('.toc-container')?.appendChild(existingToc);
@@ -101,6 +104,8 @@ describe('ExportPDF', () => {
     });
 
     it('should truncate long text in TOC', () => {
+      global.CSS = global.CSS || {};
+      global.CSS.escape = jest.fn((str) => `escaped(${str})`);
       const p = document.createElement('p');
       p.setAttribute('stylename', 'Heading1');
       p.textContent = 'A very very very very very very very very very very very very very very very long title that exceeds 70 characters';
