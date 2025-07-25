@@ -1,7 +1,10 @@
 // exportPDF.test.ts
-import { createTable } from './exportPdf';
+import { createTable, ExportPDF } from './exportPdf';
 import { createPopUp } from '@modusoperandi/licit-ui-commands';
-
+import { Schema } from 'prosemirror-model';
+import { EditorState } from 'prosemirror-state';
+import { EditorView } from 'prosemirror-view';
+import { schema as basicSchema } from 'prosemirror-schema-basic';
 // Mock createPopUp
 jest.mock('@modusoperandi/licit-ui-commands', () => ({
   createPopUp: jest.fn(),
@@ -46,7 +49,7 @@ describe('ExportPDF', () => {
     });
 
     it('should create TOC when no existing TOC', () => {
- 
+
       const p1 = document.createElement('p');
       p1.setAttribute('stylename', 'Heading1');
       p1.textContent = 'Title One';
@@ -117,5 +120,51 @@ describe('ExportPDF', () => {
       const tocLink = content.querySelector('#list-toc-generated p a');
       expect(tocLink?.textContent?.length).toBeLessThanOrEqual(70);
     });
+  });
+  it('should handle exportPdf', () => {
+    const schema = new Schema({
+      nodes: basicSchema.spec.nodes,
+      marks: basicSchema.spec.marks,
+    });
+
+    // Create a simple document node (you can extend this)
+    const content = schema.node('doc', null, [
+      schema.node('paragraph', null, [
+        schema.text('This is a test paragraph in the mock ProseMirror view.')
+      ])
+    ]);
+
+    // Create a mock state
+    const state = EditorState.create({
+      doc: content,
+      schema,
+    });
+
+    // Create a DOM container for the editor
+    const editorContainer = document.createElement('div');
+    document.body.appendChild(editorContainer);
+
+    // Create a mock EditorView
+    const editorView = new EditorView(editorContainer, {
+      state,
+    });
+    const doc = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            {
+              type: 'text',
+              text: 'Hello, this is a test document!',
+            },
+          ],
+        },
+      ],
+    };
+
+    const expdf = new ExportPDF();
+    expect(expdf.exportPdf(editorView,doc)).toBeDefined();
+    expect(expdf.exportPdf(editorView,doc)).toBeDefined();
   });
 });

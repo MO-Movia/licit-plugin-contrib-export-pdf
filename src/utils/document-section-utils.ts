@@ -121,7 +121,7 @@ export function toggleAllSectionChildElements(
 ): void {
   const section = flatStructure.find(section => section.id === sectionId);
 
-  if (section?.childrenIds.length && section?.isChecked) {
+  if (section?.childrenIds?.length && section?.isChecked) {
     for (const id of section.childrenIds) {
       toggleDisableInput(id, isDisabled);
       toggleAllSectionChildElements(flatStructure, id, isDisabled);
@@ -214,7 +214,7 @@ function sortExcludeListByFlattenedSection(nodeList: string[], flatStructure: Fl
 function getAllSectionIds(section: FlatSectionNodeStructure, flatStructure: FlatSectionNodeStructure[]): string[] {
   let allChildIds = [];
 
-  if (section.childrenIds.length) {
+  if (section.childrenIds?.length) {
     for (const id of section.childrenIds) {
       const childSection = flatStructure.find(section => section.id === id);
       const nestedIds = getAllSectionIds(childSection, flatStructure);
