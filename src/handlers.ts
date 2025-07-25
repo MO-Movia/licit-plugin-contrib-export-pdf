@@ -17,6 +17,7 @@ export class MyHandler extends Handler {
 
   public beforeParsed(content): void {
     this.pageFooters = [];
+    if (PreviewForm.showToc() || PreviewForm.showTof() || PreviewForm.showTot()) {
   createTable({
     content: content,
     tocElement: '.tocHead',
@@ -60,26 +61,30 @@ export class MyHandler extends Handler {
       }
     }
   }
-
-public afterPageLayout(pageFragment): void {
-  let concatenatedValues = '';
-  const infoIcons_ = info_Icons[0];
-
-  if (infoIcons_) {
-    infoIcons_.forEach((obj) => {
-      const isMatchingPageNumber = obj.key == pageFragment.dataset.pageNumber;
-
-      if (isMatchingPageNumber) {
-        concatenatedValues += obj.value + ' ';
-      }
-    });
-
-    pageFragment.style.setProperty(
-      '--pagedjs-string-last-chapTitled',
-      `"${concatenatedValues.trim()}"`
-    );
   }
-}
+
+  public afterPageLayout(pageFragment): void {
+    let concatenatedValues = '';
+    const infoIcons_ = info_Icons[0];
+    if (infoIcons_) {
+      infoIcons_.forEach((obj) => {
+        const ischangeNeeded = PreviewForm.showTitle() || PreviewForm.showToc() || PreviewForm.showTot() || PreviewForm.showTof();
+        const isMatchingPageNumber = obj.key == pageFragment.dataset.pageNumber;
+
+        if (
+          (ischangeNeeded && obj.key + 1 == pageFragment.dataset.pageNumber) ||
+          (!ischangeNeeded && isMatchingPageNumber)
+        ) {
+          concatenatedValues += obj.value + ' ';
+        }
+      });
+      pageFragment.style.setProperty(
+        '--pagedjs-string-last-chapTitled',
+        `"${concatenatedValues + ' '}`
+      );
+    }
+  }
+
 
   public afterRendered(pages): void {
     info_Icons.pop();
