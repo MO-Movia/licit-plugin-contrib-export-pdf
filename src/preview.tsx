@@ -89,17 +89,6 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     return [...this.totHeader];
   }
 
-      static getTocNodes() {
-    return [...this.tocNodeList];
-  }
-
-        static getTofNodes() {
-    return [...this.tofNodeList];
-  }
-        static getTotNodes() {
-    return [...this.totNodeList];
-  }
-
   constructor(props) {
     super(props);
     this.state = {

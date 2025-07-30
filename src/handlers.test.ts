@@ -1,6 +1,5 @@
 import { MyHandler } from './handlers';
 import { PreviewForm } from './preview';
-import { Node } from 'prosemirror-model';
 
 describe('MyHandler', () => {
   const mockChunker = jest.fn();
@@ -20,40 +19,6 @@ describe('MyHandler', () => {
     };
 
     PreviewForm['isToc'] = true;
-    const test_ = handler.beforeParsed(toc_data);
-    expect(test_).toBeUndefined();
-  });
-  it('beforeParsed sets up pageFooters if Option includes 2 when getTocNodes return a value', () => {
-    const toc_data = {
-      querySelector: () => {
-        return {
-          querySelector: (): string => {
-            return '.tocHead';
-          }
-        };
-      }
-    };
-
-    PreviewForm['isToc'] = true;
-    jest.spyOn(PreviewForm, 'getTocNodes').mockReturnValue([{} as unknown as Node]);
-    const test_ = handler.beforeParsed(toc_data);
-    expect(test_).toBeUndefined();
-  });
-  it('beforeParsed sets up pageFooters if Option includes 2 when tocElementDiv.querySelector(h4) is undefined', () => {
-    const toc_data = {
-      querySelector: () => {
-        return {
-          querySelector: (): string => {
-            return undefined as unknown as string;
-          }, insertBefore: () => { return {}; }
-        };
-      }
-    };
-
-    PreviewForm['isToc'] = true;
-    jest.spyOn(PreviewForm, 'getTocNodes').mockReturnValue([{} as unknown as Node]);
-    jest.spyOn(PreviewForm, 'getTofNodes').mockReturnValue([{} as unknown as Node]);
-    jest.spyOn(PreviewForm, 'getTotNodes').mockReturnValue([{} as unknown as Node]);
     const test_ = handler.beforeParsed(toc_data);
     expect(test_).toBeUndefined();
   });

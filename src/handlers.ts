@@ -15,53 +15,21 @@ export class MyHandler extends Handler {
     this.caller = caller;
   }
 
-  public beforeParsed(content): void {
-    this.pageFooters = [];
-    if (PreviewForm.showToc() || PreviewForm.showTof() || PreviewForm.showTot()) {
-  createTable({
-    content: content,
-    tocElement: '.tocHead',
-    tofElement: '.tofHead',
-    totElement: '.totHead',
-    titleElements: PreviewForm.getHeadersTOC(),
-    titleElementsTOF: PreviewForm.getHeadersTOF(),
-    titleElementsTOT: PreviewForm.getHeadersTOT(),
-  });
-     const tocNodeList = PreviewForm.getTocNodes();
-     const tofNodeList = PreviewForm.getTofNodes();
-    const totNodeList = PreviewForm.getTotNodes();
-     if (tocNodeList && tocNodeList.length >= 1) {
-      const tocElementDiv = content.querySelector('.tocHead');
-      if (tocElementDiv && !tocElementDiv.querySelector('h4')) {
-      const headerTOC = document.createElement('h4');
-      headerTOC.style.marginBottom = '40px';
-      headerTOC.style.color = '#000000';
-      headerTOC.textContent = 'TABLE OF CONTENTS';
-      tocElementDiv.insertBefore(headerTOC, tocElementDiv.firstChild);
-      }
-    }
-     if (tofNodeList && tofNodeList.length >= 1) {
-      const tofElementDiv = content.querySelector('.tofHead');
-      if (tofElementDiv && !tofElementDiv.querySelector('h4')) {
-      const headerTOF = document.createElement('h4');
-      headerTOF.style.marginBottom = '40px';
-      headerTOF.style.color = '#000000';
-      headerTOF.textContent = 'TABLE OF FIGURES';
-      tofElementDiv.insertBefore(headerTOF, tofElementDiv.firstChild);
-      }
-    }
-         if (totNodeList && totNodeList.length >= 1) {
-      const totElementDiv = content.querySelector('.totHead');
-      if (totElementDiv && !totElementDiv.querySelector('h4')) {
-      const headerTOT = document.createElement('h4');
-      headerTOT.style.marginBottom = '40px';
-      headerTOT.style.color = '#000000';
-      headerTOT.textContent = 'TABLE OF TABLES';
-      totElementDiv.insertBefore(headerTOT, totElementDiv.firstChild);
-      }
-    }
+public beforeParsed(content): void {
+  this.pageFooters = [];
+  if (PreviewForm.showToc() || PreviewForm.showTof() || PreviewForm.showTot()) {
+    createTable({
+      content: content,
+      tocElement: '.tocHead',
+      tofElement: '.tofHead',
+      totElement: '.totHead',
+      titleElements: PreviewForm.getHeadersTOC(),
+      titleElementsTOF: PreviewForm.getHeadersTOF(),
+      titleElementsTOT: PreviewForm.getHeadersTOT(),
+    });
   }
-  }
+}
+
 
   public afterPageLayout(pageFragment): void {
     let concatenatedValues = '';

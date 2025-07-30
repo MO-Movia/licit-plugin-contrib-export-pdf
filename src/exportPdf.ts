@@ -66,6 +66,7 @@ export function createTable(config): void {
     dataAttr: 'data-title-level',
     generatedListId: 'list-toc-generated',
     elementClass: 'toc-element',
+    headerText: 'TABLE OF CONTENTS',
   });
 
   generateList({
@@ -77,6 +78,7 @@ export function createTable(config): void {
     dataAttr: 'data-title-level-tof',
     generatedListId: 'list-tof-generated',
     elementClass: 'tof-element',
+    headerText: 'TABLE OF FIGURES',
   });
 
   generateList({
@@ -88,12 +90,15 @@ export function createTable(config): void {
     dataAttr: 'data-title-level-tot',
     generatedListId: 'list-tot-generated',
     elementClass: 'tot-element',
+    headerText: 'TABLE OF TABLES',
   });
 }
 
 
 function escapeCSSId(id: string): string {
-  return CSS?.escape ? CSS.escape(id) : id.replace(/^[0-9]/, '_$&').replace(/[^a-zA-Z0-9\-_:.]/g, '_');
+  return CSS?.escape
+    ? CSS.escape(id)
+    : id.replace(/^[0-9]/, '_$&').replace(/[^a-zA-Z0-9\-_:.]/g, '_');
 }
 
 function generateList({
@@ -105,6 +110,7 @@ function generateList({
   dataAttr,
   generatedListId,
   elementClass,
+  headerText,
 }) {
   const container = content.querySelector(containerSelector);
   if (!container || content.querySelector(`#${generatedListId}`)) return;
@@ -134,9 +140,8 @@ function generateList({
 
   const allElements = content.querySelectorAll(`.${cssClass}`);
 
-  allElements.forEach((el) => {
-    const newEntry = document.createElement('p');
-    newEntry.classList.add(elementClass);
+  allElements.forEach((el, index) => {
+    const safeId = escapeCSSId(el.id);
 
     let text = el.textContent.trim();
     if (text.length > 70) {
@@ -144,10 +149,18 @@ function generateList({
       text = text.substring(0, text.lastIndexOf(' '));
     }
 
-    // ⛑ Escape the ID before using in href
-    const safeId = escapeCSSId(el.id);
+    if (index === 0 && headerText) {
+      // ✅ Create a styled <h4> header
+      const headerEl = document.createElement('h4');
+      headerEl.textContent = headerText;
+      headerEl.style.marginBottom = '40px';
+      headerEl.style.color = '#000000';
+      listDiv.appendChild(headerEl);
+    }
 
-    newEntry.innerHTML = `<a href="#${safeId}">${text}</a>`;
-    listDiv.appendChild(newEntry);
+    const linkPara = document.createElement('p');
+    linkPara.classList.add(elementClass);
+    linkPara.innerHTML = `<a href="#${safeId}">${text}</a>`;
+    listDiv.appendChild(linkPara);
   });
 }
