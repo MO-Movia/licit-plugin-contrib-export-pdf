@@ -378,4 +378,9 @@ describe('Export PDF Command', () => {
       )
     ).toBeNull();
   });
+  it('should handle execute',()=>{
+       const command = new ExportPDFCommand();
+       expect(command.execute({} as unknown as EditorState,()=>{},{} as unknown as EditorView,{})).toBeFalsy();
+         expect(command.execute({} as unknown as EditorState,()=>{},{} as unknown as EditorView,{})).toBeFalsy();
+  });
 });

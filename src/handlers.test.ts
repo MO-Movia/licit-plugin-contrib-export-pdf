@@ -9,16 +9,19 @@ describe('MyHandler', () => {
 
   it('beforeParsed sets up pageFooters if Option includes 2', () => {
     const toc_data = {
-      querySelector: (): string => {
-        return '.tocHead';
-      },
+      querySelector: () => {
+        return {
+          querySelector: (): string => {
+            return '.tocHead';
+          }
+        };
+      }
     };
 
     PreviewForm['isToc'] = true;
     const test_ = handler.beforeParsed(toc_data);
     expect(test_).toBeUndefined();
   });
-
   it('beforeParsed sets up pageFooters if PreviewForm.isToc == true', () => {
     PreviewForm['isToc'] = true;
     PreviewForm['general'] = true;
@@ -33,9 +36,13 @@ describe('MyHandler', () => {
     ];
 
     handler.afterRendered(pages);
-    const test_ = handler.afterPageLayout({ dataset: { pageNumber: 2 }, style: { setProperty() {
-      return 'bold';
-    } } });
+    const test_ = handler.afterPageLayout({
+      dataset: { pageNumber: 2 }, style: {
+        setProperty() {
+          return 'bold';
+        }
+      }
+    });
     expect(test_).toBeUndefined();
   });
 
@@ -52,9 +59,13 @@ describe('MyHandler', () => {
     ];
 
     handler.afterRendered(pages);
-    const test_ = handler.afterPageLayout({ dataset: { pageNumber: 1 }, style: { setProperty() {
-      return 'bold';
-    } } });
+    const test_ = handler.afterPageLayout({
+      dataset: { pageNumber: 1 }, style: {
+        setProperty() {
+          return 'bold';
+        }
+      }
+    });
     expect(test_).toBeUndefined();
   });
 

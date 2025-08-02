@@ -59,6 +59,8 @@ module.exports = {
     structuredClone: true,
     window: false,
     localStorage: false,
+    global:false,
+    CSS:false
   },
   overrides: [
     {
