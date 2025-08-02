@@ -1,5 +1,5 @@
 import {Handler} from 'pagedjs';
-import {createToc} from './exportPdf';
+import {createTable} from './exportPdf';
 export const info_Icons = [];
 import {PreviewForm} from './preview';
 
@@ -7,34 +7,41 @@ export class MyHandler extends Handler {
   public done;
   public countTOC = 0;
   public pageFooters: Array<HTMLElement> = [];
+  public caller;
 
   constructor(chunker, polisher, caller) {
     super(chunker, polisher, caller);
     this.done = false;
+    this.caller = caller;
   }
 
-  public beforeParsed(content): void {
-    this.pageFooters = [];
-    if (PreviewForm.showToc()) {
-      createToc({
-        content: content,
-        tocElement: '.tocHead',
-        titleElements: PreviewForm.getHeaders(),
-      });
-    }
+public beforeParsed(content): void {
+  this.pageFooters = [];
+  if (PreviewForm.showToc() || PreviewForm.showTof() || PreviewForm.showTot()) {
+    createTable({
+      content: content,
+      tocElement: '.tocHead',
+      tofElement: '.tofHead',
+      totElement: '.totHead',
+      titleElements: PreviewForm.getHeadersTOC(),
+      titleElementsTOF: PreviewForm.getHeadersTOF(),
+      titleElementsTOT: PreviewForm.getHeadersTOT(),
+    });
   }
+}
+
 
   public afterPageLayout(pageFragment): void {
     let concatenatedValues = '';
     const infoIcons_ = info_Icons[0];
     if (infoIcons_) {
       infoIcons_.forEach((obj) => {
-        const isTitleOrToc = PreviewForm.showTitle() || PreviewForm.showToc();
+        const ischangeNeeded = PreviewForm.showTitle() || PreviewForm.showToc() || PreviewForm.showTot() || PreviewForm.showTof();
         const isMatchingPageNumber = obj.key == pageFragment.dataset.pageNumber;
 
         if (
-          (isTitleOrToc && obj.key + 1 == pageFragment.dataset.pageNumber) ||
-          (!isTitleOrToc && isMatchingPageNumber)
+          (ischangeNeeded && obj.key + 1 == pageFragment.dataset.pageNumber) ||
+          (!ischangeNeeded && isMatchingPageNumber)
         ) {
           concatenatedValues += obj.value + ' ';
         }
@@ -45,6 +52,7 @@ export class MyHandler extends Handler {
       );
     }
   }
+
 
   public afterRendered(pages): void {
     info_Icons.pop();
@@ -136,13 +144,6 @@ margin-left: 25px;
 counter-reset: counterTocLevel1;
 }
 
-.tocHead{
-  margin-bottom: 700px;
-}
-.titleHead{
-  margin-bottom: 700px;
-}
-
 #list-toc-generated .toc-element-level-1 {
 counter-increment: counterTocLevel1;
 counter-reset: counterTocLevel2;
@@ -177,10 +178,147 @@ float: left;
 width: 0;
 padding-left: 5px;
 letter-spacing: 2px;
-color: #000000;
+color: #2A6EBB;
 }
+
+#list-tof-generated {
+list-style: none;
+}
+
+#list-tof-generated .tof-element {
+break-inside: avoid;
+}
+
+#list-tof-generated .tof-element a::after {
+content: target-counter(attr(href), page);
+float: right;
+}
+
+#list-tof-generated .tof-element-level-1 {
+margin-top: 25px;
+font-weight: bold;
+}
+
+#list-tof-generated .tof-element-level-2 {
+margin-left: 25px;
+}
+
+/* counters */
+
+#list-tof-generated {
+counter-reset: counterTocLevel1;
+}
+
+.totHead{
+  margin-bottom: 700px;
+}
+
+#list-tof-generated .tof-element-level-1 {
+counter-increment: counterTocLevel1;
+counter-reset: counterTocLevel2;
+}
+
+#list-tof-generated .tof-element-level-1::before {
+content: counter(counterTocLevel1) ". ";
+padding-right: 5px;
+}
+
+#list-tof-generated .tof-element-level-2 {
+counter-increment: counterTocLevel2;
+}
+
+#list-tof-generated .tof-element-level-2::before {
+content: counter(counterTocLevel1) ". " counter(counterTocLevel2) ". ";
+padding-right: 5px;
+}
+
+/* hack for leaders */
+
+#list-tof-generated {
+overflow-x: hidden;
+}
+
+/* fake leading */
+#list-tof-generated .tof-element::after {
+content: ".............................................."
+".............................................."
+".............................................." "........";
+float: left;
+width: 0;
+padding-left: 5px;
+letter-spacing: 2px;
+color: #2A6EBB;
+}
+
+#list-tot-generated {
+list-style: none;
+}
+
+#list-tot-generated .tot-element {
+break-inside: avoid;
+}
+
+#list-tot-generated .tot-element a::after {
+content: target-counter(attr(href), page);
+float: right;
+}
+
+#list-tot-generated .tot-element-level-1 {
+margin-top: 25px;
+font-weight: bold;
+}
+
+#list-tot-generated .tot-element-level-2 {
+margin-left: 25px;
+}
+
+/* counters */
+
+#list-tot-generated {
+counter-reset: counterTocLevel1;
+}
+
+
+
+#list-tot-generated .tot-element-level-1 {
+counter-increment: counterTocLevel1;
+counter-reset: counterTocLevel2;
+}
+
+#list-tot-generated .tot-element-level-1::before {
+content: counter(counterTocLevel1) ". ";
+padding-right: 5px;
+}
+
+#list-tot-generated .tot-element-level-2 {
+counter-increment: counterTocLevel2;
+}
+
+#list-tot-generated .tot-element-level-2::before {
+content: counter(counterTocLevel1) ". " counter(counterTocLevel2) ". ";
+padding-right: 5px;
+}
+
+/* hack for leaders */
+
+#list-tot-generated {
+overflow-x: hidden;
+}
+
+/* fake leading */
+#list-tot-generated .tot-element::after {
+content: ".............................................."
+".............................................."
+".............................................." "........";
+float: left;
+width: 0;
+padding-left: 5px;
+letter-spacing: 2px;
+color: #2A6EBB;
+}
+
 .pagedjs_page .pagedjs_margin-bottom-center>.pagedjs_margin-content::after {
-  color: #000000;
+  color: #2A6EBB;
 }
 #list-toc-generated .toc-element {
 display: flex;
@@ -195,8 +333,41 @@ padding-left: 6px;
 
 #list-toc-generated .toc-element a {
 right: 0;
-color: blue;
+color: #2A6EBB;
 }
+
+#list-tof-generated .tof-element {
+display: flex;
+}
+
+#list-tof-generated .tof-element a::after {
+position: absolute;
+right: 0;
+background-color: white;
+padding-left: 6px;
+}
+
+#list-tof-generated .tof-element a {
+right: 0;
+color: #2A6EBB;
+}
+
+#list-tot-generated .tot-element {
+display: flex;
+}
+
+#list-tot-generated .tot-element a::after {
+position: absolute;
+right: 0;
+background-color: white;
+padding-left: 6px;
+}
+
+#list-tot-generated .tot-element a {
+right: 0;
+color: #2A6EBB;
+}
+
 .prosemirror-editor-wrapper.embedded .ProseMirror {
  width : unset;
 }

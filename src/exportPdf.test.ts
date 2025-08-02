@@ -1,7 +1,10 @@
 // exportPDF.test.ts
-import { createToc } from './exportPdf';
+import { createTable, ExportPDF } from './exportPdf';
 import { createPopUp } from '@modusoperandi/licit-ui-commands';
-
+import { Schema } from 'prosemirror-model';
+import { EditorState } from 'prosemirror-state';
+import { EditorView } from 'prosemirror-view';
+import { schema as basicSchema } from 'prosemirror-schema-basic';
 // Mock createPopUp
 jest.mock('@modusoperandi/licit-ui-commands', () => ({
   createPopUp: jest.fn(),
@@ -37,6 +40,8 @@ describe('ExportPDF', () => {
       const tocContainer = document.createElement('div');
       tocContainer.className = 'toc-container';
       content.appendChild(tocContainer);
+      global.CSS ??= {} as unknown as typeof CSS;
+      global.CSS.escape = jest.fn((str) => `escaped(${str})`);
     });
 
     afterEach(() => {
@@ -44,7 +49,7 @@ describe('ExportPDF', () => {
     });
 
     it('should create TOC when no existing TOC', () => {
-      // Add title elements
+
       const p1 = document.createElement('p');
       p1.setAttribute('stylename', 'Heading1');
       p1.textContent = 'Title One';
@@ -55,7 +60,7 @@ describe('ExportPDF', () => {
       h4.textContent = 'Title Two';
       content.appendChild(h4);
 
-      createToc({
+      createTable({
         content,
         tocElement: '.toc-container',
         titleElements: ['Heading1', 'Heading2'],
@@ -91,7 +96,7 @@ describe('ExportPDF', () => {
 
       const appendChildSpy = jest.spyOn(existingToc.parentElement!, 'appendChild');
 
-      createToc({
+      createTable({
         content,
         tocElement: '.toc-container',
         titleElements: ['Heading1'],
@@ -106,7 +111,7 @@ describe('ExportPDF', () => {
       p.textContent = 'A very very very very very very very very very very very very very very very long title that exceeds 70 characters';
       content.appendChild(p);
 
-      createToc({
+      createTable({
         content,
         tocElement: '.toc-container',
         titleElements: ['Heading1'],
@@ -115,5 +120,51 @@ describe('ExportPDF', () => {
       const tocLink = content.querySelector('#list-toc-generated p a');
       expect(tocLink?.textContent?.length).toBeLessThanOrEqual(70);
     });
+  });
+  it('should handle exportPdf', () => {
+    const schema = new Schema({
+      nodes: basicSchema.spec.nodes,
+      marks: basicSchema.spec.marks,
+    });
+
+    // Create a simple document node (you can extend this)
+    const content = schema.node('doc', null, [
+      schema.node('paragraph', null, [
+        schema.text('This is a test paragraph in the mock ProseMirror view.')
+      ])
+    ]);
+
+    // Create a mock state
+    const state = EditorState.create({
+      doc: content,
+      schema,
+    });
+
+    // Create a DOM container for the editor
+    const editorContainer = document.createElement('div');
+    document.body.appendChild(editorContainer);
+
+    // Create a mock EditorView
+    const editorView = new EditorView(editorContainer, {
+      state,
+    });
+    const doc = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            {
+              type: 'text',
+              text: 'Hello, this is a test document!',
+            },
+          ],
+        },
+      ],
+    };
+
+    const expdf = new ExportPDF();
+    expect(expdf.exportPdf(editorView,doc)).toBeDefined();
+    expect(expdf.exportPdf(editorView,doc)).toBeDefined();
   });
 });

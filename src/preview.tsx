@@ -17,7 +17,7 @@ import {
 import { Node } from 'prosemirror-model';
 import {
   DocumentStyle,
-  getTableOfContentStyles,
+  getTableStyles,
   StoredStyle,
 } from './utils/table-of-contents-utils';
 import { ExportPDFCommand } from './exportPdfCommand';
@@ -38,12 +38,18 @@ interface State {
 export class PreviewForm extends React.PureComponent<Props, State> {
   private static general: boolean = false;
   private static formattedDate: string;
-  private static isToc: boolean = false;
+  private static isToc: boolean = true;
+  private static isTof: boolean = true;
+  private static isTot: boolean = true;
   private static isCitation: boolean = false;
-  private static isTitle: boolean = false;
+  private static isTitle: boolean = true;
   private static lastUpdated: boolean = false;
   private static readonly tocHeader = [];
-  public tocNodeList: Node[] = [];
+  private static readonly tofHeader = [];
+  private static readonly totHeader = [];
+  private static readonly tocNodeList: Node[] = [];
+  private static readonly tofNodeList: Node[] = [];
+  private static readonly totNodeList: Node[] = [];
   public sectionListElements: React.ReactElement<any>[] = [];
   private _popUp = null;
 
@@ -55,6 +61,14 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     return PreviewForm.isToc;
   }
 
+  static showTof() {
+    return PreviewForm.isTof;
+  }
+
+  static showTot() {
+    return PreviewForm.isTot;
+  }
+
   static showTitle() {
     return PreviewForm.isTitle;
   }
@@ -63,8 +77,16 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     return PreviewForm.isCitation;
   }
 
-  static getHeaders() {
+  static getHeadersTOC() {
     return [...this.tocHeader];
+  }
+
+    static getHeadersTOF() {
+    return [...this.tofHeader];
+  }
+
+    static getHeadersTOT() {
+    return [...this.totHeader];
   }
 
   constructor(props) {
@@ -78,36 +100,37 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     };
   }
 
-  public componentDidMount(): void {
-    let paged = new Previewer();
-    this.showAlert();
-    const { editorView } = this.props;
-    this.getToc(editorView);
-    PreviewForm.general = true;
-    registerHandlers(MyHandler);
-    let divContainer = document.getElementById('holder');
-    const data = editorView.dom.parentElement.parentElement;
-    let data1 = data.cloneNode(true) as HTMLElement;
-    let infoIcons = data1.querySelectorAll('.infoicon');
-    infoIcons.forEach((infoIcon, index) => {
-      let superscript = document.createElement('sup');
-      superscript.textContent = (index + 1).toString();
-      infoIcon.textContent = '';
-      infoIcon.appendChild(superscript);
-    });
-    for (const element of data1.children) {
-      const imageElements = element.querySelectorAll('img');
-      for (const imageElement of imageElements) {
-        // Replace the width attribute with the desired new width value (capped at 600px if original width is larger).
-        this.replaceImageWidth(imageElement);
-      }
-    }
-    let prosimer_cls_element = data1.querySelector('.ProseMirror');
-    prosimer_cls_element?.setAttribute('contenteditable', 'false');
-    paged.preview(data1, [], divContainer).then((flow) => {
-      this.InfoActive();
-    });
-  }
+public componentDidMount(): void {
+  const paged = new Previewer();
+  this.showAlert();
+
+  const { editorView } = this.props;
+  this.getToc(editorView);
+  PreviewForm.general = true;
+  PreviewForm.isToc = true;
+  PreviewForm.isTof = true;
+  PreviewForm.isTot = true;
+  PreviewForm.isTitle = true;
+
+  registerHandlers(MyHandler);
+
+  const divContainer = document.getElementById('holder');
+  const data = editorView.dom.parentElement?.parentElement;
+  if (!data || !divContainer) return;
+
+  const data1 = data.cloneNode(true) as HTMLElement;
+
+  this.replaceInfoIcons(data1);
+  this.updateImageWidths(data1);
+  this.prepareEditorContent(data1);
+
+  editorView.dispatch(editorView.state?.tr.setMeta('suppressOnChange', true));
+
+  paged.preview(data1, [], divContainer).then(() => {
+    this.InfoActive();
+  });
+}
+
 
   public showAlert(): void {
     const anchor = null;
@@ -135,13 +158,29 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
   public getToc = async (view): Promise<void> => {
     const styles = (await view.runtime.getStylesAsync()) as DocumentStyle[];
-    const storeTOCvalue = getTableOfContentStyles(styles);
+const storeTOCvalue = getTableStyles(styles, 'toc');
+const storeTOFvalue = getTableStyles(styles, 'tof');
+const storeTOTvalue = getTableStyles(styles, 'tot');
+    
 
     view?.state?.tr?.doc.descendants((node: Node) => {
       if (node.attrs.styleName) {
+        for (const tofValue of storeTOFvalue) {
+          if (tofValue.name === node.attrs.styleName) {
+            PreviewForm.tofNodeList.push(node);
+            PreviewForm.tofHeader.push(node.attrs.styleName);
+          }
+        }
+
+         for (const totValue of storeTOTvalue) {
+          if (totValue.name === node.attrs.styleName) {
+            PreviewForm.totNodeList.push(node);
+            PreviewForm.totHeader.push(node.attrs.styleName);
+          }
+        }
         for (const tocValue of storeTOCvalue) {
           if (tocValue.name === node.attrs.styleName) {
-            this.tocNodeList.push(node);
+            PreviewForm.tocNodeList.push(node);
             PreviewForm.tocHeader.push(node.attrs.styleName);
           }
         }
@@ -149,7 +188,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     });
 
     const sectionNodeStructure = buildSectionStructure(
-      this.tocNodeList,
+      PreviewForm.tocNodeList,
       storeTOCvalue
     );
     const flattenedSectionNodeStructure =
@@ -256,6 +295,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
                       name="TOC"
                       id="licit-pdf-export-toc-option"
                       onChange={this.handleTOCChange}
+                      defaultChecked={true}
                     />{' '}
                   </div>
 
@@ -264,6 +304,56 @@ export class PreviewForm extends React.PureComponent<Props, State> {
                     style={{ marginLeft: '5px' }}
                   >
                     Include TOC
+                  </label>
+                </div>
+                                <div
+                  style={{
+                    marginTop: '10px',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                  }}
+                >
+                  <div>
+                    <input
+                      type="checkbox"
+                      name="TOF"
+                      id="licit-pdf-export-tof-option"
+                      onChange={this.handleTOFChange}
+                      defaultChecked={true}
+                    />{' '}
+                  </div>
+
+                  <label
+                    htmlFor="licit-pdf-export-tof-option"
+                    style={{ marginLeft: '5px' }}
+                  >
+                    Include TOF
+                  </label>
+                </div>
+                                <div
+                  style={{
+                    marginTop: '10px',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                  }}
+                >
+                  <div>
+                    <input
+                      type="checkbox"
+                      name="TOT"
+                      id="licit-pdf-export-tot-option"
+                      onChange={this.handleTOTChange}
+                      defaultChecked={true}
+                    />{' '}
+                  </div>
+
+                  <label
+                    htmlFor="licit-pdf-export-tot-option"
+                    style={{ marginLeft: '5px' }}
+                  >
+                    Include TOT
                   </label>
                 </div>
 
@@ -281,6 +371,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
                       name="infoicon"
                       id="licit-pdf-export-title-option"
                       onChange={this.handelDocumentTitle}
+                      defaultChecked={true}
                     />{' '}
                   </div>
 
@@ -416,6 +507,22 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       this.tocActive();
     } else {
       this.Tocdeactive();
+    }
+  };
+
+    public handleTOTChange = (event) => {
+    if (event.target.checked) {
+      this.totActive();
+    } else {
+      this.Totdeactive();
+    }
+  };
+
+    public handleTOFChange = (event) => {
+    if (event.target.checked) {
+      this.tofActive();
+    } else {
+      this.Tofdeactive();
     }
   };
 
@@ -560,113 +667,155 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     }
   };
 
-  public calcLogic = (): void => {
-    let divContainer = document.getElementById('holder');
-    divContainer.innerHTML = '';
-    const { editorView } = this.props;
-    const data = editorView.dom.parentElement.parentElement;
-    let data1 = this.cloneModifyNode(data);
-    let prosimer_cls_element = data1.querySelector('.ProseMirror');
-    prosimer_cls_element?.setAttribute('contenteditable', 'false');
-    prosimer_cls_element?.classList.remove('czi-prosemirror-editor');
-    prosimer_cls_element
-      ?.querySelectorAll('.molm-czi-image-view-body-img-clip span')
-      .forEach((span_) => {
-        (span_ as HTMLElement).style.display = 'flex';
-      });
+public calcLogic = (): void => {
+  const divContainer = document.getElementById('holder');
+  if (!divContainer) return;
+  divContainer.innerHTML = '';
 
-    data1 = filterDocumentSections(
-      data1,
-      this.tocNodeList,
-      this.state.sectionNodesToExclude,
-      this.state.storedStyles
-    );
+  const { editorView } = this.props;
+  const data = editorView.dom.parentElement?.parentElement;
+  if (!data) return;
 
-    if (PreviewForm.isCitation) {
-      let CitationIcons = data1.querySelectorAll('.citationnote');
-      CitationIcons.forEach((CitationIcon, index) => {
-        let superscript = document.createElement('sup');
-        superscript.textContent = `[${index + 1}]`;
-        CitationIcon.parentNode?.replaceChild(superscript, CitationIcon);
-      });
-      this.insertFooters(CitationIcons, data1);
-    }
+  let data1 = this.cloneModifyNode(data);
+  this.prepareEditorContent(data1);
 
-    if (PreviewForm.lastUpdated) {
-      let parentDiv = document.createElement('div');
-      parentDiv.classList.add('lastUpdatedTitle');
+  data1 = filterDocumentSections(
+    data1,
+    PreviewForm.tocNodeList,
+    this.state.sectionNodesToExclude,
+    this.state.storedStyles
+  );
 
-      const date = new Date(
-        editorView?.state?.doc?.attrs?.objectMetaData?.lastEditedOn
-      );
-      PreviewForm.formattedDate = date.toLocaleString('en-GB', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-      });
-    }
+  if (PreviewForm.isCitation) {
+    this.replaceCitations(data1);
+  }
 
-    if (PreviewForm.isToc && PreviewForm.isTitle) {
-      let parentDiv = document.createElement('div');
-      parentDiv.classList.add('titleHead');
-      let header = document.createElement('h4');
-      header.style.marginBottom = '40px';
-      header.style.color = '#000000';
-      header.textContent = editorView?.state?.doc?.attrs?.objectMetaData?.name;
+  if (PreviewForm.lastUpdated) {
+    this.setLastUpdated(editorView);
+  }
 
-      let newDiv = document.createElement('div');
-      newDiv.classList.add('tocHead');
-      parentDiv.appendChild(header);
-      parentDiv.appendChild(newDiv);
-      data1.insertBefore(parentDiv, data1.firstChild);
-    } else if (PreviewForm.isToc) {
-      let newDiv = document.createElement('div');
-      newDiv.classList.add('tocHead');
-      data1.insertBefore(newDiv, data1.firstChild);
-    } else if (PreviewForm.isTitle) {
-      let parentDiv = document.createElement('div');
-      parentDiv.classList.add('titleHead');
-      let header = document.createElement('h4');
-      header.style.marginBottom = '40px';
-      header.style.color = '#000000';
-      header.textContent = editorView?.state?.doc?.attrs?.objectMetaData?.name;
-      parentDiv.appendChild(header);
-      data1.insertBefore(parentDiv, data1.firstChild);
-    }
+  this.insertSectionHeaders(data1, editorView);
+  this.replaceInfoIcons(data1);
+  this.updateImageWidths(data1);
 
-    let infoIcons = data1.querySelectorAll('.infoicon');
-    infoIcons.forEach((infoIcon, index) => {
-      let superscript = document.createElement('sup');
-      superscript.textContent = (index + 1).toString();
-      infoIcon.textContent = '';
-      infoIcon.appendChild(superscript);
-    });
-    for (const element of data1.children) {
-      const imageElements = element.querySelectorAll('img');
-      for (const imageElement of imageElements) {
-        // Replace the width attribute with the desired new width value (capped at 500px if original width is larger).
-        this.replaceImageWidth(imageElement);
-      }
-    }
-    let paged = new Previewer();
+  const paged = new Previewer();
+  this._popUp?.close();
+  this.showAlert();
+
+  editorView.dispatch(editorView.state.tr?.setMeta('suppressOnChange', true));
+
+  paged.preview(data1, [], divContainer).then(() => {
+    const previewContainer = document.querySelector('.exportpdf-preview-container') as HTMLElement;
+    if (previewContainer) previewContainer.style.visibility = 'visible';
+    this.addLinkEventListeners();
     this._popUp?.close();
-    this.showAlert();
-    paged.preview(data1, [], divContainer).then((flow) => {
-      const preview_container_ = document.querySelector(
-        '.exportpdf-preview-container'
-      );
-      (preview_container_ as HTMLElement).style.visibility = 'visible';
-      this.addLinkEventListeners();
-      this._popUp.close();
+  });
+};
+
+
+
+private prepareEditorContent(data: HTMLElement): void {
+  const proseMirror = data.querySelector('.ProseMirror');
+  if (proseMirror) {
+    proseMirror.setAttribute('contenteditable', 'false');
+    proseMirror.classList.remove('czi-prosemirror-editor');
+    proseMirror.querySelectorAll('.molm-czi-image-view-body-img-clip span').forEach(span => {
+      (span as HTMLElement).style.display = 'flex';
     });
-  };
+  }
+}
+
+private replaceCitations(data: HTMLElement): void {
+  const citations = data.querySelectorAll('.citationnote');
+  citations.forEach((el, idx) => {
+    const sup = document.createElement('sup');
+    sup.textContent = `[${idx + 1}]`;
+    el.parentNode?.replaceChild(sup, el);
+  });
+  this.insertFooters(citations, data);
+}
+
+private setLastUpdated(editorView): void {
+  const lastEdited = editorView?.state?.doc?.attrs?.objectMetaData?.lastEditedOn;
+  const date = new Date(lastEdited);
+  PreviewForm.formattedDate = date.toLocaleString('en-GB', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+}
+
+private insertSectionHeaders(data: HTMLElement, editorView): void {
+  const sections = [
+    { flag: PreviewForm.isToc, className: 'tocHead' },
+    { flag: PreviewForm.isTof, className: 'tofHead' },
+    { flag: PreviewForm.isTot, className: 'totHead' }
+  ];
+
+  const parentDiv = document.createElement('div');
+  let hasContent = false;
+
+  if (PreviewForm.isTitle) {
+    parentDiv.classList.add('titleHead');
+    const header = document.createElement('h4');
+    header.style.marginBottom = '40px';
+    header.style.color = '#2A6EBB';
+    header.style.textAlign = 'center';
+    header.style.fontWeight = 'bold';
+    header.textContent = editorView?.state?.doc?.attrs?.objectMetaData?.name;
+    parentDiv.appendChild(header);
+    hasContent = true;
+  }
+
+  sections.forEach(({ flag, className }) => {
+    if (flag) {
+      const sectionDiv = document.createElement('div');
+      sectionDiv.classList.add(className);
+      parentDiv.appendChild(sectionDiv);
+      hasContent = true;
+    }
+  });
+
+  if (hasContent) {
+    data.insertBefore(parentDiv, data.firstChild);
+  }
+}
+
+private replaceInfoIcons(data: HTMLElement): void {
+  const icons = data.querySelectorAll('.infoicon');
+  icons.forEach((icon, index) => {
+    const sup = document.createElement('sup');
+    sup.textContent = `${index + 1}`;
+    icon.textContent = '';
+    icon.appendChild(sup);
+  });
+}
+
+private updateImageWidths(data: HTMLElement): void {
+  for (const element of data.children) {
+    const images = element.querySelectorAll('img');
+    images.forEach((img) => {
+      this.replaceImageWidth(img);
+    });
+  }
+}
 
   public tocActive = (): void => {
     PreviewForm.isToc = true;
+    this.calcLogic();
+  };
+
+    public tofActive = (): void => {
+    PreviewForm.isTof = true;
+    this.calcLogic();
+  };
+
+    public totActive = (): void => {
+    PreviewForm.isTot = true;
     this.calcLogic();
   };
 
@@ -679,8 +828,20 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     this.calcLogic();
   };
 
+    public Tofdeactive = (): void => {
+    PreviewForm.isTof = false;
+    this.calcLogic();
+  };
+
+    public Totdeactive = (): void => {
+    PreviewForm.isTot = false;
+    this.calcLogic();
+  };
+
   public handleCancel = (): void => {
     PreviewForm.isToc = false;
+    PreviewForm.isTof = false;
+    PreviewForm.isTot = false;
     PreviewForm.general = false;
     PreviewForm.isTitle = false;
     PreviewForm.isCitation = false;
