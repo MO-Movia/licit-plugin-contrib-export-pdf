@@ -158,31 +158,32 @@ public componentDidMount(): void {
 
   public getToc = async (view): Promise<void> => {
     const styles = (await view.runtime.getStylesAsync()) as DocumentStyle[];
-const storeTOCvalue = getTableStyles(styles, 'toc');
-const storeTOFvalue = getTableStyles(styles, 'tof');
-const storeTOTvalue = getTableStyles(styles, 'tot');
+    const storeTOCvalue = getTableStyles(styles, 'toc');
+    const storeTOFvalue = getTableStyles(styles, 'tof');
+    const storeTOTvalue = getTableStyles(styles, 'tot');
     
 
     view?.state?.tr?.doc.descendants((node: Node) => {
-      if (node.attrs.styleName) {
-        for (const tofValue of storeTOFvalue) {
-          if (tofValue.name === node.attrs.styleName) {
-            PreviewForm.tofNodeList.push(node);
-            PreviewForm.tofHeader.push(node.attrs.styleName);
-          }
+      if (!node.attrs.styleName) {
+        return;
+      }
+      for (const tofValue of storeTOFvalue) {
+        if (tofValue.name === node.attrs.styleName) {
+          PreviewForm.tofNodeList.push(node);
+          PreviewForm.tofHeader.push(node.attrs.styleName);
         }
+      }
 
-         for (const totValue of storeTOTvalue) {
-          if (totValue.name === node.attrs.styleName) {
-            PreviewForm.totNodeList.push(node);
-            PreviewForm.totHeader.push(node.attrs.styleName);
-          }
+      for (const totValue of storeTOTvalue) {
+        if (totValue.name === node.attrs.styleName) {
+          PreviewForm.totNodeList.push(node);
+          PreviewForm.totHeader.push(node.attrs.styleName);
         }
-        for (const tocValue of storeTOCvalue) {
-          if (tocValue.name === node.attrs.styleName) {
-            PreviewForm.tocNodeList.push(node);
-            PreviewForm.tocHeader.push(node.attrs.styleName);
-          }
+      }
+      for (const tocValue of storeTOCvalue) {
+        if (tocValue.name === node.attrs.styleName) {
+          PreviewForm.tocNodeList.push(node);
+          PreviewForm.tocHeader.push(node.attrs.styleName);
         }
       }
     });
@@ -705,7 +706,7 @@ public calcLogic = (): void => {
   editorView.dispatch(editorView.state.tr?.setMeta('suppressOnChange', true));
 
   paged.preview(data1, [], divContainer).then(() => {
-    const previewContainer = document.querySelector('.exportpdf-preview-container') as HTMLElement;
+    const previewContainer: HTMLElement = document.querySelector('.exportpdf-preview-container');
     if (previewContainer) previewContainer.style.visibility = 'visible';
     this.addLinkEventListeners();
     this._popUp?.close();

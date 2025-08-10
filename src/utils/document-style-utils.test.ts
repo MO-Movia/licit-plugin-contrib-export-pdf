@@ -1,6 +1,6 @@
 import { getStyleLevel } from './document-style-utils';
 import { StoredStyle } from './table-of-contents-utils';
-import { sampleStoredStyle } from '../test-data/document-styles.test';
+import { sampleStoredStyle } from '../test/document-styles';
 
 describe('document style utilities', () => {
   describe('getStyleLevel', () => {
