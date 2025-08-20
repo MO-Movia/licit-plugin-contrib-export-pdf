@@ -1,21 +1,11 @@
-import {ExportPDFPlugin} from './ExportPDFPlugin';
-import {createEditor, doc, p} from 'jest-prosemirror';
+import { ExportPDFPlugin } from './ExportPDFPlugin';
+import { createEditor, doc, p } from 'jest-prosemirror';
 import moment from 'moment';
-import {Schema} from 'prosemirror-model';
+import { Schema } from 'prosemirror-model';
 jest.mock('html2canvas', () => {
   return jest.fn().mockResolvedValue(null);
 });
-jest.mock('jspdf', () => {
-  const mockSave = jest.fn();
-  const mockHtml = jest.fn();
 
-  const mockConstructor = jest.fn().mockImplementation(() => ({
-    save: mockSave,
-    html: mockHtml,
-  }));
-
-  return mockConstructor;
-});
 
 describe('Export PDF Plugin', () => {
   let plugin: ExportPDFPlugin;
