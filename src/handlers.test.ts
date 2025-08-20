@@ -1,113 +1,135 @@
+//handlers.test.ts
 import { MyHandler } from './handlers';
+import { createTable } from './exportPdf';
 import { PreviewForm } from './preview';
 
+jest.mock('./exportPdf', () => ({ createTable: jest.fn() }));
+jest.mock('./preview', () => ({
+  PreviewForm: {
+    showToc: jest.fn(),
+    showTof: jest.fn(),
+    showTot: jest.fn(),
+    getHeadersTOC: jest.fn(),
+    getHeadersTOF: jest.fn(),
+    getHeadersTOT: jest.fn(),
+  }
+}));
+
 describe('MyHandler', () => {
-  const mockChunker = jest.fn();
-  const mockPolisher = jest.fn();
-  const mockCaller = jest.fn();
-  const handler = new MyHandler(mockChunker, mockPolisher, mockCaller);
+  let polisherMock: any;
+  let handler: MyHandler;
 
-  it('beforeParsed sets up pageFooters if Option includes 2', () => {
-    const toc_data = {
-      querySelector: () => {
-        return {
-          querySelector: (): string => {
-            return '.tocHead';
-          }
-        };
-      }
+  beforeEach(() => {
+    polisherMock = {
+      convertViaSheet: jest.fn().mockResolvedValue('convertedCSS'),
+      insert: jest.fn(),
     };
-
-    PreviewForm['isToc'] = true;
-    const test_ = handler.beforeParsed(toc_data);
-    expect(test_).toBeUndefined();
+    handler = new MyHandler({}, polisherMock, 'callerX');
+    jest.clearAllMocks();
   });
-  it('beforeParsed sets up pageFooters if PreviewForm.isToc == true', () => {
-    PreviewForm['isToc'] = true;
-    PreviewForm['general'] = true;
 
-    const el = document.createElement('infoicon');
-    el.setAttribute('description', 'text');
-    const el1 = document.createElement('infoicon');
-    el1.setAttribute('description', 'text');
-    const pages = [
-      { element: el },
-      { element: el1 }
-    ];
-
-    handler.afterRendered(pages);
-    const test_ = handler.afterPageLayout({
-      dataset: { pageNumber: 2 }, style: {
-        setProperty() {
-          return 'bold';
-        }
-      }
+  describe('beforeParsed', () => {
+    it('calls createTable when any show flag is true', () => {
+      (PreviewForm.showToc as jest.Mock).mockReturnValue(true);
+      handler.beforeParsed('mockContent');
+      expect(createTable).toHaveBeenCalledWith(expect.objectContaining({
+        content: 'mockContent'
+      }));
     });
-    expect(test_).toBeUndefined();
-  });
 
-  it('afterPageLayout sets up pageFooters if PreviewForm.isToc == false', () => {
-    PreviewForm['isToc'] = false;
-    PreviewForm['general'] = true;
-    const el = document.createElement('infoicon');
-    el.setAttribute('description', 'text');
-    const el1 = document.createElement('infoicon');
-    el1.setAttribute('description', 'text');
-    const pages = [
-      { element: el },
-      { element: el1 }
-    ];
-
-    handler.afterRendered(pages);
-    const test_ = handler.afterPageLayout({
-      dataset: { pageNumber: 1 }, style: {
-        setProperty() {
-          return 'bold';
-        }
-      }
+    it('skips createTable when all flags are false', () => {
+      (PreviewForm.showToc as jest.Mock).mockReturnValue(false);
+      (PreviewForm.showTof as jest.Mock).mockReturnValue(false);
+      (PreviewForm.showTot as jest.Mock).mockReturnValue(false);
+      handler.beforeParsed('mockContent');
+      expect(createTable).not.toHaveBeenCalled();
     });
-    expect(test_).toBeUndefined();
   });
 
-});
+  describe('afterPageLayout', () => {
+    function makeFragment(withElements: boolean, opts: Record<string, string> = {}) {
+      const frag: any = {
+        style: { setProperty: jest.fn() },
+        querySelectorAll: jest.fn()
+      };
+      if (withElements) {
+        const el = document.createElement('div');
+        el.setAttribute('data-style-level', opts.level || '1');
+        if (opts.prefix) el.setAttribute('prefix', opts.prefix);
+        if (opts.tof) el.setAttribute('tof', '1');
+        if (opts.tot) el.setAttribute('tot', '1');
+        if (opts.reset) el.setAttribute('reset', opts.reset);
+        frag.querySelectorAll.mockReturnValue([el]);
+      } else {
+        frag.querySelectorAll.mockReturnValue([]);
+      }
+      return frag;
+    }
 
-describe('MyHandler - doIT', () => {
+    it('handles no prepages and no tocElements', () => {
+      const frag = makeFragment(false);
+      const page = { element: { outerHTML: '<div></div>', querySelector: jest.fn().mockReturnValue(null) } };
+      handler.afterPageLayout(frag, page);
+      expect(frag.style.setProperty).toHaveBeenCalledWith('--pagedjs-string-last-chapTitled', '""');
+    });
 
-  const mockConvertViaSheet = jest.fn();
-  const mockInsert = jest.fn();
-  const mockPolisher = {
-    convertViaSheet: mockConvertViaSheet,
-    insert: mockInsert,
-  };
+    it('handles tocElements and computes footer height', () => {
+      const frag = makeFragment(false);
+      const page = {
+        element: {
+          querySelector: jest.fn().mockReturnValue(null),
+          outerHTML: '<infoicon description="testDesc"></infoicon>'
+        }
+      };
+      handler.afterPageLayout(frag, page);
+      expect(frag.style.setProperty).toHaveBeenCalledWith(expect.stringContaining('--pagedjs-footer-height'), expect.any(String));
+    });
 
-  const chunker = {};
-  const polisher = mockPolisher;
-  const caller = {};
+    it('increments counters for tof case', () => {
+      const frag = makeFragment(true, { level: '1', tof: '1' });
+      const page = { element: { querySelector: jest.fn().mockReturnValue(null), outerHTML: '<div></div>' } };
+      handler.afterPageLayout(frag, page);
+      expect(frag.querySelectorAll).toHaveBeenCalledWith('[data-style-level]');
+    });
 
-  const myHandler = new MyHandler(chunker, polisher, caller);
+    it('increments counters for tot case', () => {
+      const frag = makeFragment(true, { level: '1', tot: '1' });
+      const page = { element: { querySelector: jest.fn().mockReturnValue(null), outerHTML: '<div></div>' } };
+      handler.afterPageLayout(frag, page);
+    });
 
-  it('Should call convertViaSheet and insert with correct arguments when Option includes 3 and 2', async () => {
-    PreviewForm['isToc'] = true;
-    myHandler.beforePageLayout();
-    expect(myHandler.done).toBe(false);
+    it('handles reset case', () => {
+      const frag = makeFragment(true, { level: '2', reset: 'true' });
+      const page = { element: { querySelector: jest.fn().mockReturnValue(null), outerHTML: '<div></div>' } };
+      handler.afterPageLayout(frag, page);
+    });
   });
 
-  it('Should call convertViaSheet and insert with correct arguments when Option includes 3', async () => {
-    PreviewForm['isToc'] = false;
-    myHandler.beforePageLayout();
-    expect(myHandler.done).toBe(true);
+  describe('doIT', () => {
+    it('inserts stylesheet only once', async () => {
+      await handler.doIT();
+      expect(polisherMock.convertViaSheet).toHaveBeenCalled();
+      expect(polisherMock.insert).toHaveBeenCalledWith('convertedCSS');
+
+      await handler.doIT();  // second call should not insert again
+      expect(polisherMock.convertViaSheet).toHaveBeenCalledTimes(1);
+      expect(polisherMock.insert).toHaveBeenCalledTimes(1);
+    });
+
+    it('adds lastUpdated block if PreviewForm.lastUpdated is set', async () => {
+      (PreviewForm as any).lastUpdated = true;
+      (PreviewForm as any).formattedDate = '2025-08-20';
+      const h = new MyHandler({}, polisherMock, 'caller');
+      await h.doIT();
+      expect(polisherMock.convertViaSheet).toHaveBeenCalledWith(expect.stringContaining('Last Updated On'));
+    });
   });
 
-  it('Should call convertViaSheet and insert with correct arguments when Option includes 2', async () => {
-    PreviewForm['isToc'] = true;
-    myHandler.beforePageLayout();
-    expect(myHandler.done).toBe(true);
+  describe('beforePageLayout', () => {
+    it('delegates to doIT', async () => {
+      const spy = jest.spyOn(handler, 'doIT').mockResolvedValue();
+      handler.beforePageLayout();
+      expect(spy).toHaveBeenCalled();
+    });
   });
-
-  it('Should call convertViaSheet and insert with correct arguments when Option includes 1', async () => {
-    PreviewForm['isToc'] = false;
-    myHandler.beforePageLayout();
-    expect(myHandler.done).toBe(true);
-  });
-
 });

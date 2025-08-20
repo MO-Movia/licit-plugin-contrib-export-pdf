@@ -45,7 +45,6 @@ export class ExportPDF {
   }
 }
 
-
 export function createTable(config): void {
   const {
     content,
@@ -118,7 +117,7 @@ function generateList({
   const listDiv = document.createElement('div');
   listDiv.id = generatedListId;
   container.appendChild(listDiv);
-
+  container.classList.add('prepages');
   let elementCount = 0;
 
   titleElements.forEach((styleName, i) => {

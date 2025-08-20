@@ -19,3 +19,17 @@
   height: 100px;
   object-fit: contain;
 }
+
+.pagedjs_pages [data-style-level]::before {
+  content: attr(seybi) ' ' !important;
+}
+.pagedjs_margin-bottom {
+  grid-template-columns: minmax(12.66%, 1fr) minmax(33%, 93.3657%) minmax(
+      1px,
+      1fr
+    ) !important;
+  font-size: smaller !important;
+}
+.pagedjs_margin-bottom-center {
+  text-align: center !important;
+}
