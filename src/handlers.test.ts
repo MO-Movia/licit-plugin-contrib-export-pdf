@@ -16,7 +16,7 @@ jest.mock('./preview', () => ({
 }));
 
 describe('MyHandler', () => {
-  let polisherMock: any;
+  let polisherMock: unknown;
   let handler: MyHandler;
 
   beforeEach(() => {
@@ -48,7 +48,7 @@ describe('MyHandler', () => {
 
   describe('afterPageLayout', () => {
     function makeFragment(withElements: boolean, opts: Record<string, string> = {}) {
-      const frag: any = {
+      const frag: unknown = {
         style: { setProperty: jest.fn() },
         querySelectorAll: jest.fn()
       };
@@ -117,8 +117,8 @@ describe('MyHandler', () => {
     });
 
     it('adds lastUpdated block if PreviewForm.lastUpdated is set', async () => {
-      (PreviewForm as any).lastUpdated = true;
-      (PreviewForm as any).formattedDate = '2025-08-20';
+      PreviewForm.lastUpdated = true;
+      PreviewForm.formattedDate = '2025-08-20';
       const h = new MyHandler({}, polisherMock, 'caller');
       await h.doIT();
       expect(polisherMock.convertViaSheet).toHaveBeenCalledWith(expect.stringContaining('Last Updated On'));

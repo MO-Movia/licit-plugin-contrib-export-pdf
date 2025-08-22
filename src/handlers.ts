@@ -44,7 +44,6 @@ export class MyHandler extends Handler {
     }
   }
 
-
   public afterPageLayout(pageFragment, page): void {
     let concatenatedValues = '';
     const prepages = page?.element.querySelector('.prepages');
@@ -127,27 +126,11 @@ export class MyHandler extends Handler {
         }
 
         const counterVal = (prefix ? prefix + ' ' : '') + label.join('.');
-        el.setAttribute('seybi', counterVal + '.');
+        el.setAttribute('customcounter', counterVal + '.');
       });
     }
-    // [...document.styleSheets].forEach((sheet) => {
-    //   try {
-    //     [...sheet.cssRules].forEach((rule: CSSStyleRule, i) => {
-    //       if (rule.selectorText === '.pagedjs_area [data-split-from]') {
-    //         sheet.deleteRule(i);
-    //       }
-    //       if (rule.selectorText === '.pagedjs_area [data-footnote-call]') {
-    //         sheet.deleteRule(i);
-    //       }
-    //     });
-    //   } catch (e) {
-    //     // Handle silently
-    //   }
-    // });
-
 
   }
-
 
   public beforePageLayout(): void {
     this.doIT();
