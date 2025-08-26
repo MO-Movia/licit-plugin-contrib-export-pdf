@@ -45,91 +45,98 @@ export class MyHandler extends Handler {
   }
 
   public afterPageLayout(pageFragment, page): void {
+    const pageEl = page?.element instanceof HTMLElement ? page.element : null;
+    if (!pageEl) return;
+
+    const prepages = page?.element?.querySelector('.prepages');
+    if (prepages) return;
+
+    // ---- TOC (infoicon) processing ----
+    const tocElements = page?.element?.querySelectorAll('infoicon');
     let concatenatedValues = '';
-    const prepages = page?.element.querySelector('.prepages');
-    if (!prepages) {
+    this.prepagesCount = 0;
 
-      const outerHTMLValue = page?.element.outerHTML;
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(outerHTMLValue, 'text/html');
-      const tocElements = doc?.querySelectorAll('infoicon');
+    tocElements?.forEach((element) => {
+      this.prepagesCount++;
+      const description = element?.getAttribute('description') ?? '';
+      const cleanedDescription = ` ${this.prepagesCount}. ${this.stripHTML(description)}`;
+      concatenatedValues += cleanedDescription + ' ';
+    });
 
-      tocElements?.forEach((element) => {
-        this.prepagesCount++;
-        const description = element.getAttribute('description');
-        const cleanedDescription = ` ${this.prepagesCount}. ${description.replace(/<\/?[\w\s="'./:;#-]+>/gi, '')}`;
-        concatenatedValues += cleanedDescription + ' ';
-      });
+    if (tocElements?.length) {
+      const estimatedLines = Math.ceil(concatenatedValues.length / 80);
+      const footerHeight = 20 + estimatedLines * 12;
 
-      if (tocElements?.length > 0) {
-        const estimatedLines = Math.ceil(concatenatedValues.length / 80);
-
-        // dynamically compute footer height based on lines
-        const footerHeight = 20 + estimatedLines * 12;
-
-        pageFragment.style.setProperty('--pagedjs-string-last-chapTitled', `"${concatenatedValues}"`);
-        pageFragment.style.setProperty('--pagedjs-footer-height', `${footerHeight}px`);
-      }
-      else {
-        pageFragment.style.setProperty('--pagedjs-string-last-chapTitled', '""');
-      }
-      let items = [];
-      if (pageFragment && typeof pageFragment.querySelectorAll === 'function') {
-        items = pageFragment?.querySelectorAll('[data-style-level]');
-      }
-
-      items?.forEach(el => {
-        const level = parseInt(el.getAttribute('data-style-level'));
-        const prefix = el.getAttribute('prefix');
-        const tof = el.getAttribute('tof');
-        const tot = el.getAttribute('tot');
-        const isReset = el.getAttribute('reset');
-
-        const label = [];
-        for (let i = level + 1; i <= 10; i++) {
-          this.counters[i] = 0;
-        }
-        if (isReset === 'true') {
-          for (let i = 1; i <= level; i++) {
-            this.counters[i] = 1;
-            if (i === level) {
-              this.counters[i] = 0;
-            }
-          }
-        }
-        if (tof) {
-          this.counters[11]++;
-          if (this.counters[11]) {
-            label.push(this.counters[1]);
-            label.push(this.counters[11]);
-          }
-        } else if (tot) {
-          this.counters[12]++;
-          if (this.counters[12]) {
-            label.push(this.counters[1]);
-            label.push(this.counters[12]);
-          }
-        } else {
-          if (level === 1) {
-            if (this.counters[1] > 0) {
-              this.counters[11] = 0;
-              this.counters[12] = 0;
-            }
-          }
-          this.counters[level]++;
-          for (let i = 1; i <= level; i++) {
-            if (this.counters[i]) {
-              label.push(this.counters[i]);
-            }
-          }
-
-        }
-
-        const counterVal = (prefix ? prefix + ' ' : '') + label.join('.');
-        el.setAttribute('customcounter', counterVal + '.');
-      });
+      pageFragment.style.setProperty('--pagedjs-string-last-chapTitled', `"${concatenatedValues}"`);
+      pageFragment.style.setProperty('--pagedjs-footer-height', `${footerHeight}px`);
+    } else {
+      pageFragment.style.setProperty('--pagedjs-string-last-chapTitled', '""');
     }
 
+    // ---- Counter handling ----
+    const items = pageFragment instanceof HTMLElement
+      ? pageFragment.querySelectorAll('[data-style-level]')
+      : [];
+
+    items?.forEach(el => {
+      const level = parseInt(el.getAttribute('data-style-level') ?? '1', 10);
+      const prefix = el.getAttribute('prefix');
+      const tof = el.getAttribute('tof');
+      const tot = el.getAttribute('tot');
+      const isReset = el.getAttribute('reset') === 'true';
+
+      const label: number[] = [];
+
+      this.resetCounters(level, isReset);
+
+      if (tof || tot) {
+        this.handleSpecialCounters(tof, tot, label);
+      } else {
+        this.buildLabel(level, label);
+      }
+
+      const counterVal = (prefix ? prefix + ' ' : '') + label.join('.');
+      el.setAttribute('customcounter', counterVal + '.');
+    });
+  }
+
+  private resetCounters(level: number, isReset: boolean): void {
+    for (let i = level + 1; i <= 10; i++) this.counters[i] = 0;
+
+    if (isReset) {
+      for (let i = 1; i <= level; i++) {
+        this.counters[i] = i === level ? 0 : 1;
+      }
+    }
+  }
+
+  private handleSpecialCounters(tof: string | null, tot: string | null, label: number[]): void {
+    if (tof) {
+      this.counters[11]++;
+      if (this.counters[11]) label.push(this.counters[1], this.counters[11]);
+    } else if (tot) {
+      this.counters[12]++;
+      if (this.counters[12]) label.push(this.counters[1], this.counters[12]);
+    }
+  }
+
+  private buildLabel(level: number, label: number[]): void {
+    if (level === 1 && this.counters[1] > 0) {
+      this.counters[11] = 0;
+      this.counters[12] = 0;
+    }
+
+    this.counters[level]++;
+    for (let i = 1; i <= level; i++) {
+      if (this.counters[i]) label.push(this.counters[i]);
+    }
+  }
+
+
+  stripHTML(html: string): string {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || '';
   }
 
   public beforePageLayout(): void {
