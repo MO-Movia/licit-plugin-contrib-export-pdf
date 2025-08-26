@@ -19,3 +19,14 @@
   height: 100px;
   object-fit: contain;
 }
+
+.pagedjs_pages [data-style-level]::before {
+  content: attr(customcounter) ' ' !important;
+}
+.pagedjs_margin-bottom {
+  grid-template-columns: minmax(14.3%, 1fr) minmax(33%, 100%) minmax(1px, 1fr) !important;
+  font-size: smaller !important;
+}
+.pagedjs_margin-bottom-center {
+  text-align: center !important;
+}
