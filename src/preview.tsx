@@ -44,9 +44,9 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   private static isCitation: boolean = false;
   private static isTitle: boolean = true;
   private static lastUpdated: boolean = false;
-  private static readonly tocHeader = [];
-  private static readonly tofHeader = [];
-  private static readonly totHeader = [];
+  private static readonly tocHeader: string[] = [];
+  private static readonly tofHeader: string[] = [];
+  private static readonly totHeader: string[] = [];
   private static readonly tocNodeList: Node[] = [];
   private static readonly tofNodeList: Node[] = [];
   private static readonly totNodeList: Node[] = [];
@@ -856,9 +856,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     if (printWindow) {
       let divContainer = document.getElementById('holder');
       printWindow.document.open();
-      printWindow.document.write(
-        `<!DOCTYPE html><html><head><title>LICIT</title></head><body></body></html>`
-      );
+      printWindow.document.writeln('<!DOCTYPE html><html><body></body></html>');
 
       while (printWindow.document.documentElement.firstChild) {
         printWindow.document.documentElement.removeChild(
@@ -876,6 +874,8 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       );
 
       this.prepareCSSRules(printWindow.document);
+
+      printWindow.document.title = 'LICIT';
       printWindow.document.close();
       printWindow.print();
     }

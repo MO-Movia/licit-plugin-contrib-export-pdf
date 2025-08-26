@@ -100,7 +100,7 @@ describe('PreviewForm component', () => {
     printWindowMock = {
       document: {
         open: jest.fn(),
-        write: jest.fn(),
+        writeln: jest.fn(),
         close: jest.fn(),
         createElement: jest.fn(),
         appendChild: jest.fn(),
@@ -131,9 +131,9 @@ describe('PreviewForm component', () => {
     previewForm.handleConfirm();
     expect(window.open).toHaveBeenCalledWith('', '_blank');
     expect(printWindowMock.document.open).toHaveBeenCalled();
-    expect(printWindowMock.document.write).toHaveBeenCalledWith(
+    expect(printWindowMock.document.writeln).toHaveBeenCalledWith(
       expect.stringContaining(
-        '<!DOCTYPE html><html><head><title>LICIT</title></head><body></body></html>'
+        '<!DOCTYPE html>'
       )
     );
     expect(printWindowMock.document.documentElement.firstChild).not.toBeNull();
