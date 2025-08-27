@@ -32,7 +32,6 @@ export class MyHandler extends Handler {
     this.pageFooters = [];
     this.prepagesCount = 0;
     this.done = false;
-    MyHandler.currentPage = 0;
     if (PreviewForm.showToc() || PreviewForm.showTof() || PreviewForm.showTot()) {
       createTable({
         content: content,
@@ -178,6 +177,13 @@ ${opt2}
 /* set the style for the list numbering to none */
 #list-toc-generated {
 list-style: none;
+}
+
+.forcePageSpacer {
+  break-after: page;
+  page-break-after: always; 
+  display: block;
+  min-height: 1px;
 }
 
 #list-toc-generated .toc-element {
