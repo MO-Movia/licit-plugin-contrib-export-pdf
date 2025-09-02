@@ -18,7 +18,7 @@ export class Loader extends React.PureComponent {
           src="assets/images/modus-loading.gif"
           alt="Loading..."
         />
-        <span>Parsing section {MyHandler.currentPage}...</span>
+        <span>Parsing section {MyHandler.state.currentPage}...</span>
       </div>
     );
   }

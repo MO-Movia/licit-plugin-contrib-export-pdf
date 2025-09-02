@@ -3,7 +3,10 @@ import { createTable } from './exportPdf';
 import { PreviewForm } from './preview';
 
 export class MyHandler extends Handler {
-  public static currentPage = 0;
+    // static field needs to be readonly for sonar
+  public static readonly state = {
+    currentPage: 0
+  };
   public done = false;
   public countTOC = 0;
   public pageFooters: Array<HTMLElement> = [];
@@ -31,6 +34,7 @@ export class MyHandler extends Handler {
   public beforeParsed(content): void {
     this.pageFooters = [];
     this.prepagesCount = 0;
+    MyHandler.state.currentPage = 0;
     this.done = false;
     if (PreviewForm.showToc() || PreviewForm.showTof() || PreviewForm.showTot()) {
       createTable({
@@ -457,6 +461,6 @@ background-color: #ffffff
   }
 
   finalizePage() {
-    MyHandler.currentPage++;
+    MyHandler.state.currentPage++;
   }
 }

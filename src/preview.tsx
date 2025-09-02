@@ -101,7 +101,6 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   }
 
   public componentDidMount(): void {
-    const paged = new Previewer();
     this.showAlert();
 
     const { editorView } = this.props;
@@ -131,7 +130,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
   public showAlert(): void {
     const anchor = null;
-    MyHandler.currentPage = 0;
+    MyHandler.state.currentPage = 0;
     this._popUp = createPopUp(Loader, null, {
       anchor,
       modal: true,
@@ -763,7 +762,7 @@ private insertSectionHeaders(data: HTMLElement, editorView): void {
     header.style.color = '#2A6EBB';
     header.style.textAlign = 'center';
     header.style.fontWeight = 'bold';
-    header.textContent = editorView?.state?.doc?.attrs?.objectMetaData?.name || 'Untitled';
+    header.textContent = editorView?.state?.doc?.attrs?.objectMetaData?.name ?? 'Untitled';
 
     titleDiv.appendChild(header);
     data.insertBefore(titleDiv, insertBeforeNode);
