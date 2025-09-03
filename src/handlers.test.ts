@@ -1,113 +1,154 @@
-import { MyHandler } from './handlers';
+import { MyHandler } from './handlers'; // adjust path
 import { PreviewForm } from './preview';
+import { createTable } from './exportPdf';
+
+jest.mock('./exportPdf', () => ({
+  createTable: jest.fn(),
+}));
+
+jest.mock('./preview', () => ({
+  PreviewForm: {
+    showToc: jest.fn(),
+    showTof: jest.fn(),
+    showTot: jest.fn(),
+    getHeadersTOC: jest.fn().mockReturnValue(['h1']),
+    getHeadersTOF: jest.fn().mockReturnValue(['h2']),
+    getHeadersTOT: jest.fn().mockReturnValue(['h3']),
+  },
+}));
 
 describe('MyHandler', () => {
-  const mockChunker = jest.fn();
-  const mockPolisher = jest.fn();
-  const mockCaller = jest.fn();
-  const handler = new MyHandler(mockChunker, mockPolisher, mockCaller);
+  let handler: MyHandler;
+  let frag: HTMLElement;
+  let polisher: unknown;
 
-  it('beforeParsed sets up pageFooters if Option includes 2', () => {
-    const toc_data = {
-      querySelector: () => {
-        return {
-          querySelector: (): string => {
-            return '.tocHead';
-          }
-        };
-      }
+  beforeEach(() => {
+    polisher = {
+      convertViaSheet: jest.fn().mockResolvedValue('converted-css'),
+      insert: jest.fn(),
     };
-
-    PreviewForm['isToc'] = true;
-    const test_ = handler.beforeParsed(toc_data);
-    expect(test_).toBeUndefined();
+    handler = new MyHandler({}, polisher, {});
+    frag = document.createElement('div');
+    jest.spyOn(frag.style, 'setProperty');
   });
-  it('beforeParsed sets up pageFooters if PreviewForm.isToc == true', () => {
-    PreviewForm['isToc'] = true;
-    PreviewForm['general'] = true;
 
-    const el = document.createElement('infoicon');
-    el.setAttribute('description', 'text');
-    const el1 = document.createElement('infoicon');
-    el1.setAttribute('description', 'text');
-    const pages = [
-      { element: el },
-      { element: el1 }
-    ];
+  describe('beforeParsed', () => {
+    it('calls createTable when PreviewForm flags are true', () => {
+      (PreviewForm.showToc as jest.Mock).mockReturnValue(true);
+      (PreviewForm.showTof as jest.Mock).mockReturnValue(false);
+      (PreviewForm.showTot as jest.Mock).mockReturnValue(false);
+      const content = document.createElement('div');
 
-    handler.afterRendered(pages);
-    const test_ = handler.afterPageLayout({
-      dataset: { pageNumber: 2 }, style: {
-        setProperty() {
-          return 'bold';
-        }
-      }
+      handler.beforeParsed(content);
+      expect(createTable).toHaveBeenCalled();
     });
-    expect(test_).toBeUndefined();
-  });
 
-  it('afterPageLayout sets up pageFooters if PreviewForm.isToc == false', () => {
-    PreviewForm['isToc'] = false;
-    PreviewForm['general'] = true;
-    const el = document.createElement('infoicon');
-    el.setAttribute('description', 'text');
-    const el1 = document.createElement('infoicon');
-    el1.setAttribute('description', 'text');
-    const pages = [
-      { element: el },
-      { element: el1 }
-    ];
-
-    handler.afterRendered(pages);
-    const test_ = handler.afterPageLayout({
-      dataset: { pageNumber: 1 }, style: {
-        setProperty() {
-          return 'bold';
-        }
-      }
+    it('does not call createTable when all flags are false', () => {
+      (PreviewForm.showToc as jest.Mock).mockReturnValue(false);
+      (PreviewForm.showTof as jest.Mock).mockReturnValue(false);
+      (PreviewForm.showTot as jest.Mock).mockReturnValue(false);
+      handler.beforeParsed(document.createElement('div'));
+      expect(createTable).not.toHaveBeenCalled();
     });
-    expect(test_).toBeUndefined();
   });
 
-});
+  describe('afterPageLayout', () => {
+    it('returns early if page.element is missing', () => {
+      handler.afterPageLayout(frag, {});
+      expect(frag.style.setProperty).not.toHaveBeenCalled();
+    });
 
-describe('MyHandler - doIT', () => {
+    it('returns early if prepages exists', () => {
+      const page = { element: document.createElement('div') };
+      page.element.innerHTML = '<div class="prepages"></div>';
+      handler.afterPageLayout(frag, page);
+      expect(frag.style.setProperty).not.toHaveBeenCalled();
+    });
 
-  const mockConvertViaSheet = jest.fn();
-  const mockInsert = jest.fn();
-  const mockPolisher = {
-    convertViaSheet: mockConvertViaSheet,
-    insert: mockInsert,
-  };
+    it('sets empty toc string when no tocElements', () => {
+      const page = { element: document.createElement('div') };
+      handler.afterPageLayout(frag, page);
+      expect(frag.style.setProperty).toHaveBeenCalledWith(
+        '--pagedjs-string-last-chapTitled',
+        '""'
+      );
+    });
 
-  const chunker = {};
-  const polisher = mockPolisher;
-  const caller = {};
+    it('handles tocElements and computes footer height', () => {
+      const page = { element: document.createElement('div') };
+      page.element.innerHTML = '<infoicon description="<b>Intro</b>"></infoicon>';
+      handler.afterPageLayout(frag, page);
+      expect(frag.style.setProperty).toHaveBeenCalledWith(
+        expect.stringContaining('--pagedjs-footer-height'),
+        expect.any(String)
+      );
+    });
 
-  const myHandler = new MyHandler(chunker, polisher, caller);
+    it('increments counters normally', () => {
+      const page = { element: document.createElement('div') };
+      handler.afterPageLayout(frag, page);
+      const el = document.createElement('div');
+      el.setAttribute('data-style-level', '1');
+      frag.appendChild(el);
+      handler.afterPageLayout(frag, page);
+      expect(el.getAttribute('customcounter')).toBe('1.');
+    });
 
-  it('Should call convertViaSheet and insert with correct arguments when Option includes 3 and 2', async () => {
-    PreviewForm['isToc'] = true;
-    myHandler.beforePageLayout();
-    expect(myHandler.done).toBe(false);
+    it('increments counters for tof', () => {
+      const page = { element: document.createElement('div') };
+      const el = document.createElement('div');
+      el.setAttribute('data-style-level', '1');
+      el.setAttribute('tof', 'true');
+      frag.appendChild(el);
+      handler.afterPageLayout(frag, page);
+      expect(el.getAttribute('customcounter')).toContain('.');
+    });
+
+    it('increments counters for tot', () => {
+      const page = { element: document.createElement('div') };
+      const el = document.createElement('div');
+      el.setAttribute('data-style-level', '1');
+      el.setAttribute('tot', 'true');
+      frag.appendChild(el);
+      handler.afterPageLayout(frag, page);
+      expect(el.getAttribute('customcounter')).toContain('.');
+    });
+
+    it('resets counters when reset attribute is true', () => {
+      const page = { element: document.createElement('div') };
+      const el = document.createElement('div');
+      el.setAttribute('data-style-level', '2');
+      el.setAttribute('reset', 'true');
+      frag.appendChild(el);
+      handler.afterPageLayout(frag, page);
+      expect(el.getAttribute('customcounter')).toContain('.');
+    });
   });
 
-  it('Should call convertViaSheet and insert with correct arguments when Option includes 3', async () => {
-    PreviewForm['isToc'] = false;
-    myHandler.beforePageLayout();
-    expect(myHandler.done).toBe(true);
+  it('stripHTML removes tags', () => {
+    const result = handler.stripHTML('<b>Hello</b>');
+    expect(result).toBe('Hello');
   });
 
-  it('Should call convertViaSheet and insert with correct arguments when Option includes 2', async () => {
-    PreviewForm['isToc'] = true;
-    myHandler.beforePageLayout();
-    expect(myHandler.done).toBe(true);
-  });
+  describe('beforePageLayout & doIT', () => {
+    it('calls doIT and inserts css without lastUpdated', async () => {
+      await handler.beforePageLayout();
+      expect(polisher.convertViaSheet).toHaveBeenCalled();
+      expect(polisher.insert).toHaveBeenCalled();
+    });
 
-  it('Should call convertViaSheet and insert with correct arguments when Option includes 1', async () => {
-    PreviewForm['isToc'] = false;
-    myHandler.beforePageLayout();
-    expect(myHandler.done).toBe(true);
-  });
+    it('adds lastUpdatedStyle when PreviewForm.lastUpdated exists', async () => {
+      PreviewForm.lastUpdated = true;
+      PreviewForm.formattedDate = '2025-08-26';
+      handler = new MyHandler({}, polisher, {});
+      await handler.doIT();
+      expect(polisher.convertViaSheet).toHaveBeenCalledWith(expect.stringContaining('Last Updated On: 2025-08-26'));
+    });
 
+    it('does not run convertViaSheet if already done', async () => {
+      handler.done = true;
+      await handler.doIT();
+      expect(polisher.convertViaSheet).not.toHaveBeenCalled();
+    });
+  });
 });

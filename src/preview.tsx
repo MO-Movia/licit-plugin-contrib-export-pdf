@@ -1,6 +1,6 @@
 import React from 'react';
 import { EditorView } from 'prosemirror-view';
-import { Previewer, registerHandlers } from 'pagedjs';
+import { Previewer, registerHandlers, registeredHandlers } from 'pagedjs';
 import { MyHandler } from './handlers';
 import { createPopUp, atViewportCenter } from '@modusoperandi/licit-ui-commands';
 import { Loader } from './loader';
@@ -44,9 +44,9 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   private static isCitation: boolean = false;
   private static isTitle: boolean = true;
   private static lastUpdated: boolean = false;
-  private static readonly tocHeader = [];
-  private static readonly tofHeader = [];
-  private static readonly totHeader = [];
+  private static readonly tocHeader: string[] = [];
+  private static readonly tofHeader: string[] = [];
+  private static readonly totHeader: string[] = [];
   private static readonly tocNodeList: Node[] = [];
   private static readonly tofNodeList: Node[] = [];
   private static readonly totNodeList: Node[] = [];
@@ -81,11 +81,11 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     return [...this.tocHeader];
   }
 
-    static getHeadersTOF() {
+  static getHeadersTOF() {
     return [...this.tofHeader];
   }
 
-    static getHeadersTOT() {
+  static getHeadersTOT() {
     return [...this.totHeader];
   }
 
@@ -100,40 +100,37 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     };
   }
 
-public componentDidMount(): void {
-  const paged = new Previewer();
-  this.showAlert();
+  public componentDidMount(): void {
+    this.showAlert();
 
-  const { editorView } = this.props;
-  this.getToc(editorView);
-  PreviewForm.general = true;
-  PreviewForm.isToc = true;
-  PreviewForm.isTof = true;
-  PreviewForm.isTot = true;
-  PreviewForm.isTitle = true;
+    const { editorView } = this.props;
+    this.getToc(editorView);
+    PreviewForm.general = true;
+    PreviewForm.isToc = true;
+    PreviewForm.isTof = true;
+    PreviewForm.isTot = true;
+    PreviewForm.isTitle = true;
+    if (!registeredHandlers.includes(MyHandler)) {
+      registerHandlers(MyHandler);
+    }
+    const divContainer = document.getElementById('holder');
+    const data = editorView.dom.parentElement?.parentElement;
+    if (!data || !divContainer) return;
 
-  registerHandlers(MyHandler);
+    const data1 = data.cloneNode(true) as HTMLElement;
 
-  const divContainer = document.getElementById('holder');
-  const data = editorView.dom.parentElement?.parentElement;
-  if (!data || !divContainer) return;
+    this.replaceInfoIcons(data1);
+    this.updateImageWidths(data1);
+    this.prepareEditorContent(data1);
 
-  const data1 = data.cloneNode(true) as HTMLElement;
-
-  this.replaceInfoIcons(data1);
-  this.updateImageWidths(data1);
-  this.prepareEditorContent(data1);
-
-  editorView.dispatch(editorView.state?.tr.setMeta('suppressOnChange', true));
-
-  paged.preview(data1, [], divContainer).then(() => {
-    this.InfoActive();
-  });
-}
+    editorView.dispatch(editorView.state?.tr.setMeta('suppressOnChange', true));
+    this.calcLogic();
+  }
 
 
   public showAlert(): void {
     const anchor = null;
+    MyHandler.state.currentPage = 0;
     this._popUp = createPopUp(Loader, null, {
       anchor,
       modal: true,
@@ -158,31 +155,32 @@ public componentDidMount(): void {
 
   public getToc = async (view): Promise<void> => {
     const styles = (await view.runtime.getStylesAsync()) as DocumentStyle[];
-const storeTOCvalue = getTableStyles(styles, 'toc');
-const storeTOFvalue = getTableStyles(styles, 'tof');
-const storeTOTvalue = getTableStyles(styles, 'tot');
-    
+    const storeTOCvalue = getTableStyles(styles, 'toc');
+    const storeTOFvalue = getTableStyles(styles, 'tof');
+    const storeTOTvalue = getTableStyles(styles, 'tot');
+
 
     view?.state?.tr?.doc.descendants((node: Node) => {
-      if (node.attrs.styleName) {
-        for (const tofValue of storeTOFvalue) {
-          if (tofValue.name === node.attrs.styleName) {
-            PreviewForm.tofNodeList.push(node);
-            PreviewForm.tofHeader.push(node.attrs.styleName);
-          }
+      if (!node.attrs.styleName) {
+        return;
+      }
+      for (const tofValue of storeTOFvalue) {
+        if (tofValue.name === node.attrs.styleName) {
+          PreviewForm.tofNodeList.push(node);
+          PreviewForm.tofHeader.push(node.attrs.styleName);
         }
+      }
 
-         for (const totValue of storeTOTvalue) {
-          if (totValue.name === node.attrs.styleName) {
-            PreviewForm.totNodeList.push(node);
-            PreviewForm.totHeader.push(node.attrs.styleName);
-          }
+      for (const totValue of storeTOTvalue) {
+        if (totValue.name === node.attrs.styleName) {
+          PreviewForm.totNodeList.push(node);
+          PreviewForm.totHeader.push(node.attrs.styleName);
         }
-        for (const tocValue of storeTOCvalue) {
-          if (tocValue.name === node.attrs.styleName) {
-            PreviewForm.tocNodeList.push(node);
-            PreviewForm.tocHeader.push(node.attrs.styleName);
-          }
+      }
+      for (const tocValue of storeTOCvalue) {
+        if (tocValue.name === node.attrs.styleName) {
+          PreviewForm.tocNodeList.push(node);
+          PreviewForm.tocHeader.push(node.attrs.styleName);
         }
       }
     });
@@ -306,7 +304,7 @@ const storeTOTvalue = getTableStyles(styles, 'tot');
                     Include TOC
                   </label>
                 </div>
-                                <div
+                <div
                   style={{
                     marginTop: '10px',
                     display: 'flex',
@@ -331,7 +329,7 @@ const storeTOTvalue = getTableStyles(styles, 'tot');
                     Include TOF
                   </label>
                 </div>
-                                <div
+                <div
                   style={{
                     marginTop: '10px',
                     display: 'flex',
@@ -510,7 +508,7 @@ const storeTOTvalue = getTableStyles(styles, 'tot');
     }
   };
 
-    public handleTOTChange = (event) => {
+  public handleTOTChange = (event) => {
     if (event.target.checked) {
       this.totActive();
     } else {
@@ -518,7 +516,7 @@ const storeTOTvalue = getTableStyles(styles, 'tot');
     }
   };
 
-    public handleTOFChange = (event) => {
+  public handleTOFChange = (event) => {
     if (event.target.checked) {
       this.tofActive();
     } else {
@@ -667,159 +665,171 @@ const storeTOTvalue = getTableStyles(styles, 'tot');
     }
   };
 
-public calcLogic = (): void => {
-  const divContainer = document.getElementById('holder');
-  if (!divContainer) return;
-  divContainer.innerHTML = '';
+  public calcLogic = (): void => {
+    const divContainer = document.getElementById('holder');
+    if (!divContainer) return;
+    divContainer.innerHTML = '';
 
-  const { editorView } = this.props;
-  const data = editorView.dom.parentElement?.parentElement;
-  if (!data) return;
+    const { editorView } = this.props;
+    const data = editorView.dom.parentElement?.parentElement;
+    if (!data) return;
 
-  let data1 = this.cloneModifyNode(data);
-  this.prepareEditorContent(data1);
+    let data1 = this.cloneModifyNode(data);
+    this.prepareEditorContent(data1);
 
-  data1 = filterDocumentSections(
-    data1,
-    PreviewForm.tocNodeList,
-    this.state.sectionNodesToExclude,
-    this.state.storedStyles
-  );
+    data1 = filterDocumentSections(
+      data1,
+      PreviewForm.tocNodeList,
+      this.state.sectionNodesToExclude,
+      this.state.storedStyles
+    );
 
-  if (PreviewForm.isCitation) {
-    this.replaceCitations(data1);
-  }
+    if (PreviewForm.isCitation) {
+      this.replaceCitations(data1);
+    }
 
-  if (PreviewForm.lastUpdated) {
-    this.setLastUpdated(editorView);
-  }
+    if (PreviewForm.lastUpdated) {
+      this.setLastUpdated(editorView);
+    }
 
-  this.insertSectionHeaders(data1, editorView);
-  this.replaceInfoIcons(data1);
-  this.updateImageWidths(data1);
+    this.insertSectionHeaders(data1, editorView);
+    this.replaceInfoIcons(data1);
+    this.updateImageWidths(data1);
 
-  const paged = new Previewer();
-  this._popUp?.close();
-  this.showAlert();
-
-  editorView.dispatch(editorView.state.tr?.setMeta('suppressOnChange', true));
-
-  paged.preview(data1, [], divContainer).then(() => {
-    const previewContainer = document.querySelector('.exportpdf-preview-container') as HTMLElement;
-    if (previewContainer) previewContainer.style.visibility = 'visible';
-    this.addLinkEventListeners();
+    const paged = new Previewer();
     this._popUp?.close();
-  });
-};
+    this.showAlert();
+
+    editorView.dispatch(editorView.state.tr?.setMeta('suppressOnChange', true));
+
+    paged.preview(data1, [], divContainer).then(() => {
+      const previewContainer: HTMLElement = document.querySelector('.exportpdf-preview-container');
+      if (previewContainer) previewContainer.style.visibility = 'visible';
+      this.addLinkEventListeners();
+      this._popUp?.close();
+    });
+  };
 
 
 
-private prepareEditorContent(data: HTMLElement): void {
-  const proseMirror = data.querySelector('.ProseMirror');
-  if (proseMirror) {
-    proseMirror.setAttribute('contenteditable', 'false');
-    proseMirror.classList.remove('czi-prosemirror-editor');
-    proseMirror.querySelectorAll('.molm-czi-image-view-body-img-clip span').forEach(span => {
-      (span as HTMLElement).style.display = 'flex';
+  private prepareEditorContent(data: HTMLElement): void {
+    const proseMirror = data.querySelector('.ProseMirror');
+    if (proseMirror) {
+      proseMirror.setAttribute('contenteditable', 'false');
+      proseMirror.classList.remove('czi-prosemirror-editor');
+      proseMirror.querySelectorAll('.molm-czi-image-view-body-img-clip span').forEach(span => {
+        (span as HTMLElement).style.display = 'flex';
+      });
+    }
+  }
+
+  private replaceCitations(data: HTMLElement): void {
+    const citations = data.querySelectorAll('.citationnote');
+    citations.forEach((el, idx) => {
+      const sup = document.createElement('sup');
+      sup.textContent = `[${idx + 1}]`;
+      el.parentNode?.replaceChild(sup, el);
+    });
+    this.insertFooters(citations, data);
+  }
+
+  private setLastUpdated(editorView): void {
+    const lastEdited = editorView?.state?.doc?.attrs?.objectMetaData?.lastEditedOn;
+    const date = new Date(lastEdited);
+    PreviewForm.formattedDate = date.toLocaleString('en-GB', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
     });
   }
-}
-
-private replaceCitations(data: HTMLElement): void {
-  const citations = data.querySelectorAll('.citationnote');
-  citations.forEach((el, idx) => {
-    const sup = document.createElement('sup');
-    sup.textContent = `[${idx + 1}]`;
-    el.parentNode?.replaceChild(sup, el);
-  });
-  this.insertFooters(citations, data);
-}
-
-private setLastUpdated(editorView): void {
-  const lastEdited = editorView?.state?.doc?.attrs?.objectMetaData?.lastEditedOn;
-  const date = new Date(lastEdited);
-  PreviewForm.formattedDate = date.toLocaleString('en-GB', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  });
-}
 
 private insertSectionHeaders(data: HTMLElement, editorView): void {
+  data.querySelectorAll('.titleHead, .forcePageSpacer, .tocHead, .tofHead, .totHead')
+    .forEach(n => n.remove());
+
+  let insertBeforeNode: ChildNode | null = data.firstChild;
+
+  if (PreviewForm.isTitle) {
+    const titleDiv = document.createElement('div');
+    titleDiv.classList.add('titleHead', 'prepages');
+
+    const header = document.createElement('h4');
+    header.style.marginBottom = '40px';
+    header.style.color = '#2A6EBB';
+    header.style.textAlign = 'center';
+    header.style.fontWeight = 'bold';
+    header.textContent = editorView?.state?.doc?.attrs?.objectMetaData?.name ?? 'Untitled';
+
+    titleDiv.appendChild(header);
+    data.insertBefore(titleDiv, insertBeforeNode);
+    insertBeforeNode = titleDiv.nextSibling;
+
+    const titleSpacer = document.createElement('div');
+    titleSpacer.classList.add('forcePageSpacer');
+    titleSpacer.innerHTML = '&nbsp;';
+    data.insertBefore(titleSpacer, insertBeforeNode);
+    insertBeforeNode = titleSpacer.nextSibling;
+  }
+
   const sections = [
     { flag: PreviewForm.isToc, className: 'tocHead' },
     { flag: PreviewForm.isTof, className: 'tofHead' },
     { flag: PreviewForm.isTot, className: 'totHead' }
   ];
 
-  const parentDiv = document.createElement('div');
-  let hasContent = false;
-
-  if (PreviewForm.isTitle) {
-    parentDiv.classList.add('titleHead');
-    const header = document.createElement('h4');
-    header.style.marginBottom = '40px';
-    header.style.color = '#2A6EBB';
-    header.style.textAlign = 'center';
-    header.style.fontWeight = 'bold';
-    header.textContent = editorView?.state?.doc?.attrs?.objectMetaData?.name;
-    parentDiv.appendChild(header);
-    hasContent = true;
-  }
-
   sections.forEach(({ flag, className }) => {
-    if (flag) {
-      const sectionDiv = document.createElement('div');
-      sectionDiv.classList.add(className);
-      parentDiv.appendChild(sectionDiv);
-      hasContent = true;
-    }
-  });
+    if (!flag) return;
 
-  if (hasContent) {
-    data.insertBefore(parentDiv, data.firstChild);
-  }
-}
+    const sectionDiv = document.createElement('div');
+    sectionDiv.classList.add(className);
+    data.insertBefore(sectionDiv, insertBeforeNode);
+    insertBeforeNode = sectionDiv.nextSibling;
 
-private replaceInfoIcons(data: HTMLElement): void {
-  const icons = data.querySelectorAll('.infoicon');
-  icons.forEach((icon, index) => {
-    const sup = document.createElement('sup');
-    sup.textContent = `${index + 1}`;
-    icon.textContent = '';
-    icon.appendChild(sup);
+    const sectionSpacer = document.createElement('div');
+    sectionSpacer.classList.add('forcePageSpacer');
+    sectionSpacer.innerHTML = '&nbsp;';
+    data.insertBefore(sectionSpacer, insertBeforeNode);
+    insertBeforeNode = sectionSpacer.nextSibling;
   });
 }
 
-private updateImageWidths(data: HTMLElement): void {
-  for (const element of data.children) {
-    const images = element.querySelectorAll('img');
-    images.forEach((img) => {
-      this.replaceImageWidth(img);
+
+
+  private replaceInfoIcons(data: HTMLElement): void {
+    const icons = data.querySelectorAll('.infoicon');
+    icons.forEach((icon, index) => {
+      const sup = document.createElement('sup');
+      sup.textContent = `${index + 1}`;
+      icon.textContent = '';
+      icon.appendChild(sup);
     });
   }
-}
+
+  private updateImageWidths(data: HTMLElement): void {
+    for (const element of data.children) {
+      const images = element.querySelectorAll('img');
+      images.forEach((img) => {
+        this.replaceImageWidth(img);
+      });
+    }
+  }
 
   public tocActive = (): void => {
     PreviewForm.isToc = true;
     this.calcLogic();
   };
 
-    public tofActive = (): void => {
+  public tofActive = (): void => {
     PreviewForm.isTof = true;
     this.calcLogic();
   };
 
-    public totActive = (): void => {
+  public totActive = (): void => {
     PreviewForm.isTot = true;
-    this.calcLogic();
-  };
-
-  public InfoActive = (): void => {
     this.calcLogic();
   };
 
@@ -828,12 +838,12 @@ private updateImageWidths(data: HTMLElement): void {
     this.calcLogic();
   };
 
-    public Tofdeactive = (): void => {
+  public Tofdeactive = (): void => {
     PreviewForm.isTof = false;
     this.calcLogic();
   };
 
-    public Totdeactive = (): void => {
+  public Totdeactive = (): void => {
     PreviewForm.isTot = false;
     this.calcLogic();
   };
@@ -854,9 +864,7 @@ private updateImageWidths(data: HTMLElement): void {
     if (printWindow) {
       let divContainer = document.getElementById('holder');
       printWindow.document.open();
-      printWindow.document.write(
-        `<!DOCTYPE html><html><head><title>LICIT</title></head><body></body></html>`
-      );
+      printWindow.document.writeln('<!DOCTYPE html><html><body></body></html>');
 
       while (printWindow.document.documentElement.firstChild) {
         printWindow.document.documentElement.removeChild(
@@ -874,6 +882,8 @@ private updateImageWidths(data: HTMLElement): void {
       );
 
       this.prepareCSSRules(printWindow.document);
+
+      printWindow.document.title = 'LICIT';
       printWindow.document.close();
       printWindow.print();
     }

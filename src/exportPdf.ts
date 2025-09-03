@@ -45,7 +45,6 @@ export class ExportPDF {
   }
 }
 
-
 export function createTable(config): void {
   const {
     content,
@@ -98,7 +97,7 @@ export function createTable(config): void {
 function escapeCSSId(id: string): string {
   return CSS?.escape
     ? CSS.escape(id)
-    : id.replace(/^[0-9]/, '_$&').replace(/[^a-zA-Z0-9\-_:.]/g, '_');
+    : id.replace(/^\d/, '_$&').replace(/[^a-zA-Z0-9\-_:.]/g, '_');
 }
 
 function generateList({
@@ -118,7 +117,7 @@ function generateList({
   const listDiv = document.createElement('div');
   listDiv.id = generatedListId;
   container.appendChild(listDiv);
-
+  container.classList.add('prepages');
   let elementCount = 0;
 
   titleElements.forEach((styleName, i) => {
