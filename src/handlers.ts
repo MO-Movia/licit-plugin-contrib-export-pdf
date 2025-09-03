@@ -3,7 +3,11 @@ import { createTable } from './exportPdf';
 import { PreviewForm } from './preview';
 
 export class MyHandler extends Handler {
-  public done;
+    // static field needs to be readonly for sonar
+  public static readonly state = {
+    currentPage: 0
+  };
+  public done = false;
   public countTOC = 0;
   public pageFooters: Array<HTMLElement> = [];
   public prepagesCount = 0;
@@ -24,13 +28,14 @@ export class MyHandler extends Handler {
   };
   constructor(chunker, polisher, caller) {
     super(chunker, polisher, caller);
-    this.done = false;
     this.caller = caller;
   }
 
   public beforeParsed(content): void {
     this.pageFooters = [];
     this.prepagesCount = 0;
+    MyHandler.state.currentPage = 0;
+    this.done = false;
     if (PreviewForm.showToc() || PreviewForm.showTof() || PreviewForm.showTot()) {
       createTable({
         content: content,
@@ -176,6 +181,13 @@ ${opt2}
 /* set the style for the list numbering to none */
 #list-toc-generated {
 list-style: none;
+}
+
+.forcePageSpacer {
+  break-after: page;
+  page-break-after: always; 
+  display: block;
+  min-height: 1px;
 }
 
 #list-toc-generated .toc-element {
@@ -446,5 +458,9 @@ background-color: #ffffff
       this['polisher'].insert(text);
       this.done = true;
     }
+  }
+
+  finalizePage() {
+    MyHandler.state.currentPage++;
   }
 }

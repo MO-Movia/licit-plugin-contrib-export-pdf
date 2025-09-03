@@ -44,9 +44,9 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   private static isCitation: boolean = false;
   private static isTitle: boolean = true;
   private static lastUpdated: boolean = false;
-  private static readonly tocHeader = [];
-  private static readonly tofHeader = [];
-  private static readonly totHeader = [];
+  private static readonly tocHeader: string[] = [];
+  private static readonly tofHeader: string[] = [];
+  private static readonly totHeader: string[] = [];
   private static readonly tocNodeList: Node[] = [];
   private static readonly tofNodeList: Node[] = [];
   private static readonly totNodeList: Node[] = [];
@@ -101,7 +101,6 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   }
 
   public componentDidMount(): void {
-    const paged = new Previewer();
     this.showAlert();
 
     const { editorView } = this.props;
@@ -125,15 +124,13 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     this.prepareEditorContent(data1);
 
     editorView.dispatch(editorView.state?.tr.setMeta('suppressOnChange', true));
-
-    paged.preview(data1, [], divContainer).then(() => {
-      this.InfoActive();
-    });
+    this.calcLogic();
   }
 
 
   public showAlert(): void {
     const anchor = null;
+    MyHandler.state.currentPage = 0;
     this._popUp = createPopUp(Loader, null, {
       anchor,
       modal: true,
@@ -750,42 +747,57 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     });
   }
 
-  private insertSectionHeaders(data: HTMLElement, editorView): void {
-    const sections = [
-      { flag: PreviewForm.isToc, className: 'tocHead' },
-      { flag: PreviewForm.isTof, className: 'tofHead' },
-      { flag: PreviewForm.isTot, className: 'totHead' }
-    ];
+private insertSectionHeaders(data: HTMLElement, editorView): void {
+  data.querySelectorAll('.titleHead, .forcePageSpacer, .tocHead, .tofHead, .totHead')
+    .forEach(n => n.remove());
 
-    const parentDiv = document.createElement('div');
-    let hasContent = false;
+  let insertBeforeNode: ChildNode | null = data.firstChild;
 
-    if (PreviewForm.isTitle) {
-      parentDiv.classList.add('titleHead');
-      parentDiv.classList.add('prepages');
-      const header = document.createElement('h4');
-      header.style.marginBottom = '40px';
-      header.style.color = '#2A6EBB';
-      header.style.textAlign = 'center';
-      header.style.fontWeight = 'bold';
-      header.textContent = editorView?.state?.doc?.attrs?.objectMetaData?.name;
-      parentDiv.appendChild(header);
-      hasContent = true;
-    }
+  if (PreviewForm.isTitle) {
+    const titleDiv = document.createElement('div');
+    titleDiv.classList.add('titleHead', 'prepages');
 
-    sections.forEach(({ flag, className }) => {
-      if (flag) {
-        const sectionDiv = document.createElement('div');
-        sectionDiv.classList.add(className);
-        parentDiv.appendChild(sectionDiv);
-        hasContent = true;
-      }
-    });
+    const header = document.createElement('h4');
+    header.style.marginBottom = '40px';
+    header.style.color = '#2A6EBB';
+    header.style.textAlign = 'center';
+    header.style.fontWeight = 'bold';
+    header.textContent = editorView?.state?.doc?.attrs?.objectMetaData?.name ?? 'Untitled';
 
-    if (hasContent) {
-      data.insertBefore(parentDiv, data.firstChild);
-    }
+    titleDiv.appendChild(header);
+    data.insertBefore(titleDiv, insertBeforeNode);
+    insertBeforeNode = titleDiv.nextSibling;
+
+    const titleSpacer = document.createElement('div');
+    titleSpacer.classList.add('forcePageSpacer');
+    titleSpacer.innerHTML = '&nbsp;';
+    data.insertBefore(titleSpacer, insertBeforeNode);
+    insertBeforeNode = titleSpacer.nextSibling;
   }
+
+  const sections = [
+    { flag: PreviewForm.isToc, className: 'tocHead' },
+    { flag: PreviewForm.isTof, className: 'tofHead' },
+    { flag: PreviewForm.isTot, className: 'totHead' }
+  ];
+
+  sections.forEach(({ flag, className }) => {
+    if (!flag) return;
+
+    const sectionDiv = document.createElement('div');
+    sectionDiv.classList.add(className);
+    data.insertBefore(sectionDiv, insertBeforeNode);
+    insertBeforeNode = sectionDiv.nextSibling;
+
+    const sectionSpacer = document.createElement('div');
+    sectionSpacer.classList.add('forcePageSpacer');
+    sectionSpacer.innerHTML = '&nbsp;';
+    data.insertBefore(sectionSpacer, insertBeforeNode);
+    insertBeforeNode = sectionSpacer.nextSibling;
+  });
+}
+
+
 
   private replaceInfoIcons(data: HTMLElement): void {
     const icons = data.querySelectorAll('.infoicon');
@@ -821,10 +833,6 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     this.calcLogic();
   };
 
-  public InfoActive = (): void => {
-    this.calcLogic();
-  };
-
   public Tocdeactive = (): void => {
     PreviewForm.isToc = false;
     this.calcLogic();
@@ -856,9 +864,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     if (printWindow) {
       let divContainer = document.getElementById('holder');
       printWindow.document.open();
-      printWindow.document.write(
-        `<!DOCTYPE html><html><head><title>LICIT</title></head><body></body></html>`
-      );
+      printWindow.document.writeln('<!DOCTYPE html><html><body></body></html>');
 
       while (printWindow.document.documentElement.firstChild) {
         printWindow.document.documentElement.removeChild(
@@ -876,6 +882,8 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       );
 
       this.prepareCSSRules(printWindow.document);
+
+      printWindow.document.title = 'LICIT';
       printWindow.document.close();
       printWindow.print();
     }

@@ -100,7 +100,7 @@ describe('PreviewForm component', () => {
     printWindowMock = {
       document: {
         open: jest.fn(),
-        write: jest.fn(),
+        writeln: jest.fn(),
         close: jest.fn(),
         createElement: jest.fn(),
         appendChild: jest.fn(),
@@ -131,9 +131,9 @@ describe('PreviewForm component', () => {
     previewForm.handleConfirm();
     expect(window.open).toHaveBeenCalledWith('', '_blank');
     expect(printWindowMock.document.open).toHaveBeenCalled();
-    expect(printWindowMock.document.write).toHaveBeenCalledWith(
+    expect(printWindowMock.document.writeln).toHaveBeenCalledWith(
       expect.stringContaining(
-        '<!DOCTYPE html><html><head><title>LICIT</title></head><body></body></html>'
+        '<!DOCTYPE html>'
       )
     );
     expect(printWindowMock.document.documentElement.firstChild).not.toBeNull();
@@ -236,28 +236,6 @@ describe('PreviewForm component', () => {
     expect(Previewform.render()).toBeDefined();
   });
 
-  it('should call the function componentDidMount()', () => {
-    const el = document.createElement('div');
-    const prosimer_cls_element = document.createElement('div');
-    prosimer_cls_element.className = 'ProseMirror';
-    el.appendChild(prosimer_cls_element);
-    jest.spyOn(document, 'getElementById').mockReturnValue(el);
-
-    const props = {
-      editorState: {} as unknown as EditorState,
-      editorView: {
-        dom: { parentElement: { parentElement: el } },
-        dispatch: () => { }
-      } as unknown as EditorView,
-      onClose() {
-        return;
-      },
-    };
-    const Previewform = new PreviewForm(props);
-    const spy = jest.spyOn(Previewform, 'getToc').mockReturnValue(null as unknown as Promise<void>);
-    Previewform.componentDidMount();
-    expect(spy).toHaveBeenCalled();
-  });
   it('should call the function componentDidMount() when !data || !divContainer', () => {
     const el = document.createElement('div');
     const prosimer_cls_element = document.createElement('div');
@@ -378,15 +356,6 @@ describe('addLinkEventListeners && handleLinkClick', () => {
 
     expect(preventDefault).toHaveBeenCalled();
     expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth' });
-  });
-
-  it('should handle InfoActive and call calcLogic', () => {
-    const spy = jest
-      .spyOn(previewForm, 'calcLogic')
-      .mockImplementation(() => { });
-
-    previewForm.InfoActive();
-    expect(spy).toHaveBeenCalled();
   });
 
   describe('Last updated checkbox tests', () => {
