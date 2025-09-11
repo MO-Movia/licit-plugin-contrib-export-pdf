@@ -3,7 +3,7 @@ import { createTable } from './exportPdf';
 import { PreviewForm } from './preview';
 
 export class MyHandler extends Handler {
-    // static field needs to be readonly for sonar
+  // static field needs to be readonly for sonar
   public static readonly state = {
     currentPage: 0
   };
@@ -91,12 +91,10 @@ export class MyHandler extends Handler {
       const isReset = el.getAttribute('reset') === 'true';
 
       const label: number[] = [];
-
-      this.resetCounters(level, isReset);
-
       if (tof || tot) {
         this.handleSpecialCounters(tof, tot, label);
       } else {
+        this.resetCounters(level, isReset);
         this.buildLabel(level, label);
       }
 
