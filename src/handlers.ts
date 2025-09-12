@@ -84,6 +84,7 @@ export class MyHandler extends Handler {
       : [];
 
     items?.forEach(el => {
+      if (el.hasAttribute("data-split-from")) return;
       const level = parseInt(el.getAttribute('data-style-level') ?? '1', 10);
       const prefix = el.getAttribute('prefix');
       const tof = el.getAttribute('tof');
@@ -102,7 +103,16 @@ export class MyHandler extends Handler {
       el.setAttribute('customcounter', counterVal + '.');
     });
   }
-
+  public afterRendered(pages) {
+    for (let i = 0; i < pages.length; i++) {
+      const items = pages[i].element.querySelectorAll('p[data-split-to]');
+      if (items?.length > 0) {
+        // items[0].style.marginTop = "1pt !important";
+        items[0].style.setProperty('margin-top', '1pt', 'important');
+      }
+    }
+  }
+  
   private resetCounters(level: number, isReset: boolean): void {
     for (let i = level + 1; i <= 10; i++) this.counters[i] = 0;
 
