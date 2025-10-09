@@ -66,6 +66,10 @@ export class ExportPDFCommand extends UICommand {
     return tr;
   }
 
+  public executeCustomStyleForTable(state: EditorState, tr: Transform): Transform {
+    return tr;
+  }
+
   public static closePreviewForm(): void {
     ExportPDFCommand.isPreviewFormOpen = false;
   }
