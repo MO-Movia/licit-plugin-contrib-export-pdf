@@ -36,6 +36,7 @@ export class MyHandler extends Handler {
     this.prepagesCount = 0;
     MyHandler.state.currentPage = 0;
     this.done = false;
+
     if (PreviewForm.showToc() || PreviewForm.showTof() || PreviewForm.showTot()) {
       createTable({
         content: content,
@@ -47,6 +48,7 @@ export class MyHandler extends Handler {
         titleElementsTOT: PreviewForm.getHeadersTOT(),
       });
     }
+
   }
 
   public afterPageLayout(pageFragment, page): void {
@@ -84,7 +86,7 @@ export class MyHandler extends Handler {
       : [];
 
     items?.forEach(el => {
-      if (el.hasAttribute("data-split-from")) return;
+      if (el.hasAttribute('data-split-from')) return;
       const level = parseInt(el.getAttribute('data-style-level') ?? '1', 10);
       const prefix = el.getAttribute('prefix');
       const tof = el.getAttribute('tof');
@@ -108,11 +110,32 @@ export class MyHandler extends Handler {
       const items = pages[i].element.querySelectorAll('p[data-split-to]');
       if (items?.length > 0) {
         // items[0].style.marginTop = "1pt !important";
+        const mLeft = items[0].style.marginLeft;
         items[0].style.setProperty('margin-top', '1pt', 'important');
+        items[0].style.setProperty('margin-left', '0pt', 'important');
+        items[0].style.setProperty('pading-left', mLeft, 'important');
+      }
+
+      const items_from = pages[i].element.querySelectorAll('p[data-split-from]');
+      if (items_from?.length > 0) {
+        // items[0].style.marginTop = "1pt !important";
+        const mLeft = items_from[0].style.marginLeft;
+        items_from[0].style.setProperty('margin-left', '0pt', 'important');
+        items_from[0].style.setProperty('pading-left', mLeft, 'important');
+      }
+      const items_indent = pages[i].element.querySelectorAll('p[data-indent]');
+      if (items_indent?.length > 0) {
+        items_indent.forEach((el) => {
+          const mLeft = el.style.marginLeft;
+          el.style.setProperty('margin-left', '0pt', 'important');
+          el.style.setProperty('pading-left', mLeft, 'important');
+          // const indent = el.getAttribute('data-indent') ?? '0';
+          // el.style.setProperty('text-indent', indent + 'pt', 'important');
+        });
       }
     }
   }
-  
+
   private resetCounters(level: number, isReset: boolean): void {
     for (let i = level + 1; i <= 10; i++) this.counters[i] = 0;
 
