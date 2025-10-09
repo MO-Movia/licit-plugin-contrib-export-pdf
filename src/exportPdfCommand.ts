@@ -66,7 +66,7 @@ export class ExportPDFCommand extends UICommand {
     return tr;
   }
 
-  public executeCustomStyleForTable(state: EditorState, tr: Transform): Transform {
+  public executeCustomStyleForTable(_state: EditorState, tr: Transform): Transform {
     return tr;
   }
 
