@@ -77,7 +77,7 @@ export function createTable(config): void {
     dataAttr: 'data-title-level-tof',
     generatedListId: 'list-tof-generated',
     elementClass: 'tof-element',
-    headerText: 'TABLE OF FIGURES',
+    headerText: 'LIST OF FIGURES',
   });
 
   generateList({
@@ -89,7 +89,7 @@ export function createTable(config): void {
     dataAttr: 'data-title-level-tot',
     generatedListId: 'list-tot-generated',
     elementClass: 'tot-element',
-    headerText: 'TABLE OF TABLES',
+    headerText: 'LIST OF TABLES',
   });
 }
 
