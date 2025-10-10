@@ -588,3 +588,46 @@ describe('addLinkEventListeners && handleLinkClick', () => {
     expect(previewForm.handleTOTChange({ target: { checked: false } })).toBeUndefined();
   })
 });
+
+describe('YourClassName', () => {
+  let instance: PreviewForm;
+
+  beforeEach(() => {
+    const dommock = document.createElement('div');
+    const props = {
+      editorState: { doc: { attrs: { gg: null } } } as unknown as EditorState,
+      editorView: {
+        dom: dommock,
+        state: { doc: { attrs: { gg: null } } },
+        dispatch: () => { }
+      } as unknown as EditorView,
+      onClose: () => { },
+    };
+    instance = new PreviewForm(props);
+    // reset static flags before each test
+    PreviewForm.isTitle = false;
+    PreviewForm.lastUpdated = false;
+  });
+
+  test('documentTitleActive should set isTitle to true', () => {
+    instance.documentTitleActive();
+    expect(PreviewForm.isTitle).toBe(true);
+  });
+
+  test('documentTitleDeactive should set isTitle to false', () => {
+    PreviewForm.isTitle = true;
+    instance.documentTitleDeactive();
+    expect(PreviewForm.isTitle).toBe(false);
+  });
+
+  test('lastUpdatedActive should set lastUpdated to true', () => {
+    instance.lastUpdatedActive();
+    expect(PreviewForm.lastUpdated).toBe(true);
+  });
+
+  test('lastUpdatedDeactive should set lastUpdated to false', () => {
+    PreviewForm.lastUpdated = true;
+    instance.lastUpdatedDeactive();
+    expect(PreviewForm.lastUpdated).toBe(false);
+  });
+});

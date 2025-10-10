@@ -42,8 +42,8 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   private static isTof: boolean = true;
   private static isTot: boolean = true;
   private static isCitation: boolean = false;
-  private static isTitle: boolean = true;
-  private static lastUpdated: boolean = false;
+  public static isTitle: boolean = true;
+  public static lastUpdated: boolean = false;
   private static readonly tocHeader: string[] = [];
   private static readonly tofHeader: string[] = [];
   private static readonly totHeader: string[] = [];
