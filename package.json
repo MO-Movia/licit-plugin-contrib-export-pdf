@@ -5,10 +5,24 @@
   "description": "MO's Export To PDF ProseMirror Plugin",
   "main": "index.js",
   "types": "index.d.ts",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/MO-Movia/licit-plugin-contrib-export-pdf"
+  },
+  "scripts": {
+    "test": "jest --coverage",
+    "test:unit": "jest",
+    "test:coverage": "jest --coverage",
+    "clean": "rm -rf dist/ && rm -f modusoperandi-licit-export-pdf-*.*.*.tgz",
+    "lint:ts": "eslint src --ext .ts --fix",
+    "lint:css": "stylelint \"**/*.css\" --fix",
+    "lint": "npm run lint:css & npm run lint:ts",
+    "lint:fix": "npm run lint:css --fix & npm run lint:ts --fix",
+    "build": "tsc --build && copyfiles --up 1 \"src/**/*.css\" dist  && copyfiles package.json dist",
+    "ci:build": "tsc --build && copyfiles --up 1 \"src/**/*.css\" dist && copyfiles --up 1 \"src/assets/**\" dist && copyfiles package.json LICENSE README.md dist",
+    "ci:bom": "npx cyclonedx-npm --ignore-npm-errors --short-PURLs --output-format XML --output-file dist/bom.xml",
+    "verify": "npm run lint -- --fix && npm run ci:build && npm run test:coverage && echo 'All Tests Passed!'"
   },
   "peerDependencies": {
     "@modusoperandi/licit-doc-attrs-step": "^1.0.3",
@@ -18,7 +32,6 @@
     "react": "^18.3.1"
   },
   "devDependencies": {
-    "@cyclonedx/cyclonedx-npm": "^4.0.3",
     "@types/jest": "^29.5.14",
     "@types/node": "^24.7.1",
     "@types/react": "^19.2.2",
@@ -40,23 +53,6 @@
     "ts-jest": "^29.4.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
-  },
-  "overrides": {
-    "libxmljs2": "^1.0.0"
-  },
-  "scripts": {
-    "test": "jest --coverage",
-    "test:unit": "jest",
-    "test:coverage": "jest --coverage",
-    "clean": "rm -rf dist/ && rm -f modusoperandi-licit-export-pdf-*.*.*.tgz",
-    "lint:ts": "eslint src --ext .ts --fix",
-    "lint:css": "stylelint \"**/*.css\" --fix",
-    "lint": "npm run lint:css & npm run lint:ts",
-    "lint:fix": "npm run lint:css --fix & npm run lint:ts --fix",
-    "build": "tsc --build && copyfiles --up 1 \"src/**/*.css\" dist  && copyfiles package.json dist",
-    "ci:build": "tsc --build && copyfiles --up 1 \"src/**/*.css\" dist && copyfiles --up 1 \"src/assets/**\" dist && copyfiles package.json dist",
-    "ci:bom": "cyclonedx-npm --ignore-npm-errors --short-PURLs --output-format XML --output-file dist/bom.xml",
-    "verify": "npm run lint -- --fix && npm run ci:build && npm run test:coverage && echo 'All Tests Passed!'"
   },
   "importSort": {
     ".js": {
