@@ -6,6 +6,7 @@ import { ExportPDF } from './exportPdf';
 import React from 'react';
 
 export class ExportPDFCommand extends UICommand {
+
   private static isPreviewFormOpen = false;
 
   public exportPdf: ExportPDF;
@@ -53,6 +54,10 @@ export class ExportPDFCommand extends UICommand {
     ExportPDFCommand.isPreviewFormOpen = true;
     return this.exportPdf.exportPdf(view, doc);
   };
+
+  executeCustomStyleForTable(_state: EditorState, tr: Transform, _from: number, _to: number): Transform {
+    return tr;
+  }
 
   public renderLabel() {
     return null;

@@ -1,7 +1,7 @@
 import React from 'react';
 import { EditorView } from 'prosemirror-view';
 import { Previewer, registerHandlers, registeredHandlers } from 'pagedjs';
-import { MyHandler } from './handlers';
+import { PDFHandler } from './handlers';
 import { createPopUp, atViewportCenter } from '@modusoperandi/licit-ui-commands';
 import { Loader } from './loader';
 import {
@@ -111,11 +111,11 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     PreviewForm.isTof = true;
     PreviewForm.isTot = true;
     PreviewForm.isTitle = true;
-    if (!registeredHandlers.includes(MyHandler)) {
-      registerHandlers(MyHandler);
+    if (!registeredHandlers.includes(PDFHandler)) {
+      registerHandlers(PDFHandler);
     }
     const divContainer = document.getElementById('holder');
-    const data = editorView.dom.parentElement?.parentElement;
+    const data = editorView.dom?.parentElement?.parentElement;
     if (!data || !divContainer) return;
 
     const data1 = data.cloneNode(true) as HTMLElement;
@@ -125,7 +125,9 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     this.prepareEditorContent(data1);
 
     editorView.dispatch(editorView.state?.tr.setMeta('suppressOnChange', true));
+    PDFHandler.state.isOnLoad = true;
     paged.preview(data1, [], divContainer).then(() => {
+      PDFHandler.state.isOnLoad = false;
       this.calcLogic()
     });
   }
@@ -133,7 +135,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
   public showAlert(): void {
     const anchor = null;
-    MyHandler.state.currentPage = 0;
+    PDFHandler.state.currentPage = 0;
     this._popUp = createPopUp(Loader, null, {
       anchor,
       modal: true,
@@ -505,8 +507,8 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     }
   };
 
-  public handelCitation = (event): void => {
-    if (event.target.checked) {
+  public handelCitation = (e: { target: { checked: boolean } }): void => {
+    if (e.target.checked) {
       this.citationActive();
     } else {
       this.citationDeactive();
@@ -678,7 +680,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     divContainer.innerHTML = '';
 
     const { editorView } = this.props;
-    const data = editorView.dom.parentElement?.parentElement;
+    const data = editorView.dom?.parentElement?.parentElement;
     if (!data) return;
 
     let data1 = this.cloneModifyNode(data);

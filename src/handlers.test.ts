@@ -1,4 +1,4 @@
-import { MyHandler } from './handlers'; // adjust path
+import { PDFHandler } from './handlers'; // adjust path
 import { PreviewForm } from './preview';
 import { createTable } from './exportPdf';
 
@@ -18,7 +18,7 @@ jest.mock('./preview', () => ({
 }));
 
 describe('MyHandler', () => {
-  let handler: MyHandler;
+  let handler: PDFHandler;
   let frag: HTMLElement;
   let polisher: unknown;
 
@@ -27,7 +27,7 @@ describe('MyHandler', () => {
       convertViaSheet: jest.fn().mockResolvedValue('converted-css'),
       insert: jest.fn(),
     };
-    handler = new MyHandler({}, polisher, {});
+    handler = new PDFHandler({}, polisher, {});
     frag = document.createElement('div');
     jest.spyOn(frag.style, 'setProperty');
   });
@@ -140,7 +140,7 @@ describe('MyHandler', () => {
     it('adds lastUpdatedStyle when PreviewForm.lastUpdated exists', async () => {
       PreviewForm.lastUpdated = true;
       PreviewForm.formattedDate = '2025-08-26';
-      handler = new MyHandler({}, polisher, {});
+      handler = new PDFHandler({}, polisher, {});
       await handler.doIT();
       expect(polisher.convertViaSheet).toHaveBeenCalledWith(expect.stringContaining('Last Updated On: 2025-08-26'));
     });

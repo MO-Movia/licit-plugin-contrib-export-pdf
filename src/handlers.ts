@@ -2,10 +2,11 @@ import { Handler } from 'pagedjs';
 import { createTable } from './exportPdf';
 import { PreviewForm } from './preview';
 
-export class MyHandler extends Handler {
+export class PDFHandler extends Handler {
   // static field needs to be readonly for sonar
   public static readonly state = {
-    currentPage: 0
+    currentPage: 0,
+    isOnLoad: false,
   };
   public done = false;
   public countTOC = 0;
@@ -34,7 +35,7 @@ export class MyHandler extends Handler {
   public beforeParsed(content): void {
     this.pageFooters = [];
     this.prepagesCount = 0;
-    MyHandler.state.currentPage = 0;
+    PDFHandler.state.currentPage = 0;
     this.done = false;
 
     if (PreviewForm.showToc() || PreviewForm.showTof() || PreviewForm.showTot()) {
@@ -492,6 +493,6 @@ background-color: #ffffff
   }
 
   finalizePage() {
-    MyHandler.state.currentPage++;
+    if (!PDFHandler.state.isOnLoad) PDFHandler.state.currentPage++;
   }
 }
