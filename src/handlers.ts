@@ -108,7 +108,7 @@ export class PDFHandler extends Handler {
   }
 
   public afterRendered(pages) {
-    const getMarginLeft = (el) => getComputedStyle(el).marginLeft || '0pt';
+    const getMarginLeft = (el) => window.getComputedStyle(el).marginLeft || '0pt';
 
     for (const pageObj of pages) {
       const page = pageObj.element;
