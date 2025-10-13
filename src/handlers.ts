@@ -87,12 +87,12 @@ export class PDFHandler extends Handler {
       : [];
 
     items?.forEach(el => {
-      if (el.hasAttribute('data-split-from')) return;
-      const level = parseInt(el.getAttribute('data-style-level') ?? '1', 10);
-      const prefix = el.getAttribute('prefix');
-      const tof = el.getAttribute('tof');
-      const tot = el.getAttribute('tot');
-      const isReset = el.getAttribute('reset') === 'true';
+      if (el.dataset.splitFrom) return;
+      const level = parseInt(el.dataset.styleLevel ?? '1', 10);
+      const prefix = el.dataset.prefix;
+      const tof = el.dataset.tof;
+      const tot = el.dataset.tot;
+      const isReset = el.dataset.reset === 'true';
 
       const label: number[] = [];
       if (tof || tot) {
@@ -108,7 +108,7 @@ export class PDFHandler extends Handler {
   }
 
   public afterRendered(pages) {
-    const getMarginLeft = (el) => window.getComputedStyle(el).marginLeft || '0pt';
+    const getMarginLeft = (el) => globalThis.getComputedStyle(el).marginLeft || '0pt';
 
     for (const pageObj of pages) {
       const page = pageObj.element;

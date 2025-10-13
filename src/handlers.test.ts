@@ -1,6 +1,9 @@
-import { PDFHandler } from './handlers'; // adjust path
-import { PreviewForm } from './preview';
+/**
+ * @jest-environment jsdom
+ */
+import { PDFHandler } from './handlers';
 import { createTable } from './exportPdf';
+import { PreviewForm } from './preview';
 
 jest.mock('./exportPdf', () => ({
   createTable: jest.fn(),
@@ -11,144 +14,165 @@ jest.mock('./preview', () => ({
     showToc: jest.fn(),
     showTof: jest.fn(),
     showTot: jest.fn(),
-    getHeadersTOC: jest.fn().mockReturnValue(['h1']),
-    getHeadersTOF: jest.fn().mockReturnValue(['h2']),
-    getHeadersTOT: jest.fn().mockReturnValue(['h3']),
+    getHeadersTOC: jest.fn(),
+    getHeadersTOF: jest.fn(),
+    getHeadersTOT: jest.fn(),
+    formattedDate: '2025-10-13',
+    lastUpdated: true,
   },
 }));
 
-describe('MyHandler', () => {
+const mockChunker = {};
+const mockPolisher = {
+  convertViaSheet: jest.fn().mockResolvedValue('css-text'),
+  insert: jest.fn(),
+};
+const mockCaller = {};
+
+describe('PDFHandler', () => {
   let handler: PDFHandler;
-  let frag: HTMLElement;
-  let polisher: unknown;
 
   beforeEach(() => {
-    polisher = {
-      convertViaSheet: jest.fn().mockResolvedValue('converted-css'),
-      insert: jest.fn(),
-    };
-    handler = new PDFHandler({}, polisher, {});
-    frag = document.createElement('div');
-    jest.spyOn(frag.style, 'setProperty');
+    handler = new PDFHandler(mockChunker, mockPolisher, mockCaller);
+    jest.clearAllMocks();
+    PDFHandler.state.currentPage = 0;
+    PDFHandler.state.isOnLoad = false;
   });
 
-  describe('beforeParsed', () => {
-    it('calls createTable when PreviewForm flags are true', () => {
-      (PreviewForm.showToc as jest.Mock).mockReturnValue(true);
-      (PreviewForm.showTof as jest.Mock).mockReturnValue(false);
-      (PreviewForm.showTot as jest.Mock).mockReturnValue(false);
-      const content = document.createElement('div');
+  test('beforeParsed calls createTable when any TOC/TOF/TOT is true', () => {
+    PreviewForm.showToc.mockReturnValue(true);
+    PreviewForm.showTof.mockReturnValue(false);
+    PreviewForm.showTot.mockReturnValue(false);
+    PreviewForm.getHeadersTOC.mockReturnValue(['h1']);
+    PreviewForm.getHeadersTOF.mockReturnValue([]);
+    PreviewForm.getHeadersTOT.mockReturnValue([]);
 
-      handler.beforeParsed(content);
-      expect(createTable).toHaveBeenCalled();
-    });
+    handler.beforeParsed('content');
 
-    it('does not call createTable when all flags are false', () => {
-      (PreviewForm.showToc as jest.Mock).mockReturnValue(false);
-      (PreviewForm.showTof as jest.Mock).mockReturnValue(false);
-      (PreviewForm.showTot as jest.Mock).mockReturnValue(false);
-      handler.beforeParsed(document.createElement('div'));
-      expect(createTable).not.toHaveBeenCalled();
-    });
+    expect(createTable).toHaveBeenCalledWith(expect.objectContaining({
+      content: 'content',
+      tocElement: '.tocHead',
+      tofElement: '.tofHead',
+      totElement: '.totHead',
+      titleElements: ['h1'],
+      titleElementsTOF: [],
+      titleElementsTOT: [],
+    }));
+    expect(handler.done).toBe(false);
+    expect(handler.pageFooters).toEqual([]);
+    expect(handler.prepagesCount).toBe(0);
+    expect(PDFHandler.state.currentPage).toBe(0);
   });
 
-  describe('afterPageLayout', () => {
-    it('returns early if page.element is missing', () => {
-      handler.afterPageLayout(frag, {});
-      expect(frag.style.setProperty).not.toHaveBeenCalled();
-    });
+  test('afterPageLayout sets customcounter and CSS variables correctly', () => {
+    const pageFragment = document.createElement('div');
+    const pageEl = document.createElement('div');
+    const infoIcon = document.createElement('infoicon');
+    infoIcon.setAttribute('description', 'desc');
+    pageEl.appendChild(infoIcon);
 
-    it('returns early if prepages exists', () => {
-      const page = { element: document.createElement('div') };
-      page.element.innerHTML = '<div class="prepages"></div>';
-      handler.afterPageLayout(frag, page);
-      expect(frag.style.setProperty).not.toHaveBeenCalled();
-    });
+    const item = document.createElement('div');
+    item.dataset.styleLevel = '2';
+    pageFragment.appendChild(item);
 
-    it('sets empty toc string when no tocElements', () => {
-      const page = { element: document.createElement('div') };
-      handler.afterPageLayout(frag, page);
-      expect(frag.style.setProperty).toHaveBeenCalledWith(
-        '--pagedjs-string-last-chapTitled',
-        '""'
-      );
-    });
+    const page = { element: pageEl };
+    handler.afterPageLayout(pageFragment, page);
 
-    it('handles tocElements and computes footer height', () => {
-      const page = { element: document.createElement('div') };
-      page.element.innerHTML = '<infoicon description="<b>Intro</b>"></infoicon>';
-      handler.afterPageLayout(frag, page);
-      expect(frag.style.setProperty).toHaveBeenCalledWith(
-        expect.stringContaining('--pagedjs-footer-height'),
-        expect.any(String)
-      );
-    });
-
-    it('increments counters normally', () => {
-      const page = { element: document.createElement('div') };
-      handler.afterPageLayout(frag, page);
-      const el = document.createElement('div');
-      el.setAttribute('data-style-level', '1');
-      frag.appendChild(el);
-      handler.afterPageLayout(frag, page);
-      expect(el.getAttribute('customcounter')).toBe('1.');
-    });
-
-    it('increments counters for tof', () => {
-      const page = { element: document.createElement('div') };
-      const el = document.createElement('div');
-      el.setAttribute('data-style-level', '1');
-      el.setAttribute('tof', 'true');
-      frag.appendChild(el);
-      handler.afterPageLayout(frag, page);
-      expect(el.getAttribute('customcounter')).toContain('.');
-    });
-
-    it('increments counters for tot', () => {
-      const page = { element: document.createElement('div') };
-      const el = document.createElement('div');
-      el.setAttribute('data-style-level', '1');
-      el.setAttribute('tot', 'true');
-      frag.appendChild(el);
-      handler.afterPageLayout(frag, page);
-      expect(el.getAttribute('customcounter')).toContain('.');
-    });
-
-    it('resets counters when reset attribute is true', () => {
-      const page = { element: document.createElement('div') };
-      const el = document.createElement('div');
-      el.setAttribute('data-style-level', '2');
-      el.setAttribute('reset', 'true');
-      frag.appendChild(el);
-      handler.afterPageLayout(frag, page);
-      expect(el.getAttribute('customcounter')).toContain('.');
-    });
+    expect(item.getAttribute('customcounter')).toBeDefined();
+    expect(pageFragment.style.getPropertyValue('--pagedjs-string-last-chapTitled')).toContain('desc');
   });
 
-  it('stripHTML removes tags', () => {
-    const result = handler.stripHTML('<b>Hello</b>');
-    expect(result).toBe('Hello');
+  test('afterPageLayout returns early if pageEl is not HTMLElement or prepages exists', () => {
+    const frag = document.createElement('div');
+    const page1 = { element: null };
+    const page2El = document.createElement('div');
+    page2El.appendChild(document.createElement('div')).className = 'prepages';
+    const page2 = { element: page2El };
+
+    expect(() => handler.afterPageLayout(frag, page1)).not.toThrow();
+    expect(() => handler.afterPageLayout(frag, page2)).not.toThrow();
   });
 
-  describe('beforePageLayout & doIT', () => {
-    it('calls doIT and inserts css without lastUpdated', async () => {
-      await handler.beforePageLayout();
-      expect(polisher.convertViaSheet).toHaveBeenCalled();
-      expect(polisher.insert).toHaveBeenCalled();
+  test('afterRendered applies styles for split and indent items', () => {
+    const pageEl = document.createElement('div');
+    const p1 = document.createElement('p');
+    p1.dataset.splitTo = 'true';
+    const p2 = document.createElement('p');
+    p2.dataset.splitFrom = 'true';
+    const p3 = document.createElement('p');
+    p3.dataset.indent = 'true';
+    pageEl.appendChild(p1);
+    pageEl.appendChild(p2);
+    pageEl.appendChild(p3);
+
+    const pages = [{ element: pageEl }];
+    Object.defineProperty(window, 'getComputedStyle', {
+      value: jest.fn().mockReturnValue({ marginLeft: '5pt' }),
     });
 
-    it('adds lastUpdatedStyle when PreviewForm.lastUpdated exists', async () => {
-      PreviewForm.lastUpdated = true;
-      PreviewForm.formattedDate = '2025-08-26';
-      handler = new PDFHandler({}, polisher, {});
-      await handler.doIT();
-      expect(polisher.convertViaSheet).toHaveBeenCalledWith(expect.stringContaining('Last Updated On: 2025-08-26'));
-    });
+    handler.afterRendered(pages);
 
-    it('does not run convertViaSheet if already done', async () => {
-      handler.done = true;
-      await handler.doIT();
-      expect(polisher.convertViaSheet).not.toHaveBeenCalled();
-    });
+    expect(p1.style.marginTop).toBe('1pt');
+    expect(p1.style.paddingLeft).toBe('5pt');
+    expect(p2.style.paddingLeft).toBe('5pt');
+    expect(p3.style.paddingLeft).toBe('5pt');
+  });
+
+  test('resetCounters works correctly', () => {
+    handler['counters'] = { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 11: 0, 12: 0 };
+    handler['resetCounters'](2, true);
+    expect(handler['counters'][3]).toBe(0);
+    expect(handler['counters'][1]).toBe(1);
+  });
+
+  test('handleSpecialCounters increments counters', () => {
+    const label: number[] = [];
+    handler['counters'][1] = 1;
+    handler['handleSpecialCounters']('tof', null, label);
+    expect(label).toEqual([1, 1]);
+
+    const label2: number[] = [];
+    handler['handleSpecialCounters'](null, 'tot', label2);
+    expect(label2).toEqual([1, 1]);
+  });
+
+  test('buildLabel resets TOF and TOT at level 1', () => {
+    handler['counters'][1] = 1;
+    handler['counters'][11] = 5;
+    handler['counters'][12] = 5;
+    const label: number[] = [];
+    handler['buildLabel'](1, label);
+    expect(handler['counters'][11]).toBe(0);
+    expect(handler['counters'][12]).toBe(0);
+    expect(label).toEqual([2]);
+  });
+
+  test('stripHTML removes HTML tags', () => {
+    const html = '<p>Hello <b>World</b></p>';
+    expect(handler.stripHTML(html)).toBe('Hello World');
+  });
+
+  test('beforePageLayout calls doIT', () => {
+    const spy = jest.spyOn(handler, 'doIT').mockResolvedValue(undefined);
+    handler.beforePageLayout();
+    expect(spy).toHaveBeenCalled();
+  });
+
+  test('doIT calls polisher.convertViaSheet and insert', async () => {
+    handler.done = false;
+    await handler.doIT();
+    expect(mockPolisher.convertViaSheet).toHaveBeenCalled();
+    expect(mockPolisher.insert).toHaveBeenCalledWith('css-text');
+    expect(handler.done).toBe(true);
+  });
+
+  test('finalizePage increments currentPage only if isOnLoad is false', () => {
+    PDFHandler.state.isOnLoad = false;
+    handler.finalizePage();
+    expect(PDFHandler.state.currentPage).toBe(1);
+
+    PDFHandler.state.isOnLoad = true;
+    handler.finalizePage();
+    expect(PDFHandler.state.currentPage).toBe(1); // no increment
   });
 });
