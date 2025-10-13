@@ -106,36 +106,39 @@ export class PDFHandler extends Handler {
       el.setAttribute('customcounter', counterVal + '.');
     });
   }
+
   public afterRendered(pages) {
-    for (let i = 0; i < pages.length; i++) {
-      const items = pages[i].element.querySelectorAll('p[data-split-to]');
-      if (items?.length > 0) {
-        // items[0].style.marginTop = "1pt !important";
-        const mLeft = items[0].style.marginLeft;
-        items[0].style.setProperty('margin-top', '1pt', 'important');
-        items[0].style.setProperty('margin-left', '0pt', 'important');
-        items[0].style.setProperty('pading-left', mLeft, 'important');
+    const getMarginLeft = (el) => getComputedStyle(el).marginLeft || '0pt';
+
+    for (const pageObj of pages) {
+      const page = pageObj.element;
+
+      const splitToItems = page.querySelectorAll('p[data-split-to]');
+      if (splitToItems.length > 0) {
+        const el = splitToItems[0];
+        const mLeft = getMarginLeft(el);
+        el.style.setProperty('margin-top', '1pt', 'important');
+        el.style.setProperty('margin-left', '0pt', 'important');
+        el.style.setProperty('padding-left', mLeft, 'important');
       }
 
-      const items_from = pages[i].element.querySelectorAll('p[data-split-from]');
-      if (items_from?.length > 0) {
-        // items[0].style.marginTop = "1pt !important";
-        const mLeft = items_from[0].style.marginLeft;
-        items_from[0].style.setProperty('margin-left', '0pt', 'important');
-        items_from[0].style.setProperty('pading-left', mLeft, 'important');
+      const splitFromItems = page.querySelectorAll('p[data-split-from]');
+      if (splitFromItems.length > 0) {
+        const el = splitFromItems[0];
+        const mLeft = getMarginLeft(el);
+        el.style.setProperty('margin-left', '0pt', 'important');
+        el.style.setProperty('padding-left', mLeft, 'important');
       }
-      const items_indent = pages[i].element.querySelectorAll('p[data-indent]');
-      if (items_indent?.length > 0) {
-        items_indent.forEach((el) => {
-          const mLeft = el.style.marginLeft;
-          el.style.setProperty('margin-left', '0pt', 'important');
-          el.style.setProperty('pading-left', mLeft, 'important');
-          // const indent = el.getAttribute('data-indent') ?? '0';
-          // el.style.setProperty('text-indent', indent + 'pt', 'important');
-        });
+
+      const indentItems = page.querySelectorAll('p[data-indent]');
+      for (const el of indentItems) {
+        const mLeft = getMarginLeft(el);
+        el.style.setProperty('margin-left', '0pt', 'important');
+        el.style.setProperty('padding-left', mLeft, 'important');
       }
     }
   }
+
 
   private resetCounters(level: number, isReset: boolean): void {
     for (let i = level + 1; i <= 10; i++) this.counters[i] = 0;
