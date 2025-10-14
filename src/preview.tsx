@@ -151,7 +151,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
   public replaceImageWidth = (imageElement): void => {
     // Get the original width of the image.
-    const originalWidth = parseInt(imageElement.getAttribute('width'), 10);
+    const originalWidth = Number.parseInt(imageElement.getAttribute('width'), 10);
 
     if (originalWidth > 600) {
       imageElement.style.maxWidth = '600px';
@@ -774,13 +774,13 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       header.textContent = editorView?.state?.doc?.attrs?.objectMetaData?.name ?? 'Untitled';
 
       titleDiv.appendChild(header);
-      data.insertBefore(titleDiv, insertBeforeNode);
+      insertBeforeNode?.before(titleDiv);
       insertBeforeNode = titleDiv.nextSibling;
 
       const titleSpacer = document.createElement('div');
       titleSpacer.classList.add('forcePageSpacer');
       titleSpacer.innerHTML = '&nbsp;';
-      data.insertBefore(titleSpacer, insertBeforeNode);
+      insertBeforeNode?.before(titleSpacer);
       insertBeforeNode = titleSpacer.nextSibling;
     }
 
@@ -795,13 +795,13 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
       const sectionDiv = document.createElement('div');
       sectionDiv.classList.add(className);
-      data.insertBefore(sectionDiv, insertBeforeNode);
+      insertBeforeNode?.before(sectionDiv);
       insertBeforeNode = sectionDiv.nextSibling;
 
       const sectionSpacer = document.createElement('div');
       sectionSpacer.classList.add('forcePageSpacer');
       sectionSpacer.innerHTML = '&nbsp;';
-      data.insertBefore(sectionSpacer, insertBeforeNode);
+      insertBeforeNode?.before(sectionSpacer);
       insertBeforeNode = sectionSpacer.nextSibling;
     });
   }

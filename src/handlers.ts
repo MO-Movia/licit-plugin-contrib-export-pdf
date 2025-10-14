@@ -88,7 +88,7 @@ export class PDFHandler extends Handler {
 
     items?.forEach(el => {
       if (el.dataset.splitFrom) return;
-      const level = parseInt(el.dataset.styleLevel ?? '1', 10);
+      const level = Number.parseInt(el.dataset.styleLevel ?? '1', 10);
       const prefix = el.dataset.prefix;
       const tof = el.dataset.tof;
       const tot = el.dataset.tot;
