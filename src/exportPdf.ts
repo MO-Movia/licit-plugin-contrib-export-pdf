@@ -23,6 +23,7 @@ export class ExportPDF {
     });
     document.body.classList.add('export-pdf-mode');
     view.updateState(fullDocState);
+
     const viewPops = {
       editorState: fullDocState,
       editorView: view,
@@ -149,7 +150,6 @@ function generateList({
     }
 
     if (index === 0 && headerText) {
-      // ✅ Create a styled <h4> header
       const headerEl = document.createElement('h4');
       headerEl.textContent = headerText;
       headerEl.style.marginBottom = '40px';

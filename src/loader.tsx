@@ -1,11 +1,11 @@
 import * as React from 'react';
-import {MyHandler} from './handlers';
+import { PDFHandler } from './handlers';
 
 export class Loader extends React.PureComponent {
   private interval: number;
   componentDidMount() {
     // trigger update of static values
-    this.interval = setInterval(() => this.setState({time: Date.now()}), 1000);
+    this.interval = setInterval(() => this.setState({ time: Date.now() }), 1000);
   }
   componentWillUnmount() {
     clearInterval(this.interval);
@@ -18,7 +18,7 @@ export class Loader extends React.PureComponent {
           src="assets/images/modus-loading.gif"
           alt="Loading..."
         />
-        <span>Parsing section {MyHandler.state.currentPage}...</span>
+        <span>Parsing section {PDFHandler.state.currentPage}...</span>
       </div>
     );
   }

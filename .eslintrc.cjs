@@ -35,7 +35,7 @@ module.exports = {
     ],
     'no-var': 'error',
     'prefer-const': 'error',
-    quotes: [2, 'single', {avoidEscape: true}],
+    quotes: [2, 'single', { avoidEscape: true }],
     semi: [2, 'always'],
     strict: 0,
   },
@@ -59,8 +59,9 @@ module.exports = {
     structuredClone: true,
     window: false,
     localStorage: false,
-    global:false,
-    CSS:false
+    global: false,
+    CSS: false,
+    globalThis: false,
   },
   overrides: [
     {
@@ -68,7 +69,7 @@ module.exports = {
       files: '*.test.ts',
       plugins: ['jest'],
       env: {
-        'jest/globals': true,
+        'jest/globals': true
       },
     },
   ],
