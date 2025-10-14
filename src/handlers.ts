@@ -2,10 +2,11 @@ import { Handler } from 'pagedjs';
 import { createTable } from './exportPdf';
 import { PreviewForm } from './preview';
 
-export class MyHandler extends Handler {
-    // static field needs to be readonly for sonar
+export class PDFHandler extends Handler {
+  // static field needs to be readonly for sonar
   public static readonly state = {
-    currentPage: 0
+    currentPage: 0,
+    isOnLoad: false,
   };
   public done = false;
   public countTOC = 0;
@@ -34,8 +35,9 @@ export class MyHandler extends Handler {
   public beforeParsed(content): void {
     this.pageFooters = [];
     this.prepagesCount = 0;
-    MyHandler.state.currentPage = 0;
+    PDFHandler.state.currentPage = 0;
     this.done = false;
+
     if (PreviewForm.showToc() || PreviewForm.showTof() || PreviewForm.showTot()) {
       createTable({
         content: content,
@@ -47,6 +49,7 @@ export class MyHandler extends Handler {
         titleElementsTOT: PreviewForm.getHeadersTOT(),
       });
     }
+
   }
 
   public afterPageLayout(pageFragment, page): void {
@@ -84,19 +87,18 @@ export class MyHandler extends Handler {
       : [];
 
     items?.forEach(el => {
-      const level = parseInt(el.getAttribute('data-style-level') ?? '1', 10);
-      const prefix = el.getAttribute('prefix');
-      const tof = el.getAttribute('tof');
-      const tot = el.getAttribute('tot');
-      const isReset = el.getAttribute('reset') === 'true';
+      if (el.dataset.splitFrom) return;
+      const level = Number.parseInt(el.dataset.styleLevel ?? '1', 10);
+      const prefix = el.dataset.prefix;
+      const tof = el.dataset.tof;
+      const tot = el.dataset.tot;
+      const isReset = el.dataset.reset === 'true';
 
       const label: number[] = [];
-
-      this.resetCounters(level, isReset);
-
       if (tof || tot) {
         this.handleSpecialCounters(tof, tot, label);
       } else {
+        this.resetCounters(level, isReset);
         this.buildLabel(level, label);
       }
 
@@ -104,6 +106,39 @@ export class MyHandler extends Handler {
       el.setAttribute('customcounter', counterVal + '.');
     });
   }
+
+  public afterRendered(pages) {
+    const getMarginLeft = (el) => globalThis.getComputedStyle(el).marginLeft || '0pt';
+
+    for (const pageObj of pages) {
+      const page = pageObj.element;
+
+      const splitToItems = page.querySelectorAll('p[data-split-to]');
+      if (splitToItems.length > 0) {
+        const el = splitToItems[0];
+        const mLeft = getMarginLeft(el);
+        el.style.setProperty('margin-top', '1pt', 'important');
+        el.style.setProperty('margin-left', '0pt', 'important');
+        el.style.setProperty('padding-left', mLeft, 'important');
+      }
+
+      const splitFromItems = page.querySelectorAll('p[data-split-from]');
+      if (splitFromItems.length > 0) {
+        const el = splitFromItems[0];
+        const mLeft = getMarginLeft(el);
+        el.style.setProperty('margin-left', '0pt', 'important');
+        el.style.setProperty('padding-left', mLeft, 'important');
+      }
+
+      const indentItems = page.querySelectorAll('p[data-indent]');
+      for (const el of indentItems) {
+        const mLeft = getMarginLeft(el);
+        el.style.setProperty('margin-left', '0pt', 'important');
+        el.style.setProperty('padding-left', mLeft, 'important');
+      }
+    }
+  }
+
 
   private resetCounters(level: number, isReset: boolean): void {
     for (let i = level + 1; i <= 10; i++) this.counters[i] = 0;
@@ -461,6 +496,6 @@ background-color: #ffffff
   }
 
   finalizePage() {
-    MyHandler.state.currentPage++;
+    if (!PDFHandler.state.isOnLoad) PDFHandler.state.currentPage++;
   }
 }

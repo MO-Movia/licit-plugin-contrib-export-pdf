@@ -1,7 +1,7 @@
 import React from 'react';
 import { EditorView } from 'prosemirror-view';
 import { Previewer, registerHandlers, registeredHandlers } from 'pagedjs';
-import { MyHandler } from './handlers';
+import { PDFHandler } from './handlers';
 import { createPopUp, atViewportCenter } from '@modusoperandi/licit-ui-commands';
 import { Loader } from './loader';
 import {
@@ -101,6 +101,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   }
 
   public componentDidMount(): void {
+    const paged = new Previewer();
     this.showAlert();
 
     const { editorView } = this.props;
@@ -110,11 +111,11 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     PreviewForm.isTof = true;
     PreviewForm.isTot = true;
     PreviewForm.isTitle = true;
-    if (!registeredHandlers.includes(MyHandler)) {
-      registerHandlers(MyHandler);
+    if (!registeredHandlers.includes(PDFHandler)) {
+      registerHandlers(PDFHandler);
     }
     const divContainer = document.getElementById('holder');
-    const data = editorView.dom.parentElement?.parentElement;
+    const data = editorView.dom?.parentElement?.parentElement;
     if (!data || !divContainer) return;
 
     const data1 = data.cloneNode(true) as HTMLElement;
@@ -124,13 +125,17 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     this.prepareEditorContent(data1);
 
     editorView.dispatch(editorView.state?.tr.setMeta('suppressOnChange', true));
-    this.calcLogic();
+    PDFHandler.state.isOnLoad = true;
+    paged.preview(data1, [], divContainer).then(() => {
+      PDFHandler.state.isOnLoad = false;
+      this.calcLogic()
+    });
   }
 
 
   public showAlert(): void {
     const anchor = null;
-    MyHandler.state.currentPage = 0;
+    PDFHandler.state.currentPage = 0;
     this._popUp = createPopUp(Loader, null, {
       anchor,
       modal: true,
@@ -146,7 +151,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
   public replaceImageWidth = (imageElement): void => {
     // Get the original width of the image.
-    const originalWidth = parseInt(imageElement.getAttribute('width'), 10);
+    const originalWidth = Number.parseInt(imageElement.getAttribute('width'), 10);
 
     if (originalWidth > 600) {
       imageElement.style.maxWidth = '600px';
@@ -430,6 +435,16 @@ export class PreviewForm extends React.PureComponent<Props, State> {
                     Last updated
                   </label>
                 </div>
+                <div
+                  style={{
+                    marginTop: '8px',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                  }}
+                >
+                  <button onClick={this.handleApply}>Apply</button>
+                </div>
 
                 <h6 style={{ marginRight: 'auto', marginTop: '30px' }}>
                   Document Sections:
@@ -492,8 +507,8 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     }
   };
 
-  public handelCitation = (event): void => {
-    if (event.target.checked) {
+  public handelCitation = (e: { target: { checked: boolean } }): void => {
+    if (e.target.checked) {
       this.citationActive();
     } else {
       this.citationDeactive();
@@ -526,28 +541,23 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
   public documentTitleActive = (): void => {
     PreviewForm.isTitle = true;
-    this.calcLogic();
   };
 
   public documentTitleDeactive = (): void => {
     PreviewForm.isTitle = false;
-    this.calcLogic();
   };
 
   public lastUpdatedActive = (): void => {
     PreviewForm.lastUpdated = true;
-    this.calcLogic();
   }
 
   public lastUpdatedDeactive = (): void => {
     PreviewForm.lastUpdated = false;
-    this.calcLogic();
   }
 
 
   public citationActive = (): void => {
     PreviewForm.isCitation = true;
-    this.calcLogic();
   };
 
   public insertFooters = (CitationIcons, trialHtml): void => {
@@ -638,7 +648,6 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
   public citationDeactive = (): void => {
     PreviewForm.isCitation = false;
-    this.calcLogic();
   };
 
   public cloneModifyNode = (data: HTMLElement) => {
@@ -671,7 +680,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     divContainer.innerHTML = '';
 
     const { editorView } = this.props;
-    const data = editorView.dom.parentElement?.parentElement;
+    const data = editorView.dom?.parentElement?.parentElement;
     if (!data) return;
 
     let data1 = this.cloneModifyNode(data);
@@ -747,55 +756,55 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     });
   }
 
-private insertSectionHeaders(data: HTMLElement, editorView): void {
-  data.querySelectorAll('.titleHead, .forcePageSpacer, .tocHead, .tofHead, .totHead')
-    .forEach(n => n.remove());
+  private insertSectionHeaders(data: HTMLElement, editorView): void {
+    data.querySelectorAll('.titleHead, .forcePageSpacer, .tocHead, .tofHead, .totHead')
+      .forEach(n => n.remove());
 
-  let insertBeforeNode: ChildNode | null = data.firstChild;
+    let insertBeforeNode: ChildNode | null = data.firstChild;
 
-  if (PreviewForm.isTitle) {
-    const titleDiv = document.createElement('div');
-    titleDiv.classList.add('titleHead', 'prepages');
+    if (PreviewForm.isTitle) {
+      const titleDiv = document.createElement('div');
+      titleDiv.classList.add('titleHead', 'prepages');
 
-    const header = document.createElement('h4');
-    header.style.marginBottom = '40px';
-    header.style.color = '#2A6EBB';
-    header.style.textAlign = 'center';
-    header.style.fontWeight = 'bold';
-    header.textContent = editorView?.state?.doc?.attrs?.objectMetaData?.name ?? 'Untitled';
+      const header = document.createElement('h4');
+      header.style.marginBottom = '40px';
+      header.style.color = '#2A6EBB';
+      header.style.textAlign = 'center';
+      header.style.fontWeight = 'bold';
+      header.textContent = editorView?.state?.doc?.attrs?.objectMetaData?.name ?? 'Untitled';
 
-    titleDiv.appendChild(header);
-    data.insertBefore(titleDiv, insertBeforeNode);
-    insertBeforeNode = titleDiv.nextSibling;
+      titleDiv.appendChild(header);
+      insertBeforeNode?.before(titleDiv);
+      insertBeforeNode = titleDiv.nextSibling;
 
-    const titleSpacer = document.createElement('div');
-    titleSpacer.classList.add('forcePageSpacer');
-    titleSpacer.innerHTML = '&nbsp;';
-    data.insertBefore(titleSpacer, insertBeforeNode);
-    insertBeforeNode = titleSpacer.nextSibling;
+      const titleSpacer = document.createElement('div');
+      titleSpacer.classList.add('forcePageSpacer');
+      titleSpacer.innerHTML = '&nbsp;';
+      insertBeforeNode?.before(titleSpacer);
+      insertBeforeNode = titleSpacer.nextSibling;
+    }
+
+    const sections = [
+      { flag: PreviewForm.isToc, className: 'tocHead' },
+      { flag: PreviewForm.isTof, className: 'tofHead' },
+      { flag: PreviewForm.isTot, className: 'totHead' }
+    ];
+
+    sections.forEach(({ flag, className }) => {
+      if (!flag) return;
+
+      const sectionDiv = document.createElement('div');
+      sectionDiv.classList.add(className);
+      insertBeforeNode?.before(sectionDiv);
+      insertBeforeNode = sectionDiv.nextSibling;
+
+      const sectionSpacer = document.createElement('div');
+      sectionSpacer.classList.add('forcePageSpacer');
+      sectionSpacer.innerHTML = '&nbsp;';
+      insertBeforeNode?.before(sectionSpacer);
+      insertBeforeNode = sectionSpacer.nextSibling;
+    });
   }
-
-  const sections = [
-    { flag: PreviewForm.isToc, className: 'tocHead' },
-    { flag: PreviewForm.isTof, className: 'tofHead' },
-    { flag: PreviewForm.isTot, className: 'totHead' }
-  ];
-
-  sections.forEach(({ flag, className }) => {
-    if (!flag) return;
-
-    const sectionDiv = document.createElement('div');
-    sectionDiv.classList.add(className);
-    data.insertBefore(sectionDiv, insertBeforeNode);
-    insertBeforeNode = sectionDiv.nextSibling;
-
-    const sectionSpacer = document.createElement('div');
-    sectionSpacer.classList.add('forcePageSpacer');
-    sectionSpacer.innerHTML = '&nbsp;';
-    data.insertBefore(sectionSpacer, insertBeforeNode);
-    insertBeforeNode = sectionSpacer.nextSibling;
-  });
-}
 
 
 
@@ -820,32 +829,26 @@ private insertSectionHeaders(data: HTMLElement, editorView): void {
 
   public tocActive = (): void => {
     PreviewForm.isToc = true;
-    this.calcLogic();
   };
 
   public tofActive = (): void => {
     PreviewForm.isTof = true;
-    this.calcLogic();
   };
 
   public totActive = (): void => {
     PreviewForm.isTot = true;
-    this.calcLogic();
   };
 
   public Tocdeactive = (): void => {
     PreviewForm.isToc = false;
-    this.calcLogic();
   };
 
   public Tofdeactive = (): void => {
     PreviewForm.isTof = false;
-    this.calcLogic();
   };
 
   public Totdeactive = (): void => {
     PreviewForm.isTot = false;
-    this.calcLogic();
   };
 
   public handleCancel = (): void => {
@@ -889,6 +892,10 @@ private insertSectionHeaders(data: HTMLElement, editorView): void {
     }
     ExportPDFCommand.closePreviewForm();
     this.props.onClose();
+  };
+
+  public handleApply = (): void => {
+    this.calcLogic();
   };
 
   public prepareCSSRules = (doc): void => {
