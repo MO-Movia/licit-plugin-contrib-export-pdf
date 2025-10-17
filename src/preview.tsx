@@ -655,22 +655,60 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   };
 
   public addLinkEventListeners = (): void => {
-    const links = document.querySelectorAll('.toc-element a');
+    const links = document.querySelectorAll('.exportpdf-preview-container a');
     links.forEach((link) => {
       link.addEventListener('click', this.handleLinkClick);
     });
   };
 
   public handleLinkClick = (event: MouseEvent): void => {
-    event.preventDefault();
-    const targetId = (event.currentTarget as HTMLAnchorElement)
-      .getAttribute('href')
-      ?.slice(1);
-    if (targetId) {
-      const targetElement = document.getElementById(targetId);
-      if (targetElement) {
-        targetElement.scrollIntoView({ behavior: 'smooth' });
-      }
+    const link = event.currentTarget as HTMLAnchorElement;
+    const href = link.getAttribute('href');
+    const selectionId = link.getAttribute('selectionid');
+
+    // Skip if no href
+    if (!href) return;
+
+    if (this.isExternalLink(href)) {
+      event.preventDefault();
+      this.openExternalLink(href);
+    } else {
+      event.preventDefault();
+      this.scrollToInternalTarget(href, selectionId);
+    }
+  };
+
+  // Check if a link is external if it startsWith http:// ,https:// or mailto:
+  isExternalLink = (href: string): boolean => {
+    return href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:');
+  };
+
+  // Open external links safely
+  openExternalLink = (href: string): void => {
+    globalThis.open(href, '_blank', 'noopener,noreferrer');
+  };
+
+  // Scroll to internal target
+  scrollToInternalTarget = (href: string, selectionId: string | null): void => {
+    let targetElement: Element | null = null;
+
+    // Check if href is an ID (starts with #) or a selectionId (starts with #)
+    // For TOC links, href will be like #id for internal links selectionId will be like #id
+    if (href.startsWith('#')) {
+      const targetId = href.slice(1);
+      targetElement = document.getElementById(targetId);
+    } else if (selectionId && selectionId.startsWith('#')) {
+      const targetId = selectionId.slice(1);
+      const container = document.querySelector('.exportpdf-preview-container');
+      if (!container) return;
+
+      targetElement = container.querySelector(
+        `p[selectionid="#${CSS.escape(targetId)}"]`
+      );
+    }
+
+    if (targetElement) {
+      targetElement.scrollIntoView({ behavior: 'smooth' });
     }
   };
 

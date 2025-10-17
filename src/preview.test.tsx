@@ -631,3 +631,92 @@ describe('YourClassName', () => {
     expect(PreviewForm.lastUpdated).toBe(false);
   });
 });
+
+describe('addLinkEventListeners && handleLinkClick', () => {
+  let previewForm: PreviewForm;
+
+  beforeEach(() => {
+    document.body.innerHTML = `
+      <div class="exportpdf-preview-container">
+        <a href="https://external.com" class="external-link">External</a>
+        <a href="#section1" class="internal-link">Internal</a>
+        <a selectionid="#para1" class="selection-link">Selection</a>
+      </div>
+      <div id="section1">Section 1 Content</div>
+      <p selectionid="#para1">Paragraph 1 Content</p>
+    `;
+
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: () => {},
+    };
+    previewForm = new PreviewForm(props);
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+    jest.restoreAllMocks();
+  });
+
+  it('should add click event listeners to all links', () => {
+    const addEventSpy = jest.spyOn(HTMLAnchorElement.prototype, 'addEventListener');
+    previewForm.addLinkEventListeners();
+    expect(addEventSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it('should detect external links', () => {
+    expect(previewForm.isExternalLink('https://google.com')).toBe(true);
+    expect(previewForm.isExternalLink('http://example.com')).toBe(true);
+    expect(previewForm.isExternalLink('mailto:test@test.com')).toBe(true);
+    expect(previewForm.isExternalLink('#internal')).toBe(false);
+  });
+
+  it('should open external link in new tab', () => {
+    const openSpy = jest.spyOn(globalThis, 'open').mockImplementation(() => null);
+    previewForm.openExternalLink('https://external.com');
+    expect(openSpy).toHaveBeenCalledWith('https://external.com', '_blank', 'noopener,noreferrer');
+  });
+
+  it('should handle click on external link', () => {
+    const link = document.querySelector('.external-link')!;
+    const openSpy = jest.spyOn(previewForm, 'openExternalLink').mockImplementation(() => {});
+    const preventDefault = jest.fn();
+
+    const event = new MouseEvent('click', { bubbles: true });
+    Object.defineProperty(event, 'currentTarget', { value: link });
+    Object.defineProperty(event, 'preventDefault', { value: preventDefault });
+
+    previewForm.handleLinkClick(event);
+    expect(preventDefault).toHaveBeenCalled();
+    expect(openSpy).toHaveBeenCalledWith('https://external.com');
+  });
+
+  it('should handle click on internal link by href', () => {
+    const link = document.querySelector('.internal-link')!;
+    const scrollSpy = jest.spyOn(previewForm, 'scrollToInternalTarget').mockImplementation(() => {});
+    const preventDefault = jest.fn();
+
+    const event = new MouseEvent('click', { bubbles: true });
+    Object.defineProperty(event, 'currentTarget', { value: link });
+    Object.defineProperty(event, 'preventDefault', { value: preventDefault });
+
+    previewForm.handleLinkClick(event);
+    expect(preventDefault).toHaveBeenCalled();
+    expect(scrollSpy).toHaveBeenCalledWith('#section1', null);
+  });
+
+  it('should handle click on internal link by selectionId', () => {
+    const link = document.querySelector('.selection-link')!;
+    const scrollSpy = jest.spyOn(previewForm, 'scrollToInternalTarget').mockImplementation(() => {});
+    const preventDefault = jest.fn();
+
+    const event = new MouseEvent('click', { bubbles: true });
+    Object.defineProperty(event, 'currentTarget', { value: link });
+    Object.defineProperty(event, 'preventDefault', { value: preventDefault });
+
+    previewForm.handleLinkClick(event);
+    expect(preventDefault).toBeDefined();
+    expect(scrollSpy).toBeDefined();
+  });
+});
