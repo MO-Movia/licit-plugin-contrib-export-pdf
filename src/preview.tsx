@@ -669,7 +669,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     // Skip if no href
     if (!href) return;
 
-    if (this.isExternalLink(href)) {
+    if (this.isExternalLink(href)&& !selectionId) {
       event.preventDefault();
       this.openExternalLink(href);
     } else {
