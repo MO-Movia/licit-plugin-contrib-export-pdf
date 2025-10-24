@@ -40,8 +40,8 @@ describe('ExportPDF', () => {
       const tocContainer = document.createElement('div');
       tocContainer.className = 'toc-container';
       content.appendChild(tocContainer);
-      global.CSS ??= {} as unknown as typeof CSS;
-      global.CSS.escape = jest.fn((str) => `escaped(${str})`);
+      globalThis.CSS ??= {} as unknown as typeof CSS;
+      globalThis.CSS.escape = jest.fn((str) => `escaped(${str})`);
     });
 
     afterEach(() => {
