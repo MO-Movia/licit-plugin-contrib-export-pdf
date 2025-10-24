@@ -1,6 +1,6 @@
 {
   "name": "@modusoperandi/licit-export-pdf",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "type": "module",
   "description": "MO's Export To PDF ProseMirror Plugin",
   "main": "index.js",
