@@ -297,8 +297,129 @@ describe('PreviewForm component', () => {
     const Previewform = new PreviewForm(props);
     const imageElement = document.createElement('img');
     imageElement.setAttribute('width', '700');
-    Previewform.replaceImageWidth(imageElement);
+
+    const container = document.createElement('div');
+    Previewform.replaceImageWidth(imageElement, container);
+    Previewform.replaceImageWidth(imageElement, container);
     expect(imageElement.getAttribute('data-original-width')).toBe(null);
+  });
+
+  it('should call replaceImageWidth() and apply rotation and overflow styles correctly', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose() {
+        return;
+      },
+    };
+    const Previewform = new PreviewForm(props);
+    const container = document.createElement('div');
+    const figure = document.createElement('div');
+    figure.classList.add('enhanced-table-figure');
+    figure.setAttribute('data-type', 'enhanced-table-figure');
+    const contentDiv = document.createElement('div');
+    contentDiv.classList.add('enhanced-table-figure-content');
+    figure.appendChild(contentDiv);
+    container.appendChild(figure);
+    const imageElement = document.createElement('img');
+    imageElement.setAttribute('width', '800');
+    figure.appendChild(imageElement);
+
+    Previewform.replaceImageWidth(imageElement, container);
+
+    expect(imageElement.style.maxWidth).toBe('575px');
+    expect(imageElement.style.transform).toBe('rotate(-90deg)');
+    expect(figure.style.overflow).toBe('hidden');
+  });
+
+  it('should not modify styles when image width <= 600', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose() {
+        return;
+      },
+    };
+    const Previewform = new PreviewForm(props);
+    const container = document.createElement('div');
+    const imageElement = document.createElement('img');
+    imageElement.setAttribute('width', '500');
+
+    Previewform.replaceImageWidth(imageElement, container);
+
+    expect(imageElement.style.maxWidth).toBe('');
+    expect(imageElement.style.transform).toBe('');
+  });
+  
+  it('should return early if contentDiv is not present', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose() { return; },
+    };
+
+    const Previewform = new PreviewForm(props);
+    const container = document.createElement('div');
+    const figure = document.createElement('div');
+    figure.classList.add('enhanced-table-figure');
+    figure.setAttribute('data-type', 'enhanced-table-figure');
+    container.appendChild(figure);
+    const imageElement = document.createElement('img');
+    imageElement.setAttribute('width', '800');
+    figure.appendChild(imageElement);
+    Previewform.replaceImageWidth(imageElement, container);
+
+    expect(imageElement.style.maxWidth).toBe('600px');
+    expect(imageElement.style.transform).toBe('');
+  });
+
+  it('should call replaceTableWidth() and apply styles correctly for wide tables', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose() {
+        return;
+      },
+    };
+
+    const Previewform = new PreviewForm(props);
+    const table = document.createElement('table');
+    const row = document.createElement('tr');
+    const cell1 = document.createElement('td');
+    cell1.setAttribute('data-colwidth', '300');
+    const cell2 = document.createElement('td');
+    cell2.setAttribute('data-colwidth', '400');
+    row.appendChild(cell1);
+    row.appendChild(cell2);
+    table.appendChild(row);
+    const wrapper = document.createElement('div');
+    wrapper.classList.add('tablewrapper');
+    wrapper.appendChild(table);
+    document.body.appendChild(wrapper);
+
+    Previewform.replaceTableWidth(table);
+
+    expect(table.style.maxWidth).toBe('600px');
+    expect(table.style.transform).toBe('rotate(-90deg)');
+    expect(wrapper.style.overflow).toBe('hidden');
+    expect(wrapper.style.overflowX).toBe('hidden');
+    expect(wrapper.style.overflowY).toBe('hidden');
+  });
+
+  it('should return early if table has no rows', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose() { return; },
+    };
+
+    const Previewform = new PreviewForm(props);
+    const tableElement = document.createElement('table');
+    const setStyleSpy = jest.spyOn(tableElement.style, 'setProperty');
+
+    Previewform.replaceTableWidth(tableElement);
+
+    expect(setStyleSpy).not.toHaveBeenCalled();
   });
 });
 
