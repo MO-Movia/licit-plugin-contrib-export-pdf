@@ -123,6 +123,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     this.replaceInfoIcons(data1);
     this.updateImageWidths(data1);
     this.prepareEditorContent(data1);
+    this.updateTableWidths(data1);
 
     editorView.dispatch(editorView.state?.tr.setMeta('suppressOnChange', true));
     PDFHandler.state.isOnLoad = true;
@@ -149,13 +150,80 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     });
   }
 
-  public replaceImageWidth = (imageElement): void => {
+  public replaceImageWidth = (imageElement, container: HTMLElement): void => {
     // Get the original width of the image.
     const originalWidth = Number.parseInt(imageElement.getAttribute('width'), 10);
 
-    if (originalWidth > 600) {
-      imageElement.style.maxWidth = '600px';
+    if (originalWidth <= 600) return;
+
+    imageElement.style.maxWidth = '600px';
+    const enhancedFigures = container.querySelectorAll('.enhanced-table-figure[data-type="enhanced-table-figure"]');
+
+    for (const figure of enhancedFigures) {
+      const contentDiv = figure.querySelector<HTMLElement>('.enhanced-table-figure-content');
+      if (!contentDiv) continue;
+
+      const hasEnhancedContent =
+        contentDiv.classList.contains('enhanced-table-figure-content') ||
+        contentDiv.querySelector('.enhanced-table-figure-content');
+
+      if (hasEnhancedContent && originalWidth > 624) {
+        // Rotate image if within enhanced figure
+        imageElement.style.transform = 'rotate(-90deg)';
+        imageElement.style.maxWidth = '575px';
+
+        // Hide overflow in parent wrapper
+        let parent = imageElement.parentElement as HTMLElement | null;
+        while (parent) {
+          if (parent.classList.contains('enhanced-table-figure')) {
+            parent.style.overflow = 'hidden';
+            break;
+          }
+          parent = parent.parentElement;
+        };
+      };
+    };
+  };
+
+  public replaceTableWidth = (tableElement: HTMLElement): void => {
+
+    // Calculate total width from data-colwidth of first row
+    const firstRow = tableElement.querySelector('tr');
+    if (!firstRow) return;
+
+    let totalWidth = 0;
+    const cells = firstRow.querySelectorAll<HTMLElement>('td, th');
+    for (const cell of cells) {
+      const colWidthAttr = cell.dataset.colwidth;
+      if (colWidthAttr) {
+        totalWidth += Number(colWidthAttr);
+      }
     }
+
+    if (totalWidth > 600) {
+      tableElement.style.maxWidth = '600px';
+
+      // Rotate table 
+      if (totalWidth > 624) {
+        tableElement.style.transform = 'rotate(-90deg)';
+
+        // Hide overflow in parent wrapper
+        const targetClasses = ['enhanced-table-figure', 'enhanced-table-figure-content', 'tableWrapper', 'tablewrapper'];
+        let parent: HTMLElement | null = tableElement.parentElement;
+        while (parent) {
+          if (targetClasses.some((cls) => parent.classList.contains(cls))) {
+            parent.style.overflow = 'hidden';
+            parent.style.overflowX = 'hidden';
+            parent.style.overflowY = 'hidden';
+          };
+          parent = parent.parentElement;
+        };
+
+        // Set table height
+        const tableHeight = tableElement.offsetHeight || totalWidth;
+        tableElement.style.height = `${tableHeight}px`;
+      };
+    };
   };
 
   public getToc = async (view): Promise<void> => {
@@ -742,6 +810,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     this.insertSectionHeaders(data1, editorView);
     this.replaceInfoIcons(data1);
     this.updateImageWidths(data1);
+    this.updateTableWidths(data1);
 
     const paged = new Previewer();
     this._popUp?.close();
@@ -860,8 +929,17 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     for (const element of data.children) {
       const images = element.querySelectorAll('img');
       images.forEach((img) => {
-        this.replaceImageWidth(img);
+        this.replaceImageWidth(img, data);
       });
+    }
+  }
+
+  private updateTableWidths(data: HTMLElement): void {
+    for (const element of data.children) {
+      const tables = element.querySelectorAll('table');
+      for (const table of tables) {
+        this.replaceTableWidth(table);
+      }
     }
   }
 
