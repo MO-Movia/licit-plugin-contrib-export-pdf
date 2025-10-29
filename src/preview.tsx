@@ -227,6 +227,13 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   };
 
   public getToc = async (view): Promise<void> => {
+      // Reset static lists
+    PreviewForm.tocNodeList.length = 0;
+    PreviewForm.tocHeader.length = 0;
+    PreviewForm.tofNodeList.length = 0;
+    PreviewForm.tofHeader.length = 0;
+    PreviewForm.totNodeList.length = 0;
+    PreviewForm.totHeader.length = 0;
     const styles = (await view.runtime.getStylesAsync()) as DocumentStyle[];
     const storeTOCvalue = getTableStyles(styles, 'toc');
     const storeTOFvalue = getTableStyles(styles, 'tof');
@@ -308,13 +315,32 @@ export class PreviewForm extends React.PureComponent<Props, State> {
           sectionNodesToExclude: newNodeList,
         };
       },
-      () => {
-        this.calcLogic();
-      }
+      () => {}
     );
   }
 
   public render(): React.ReactElement<any> {
+    const getButtonStyle = (color: string): React.CSSProperties => ({
+      backgroundColor: color,
+      color: '#fff',
+      border: 'none',
+      borderRadius: '6px',
+      padding: '8px 16px',
+      fontSize: '14px',
+      fontWeight: 500,
+      cursor: 'pointer',
+      transition: 'all 0.2s ease',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+    });
+
+    const handleHover = (
+      e: React.MouseEvent<HTMLButtonElement>,
+      bg: string,
+      shadow: string
+    ) => {
+      e.currentTarget.style.backgroundColor = bg;
+      e.currentTarget.style.boxShadow = shadow;
+    };
     return (
       <div
         style={{
@@ -503,16 +529,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
                     Last updated
                   </label>
                 </div>
-                <div
-                  style={{
-                    marginTop: '8px',
-                    display: 'flex',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                  }}
-                >
-                  <button onClick={this.handleApply}>Apply</button>
-                </div>
+                
 
                 <h6 style={{ marginRight: 'auto', marginTop: '30px' }}>
                   Document Sections:
@@ -533,10 +550,30 @@ export class PreviewForm extends React.PureComponent<Props, State> {
                     overflowY: 'auto',
                     overflowX: 'auto',
                     paddingLeft: '10px',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                    border: '1px solid #ccc',
                   }}
                 >
                   {this.state.sections}
                 </div>
+              </div>
+              <div
+                style={{
+                  marginTop: '8px',
+                  display: 'flex',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingLeft: '20px',
+                }}
+              >
+                <button
+                  onClick={this.handleApply}
+                  style={getButtonStyle('#4CAF50')}
+                  onMouseEnter={e => handleHover(e, '#45a049', '0 4px 8px rgba(0,0,0,0.25)')}
+                  onMouseLeave={e => handleHover(e, '#4CAF50', '0 2px 4px rgba(0,0,0,0.2)')}
+                >
+                  Apply
+                </button>
               </div>
 
               <div
@@ -547,10 +584,26 @@ export class PreviewForm extends React.PureComponent<Props, State> {
                   padding: '5px',
                   display: 'flex',
                   flexDirection: 'row',
+                  gap: '10px',
                 }}
               >
-                <button onClick={this.handleConfirm}>Confirm</button>
-                <button onClick={this.handleCancel}>Cancel</button>
+                <button
+                  onClick={this.handleConfirm}
+                  style={getButtonStyle('#4CAF50')}
+                  onMouseEnter={e => handleHover(e, '#45a049', '0 4px 8px rgba(0,0,0,0.25)')}
+                  onMouseLeave={e => handleHover(e, '#4CAF50', '0 2px 4px rgba(0,0,0,0.2)')}
+                >
+                  Confirm
+                </button>
+
+                <button
+                  onClick={this.handleCancel}
+                  style={getButtonStyle('#f44336')}
+                  onMouseEnter={e => handleHover(e, '#d32f2f', '0 4px 8px rgba(0,0,0,0.25)')}
+                  onMouseLeave={e => handleHover(e, '#f44336', '0 2px 4px rgba(0,0,0,0.2)')}
+                >
+                  Cancel
+                </button>
               </div>
             </div>
           </div>
@@ -558,6 +611,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       </div>
     );
   }
+  
 
   public handelDocumentTitle = (event): void => {
     if (event.target.checked) {
@@ -762,10 +816,10 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
     // Check if href is an ID (starts with #) or a selectionId (starts with #)
     // For TOC links, href will be like #id for internal links selectionId will be like #id
-    if (href.startsWith('#')) {
+    if (href?.startsWith('#')) {
       const targetId = href.slice(1);
       targetElement = document.getElementById(targetId);
-    } else if (selectionId && selectionId.startsWith('#')) {
+    } else if (selectionId?.startsWith('#')) {
       const targetId = selectionId.slice(1);
       const container = document.querySelector('.exportpdf-preview-container');
       if (!container) return;
@@ -1058,6 +1112,9 @@ export class PreviewForm extends React.PureComponent<Props, State> {
             alignItems: 'center',
             minWidth: '100%',
             width: 'auto',
+            borderBottom: '1px solid #e0e0e0',
+            backgroundColor: '#fff',
+            transition: 'background 0.2s',
           }}
         >
           <div>
