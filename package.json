@@ -1,6 +1,6 @@
 {
   "name": "@modusoperandi/licit-export-pdf",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "type": "module",
   "description": "MO's Export To PDF ProseMirror Plugin",
   "main": "index.js",
@@ -33,7 +33,7 @@
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
-    "@types/node": "^24.9.1",
+    "@types/node": "^24.9.2",
     "@types/react": "^19.2.2",
     "@typescript-eslint/eslint-plugin": "^8.46.2",
     "@typescript-eslint/parser": "^8.46.2",
