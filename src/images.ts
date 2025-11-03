@@ -1,4 +1,4 @@
-import DarkThemeIcon from './assets/dark/Icon_pdf.svg';
-import LightThemeIcon from './assets/light/Icon_pdf.svg';
+const DarkThemeIcon = 'assets/images/dark/Icon_pdf.svg';
+const LightThemeIcon = 'assets/images/light/Icon_pdf.svg';
 
 export {DarkThemeIcon, LightThemeIcon};

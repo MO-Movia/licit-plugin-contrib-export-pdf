@@ -10,9 +10,11 @@
     "type": "git",
     "url": "git+https://github.com/MO-Movia/licit-plugin-contrib-export-pdf.git"
   },
+    "dependencies": {
+	"@modusoperandi/licit-doc-attrs-step": "file:modusoperandi-licit-doc-attrs-step-1.0.2.tgz",
+    "@modusoperandi/licit-ui-commands": "file:modusoperandi-licit-ui-commands-1.0.0.tgz"
+  },
   "peerDependencies": {
-    "@modusoperandi/licit-doc-attrs-step": "^1.0.2",
-    "@modusoperandi/licit-ui-commands": "^1.0.3",
     "pagedjs": "^0.4.3",
     "prosemirror-model": "^1.22.2",
     "react": "^18.3.1"
