@@ -1,103 +1,228 @@
-import {Handler} from 'pagedjs';
-import {createToc} from './exportPdf';
-export const info_Icons = [];
-import {PreviewForm} from './preview';
+import { Handler } from 'pagedjs';
+import { createTable } from './exportPdf';
+import { PreviewForm } from './preview';
 
-export class MyHandler extends Handler {
-  done;
-  countTOC = 0;
-  pageFooters: Array<HTMLElement> = [];
+export class PDFHandler extends Handler {
+  // static field needs to be readonly for sonar
+  public static readonly state = {
+    currentPage: 0,
+    isOnLoad: false,
+  };
+  public done = false;
+  public countTOC = 0;
+  public pageFooters: Array<HTMLElement> = [];
+  public prepagesCount = 0;
+  public caller;
+  private counters = {
+    1: 0,
+    2: 0,
+    3: 0,
+    4: 0,
+    5: 0,
+    6: 0,
+    7: 0,
+    8: 0,
+    9: 0,
+    10: 0,
+    11: 0, // this is for the tof
+    12: 0// this is for the tot
+  };
   constructor(chunker, polisher, caller) {
     super(chunker, polisher, caller);
-    this.done = false;
+    this.caller = caller;
   }
 
-  beforeParsed(content) {
+  public beforeParsed(content): void {
     this.pageFooters = [];
-    if (PreviewForm.isToc) {
-      createToc({
+    this.prepagesCount = 0;
+    PDFHandler.state.currentPage = 0;
+    this.done = false;
+
+    if (PreviewForm.showToc() || PreviewForm.showTof() || PreviewForm.showTot()) {
+      createTable({
         content: content,
         tocElement: '.tocHead',
-        titleElements: PreviewForm.tocHeader,
+        tofElement: '.tofHead',
+        totElement: '.totHead',
+        titleElements: PreviewForm.getHeadersTOC(),
+        titleElementsTOF: PreviewForm.getHeadersTOF(),
+        titleElementsTOT: PreviewForm.getHeadersTOT(),
       });
     }
+
   }
 
-  afterPageLayout(pageFragment) {
+  public afterPageLayout(pageFragment, page): void {
+    const pageEl = page?.element instanceof HTMLElement ? page.element : null;
+    if (!pageEl) return;
+
+    const prepages = page?.element?.querySelector('.prepages');
+    if (prepages) return;
+
+    // ---- TOC (infoicon) processing ----
+    const tocElements = page?.element?.querySelectorAll('infoicon');
     let concatenatedValues = '';
-    const infoIcons_ = info_Icons[0];
-    if (infoIcons_) {
-      infoIcons_.forEach((obj) => {
-        const isTitleOrToc = PreviewForm.isTitle || PreviewForm.isToc;
-        const isMatchingPageNumber = obj.key == pageFragment.dataset.pageNumber;
+    this.prepagesCount = 0;
 
-        if (
-          (isTitleOrToc && obj.key + 1 == pageFragment.dataset.pageNumber) ||
-          (!isTitleOrToc && isMatchingPageNumber)
-        ) {
-          concatenatedValues += obj.value + ' ';
-        }
-      });
-      pageFragment.style.setProperty(
-        '--pagedjs-string-last-chapTitled',
-        `"${concatenatedValues + ' '}`
-      );
+    tocElements?.forEach((element) => {
+      this.prepagesCount++;
+      const description = element?.getAttribute('description') ?? '';
+      const cleanedDescription = ` ${this.prepagesCount}. ${this.stripHTML(description)}`;
+      concatenatedValues += cleanedDescription + ' ';
+    });
+
+    if (tocElements?.length) {
+      const estimatedLines = Math.ceil(concatenatedValues.length / 80);
+      const footerHeight = 20 + estimatedLines * 12;
+
+      pageFragment.style.setProperty('--pagedjs-string-last-chapTitled', `"${concatenatedValues}"`);
+      pageFragment.style.setProperty('--pagedjs-footer-height', `${footerHeight}px`);
+    } else {
+      pageFragment.style.setProperty('--pagedjs-string-last-chapTitled', '""');
+    }
+
+    // ---- Counter handling ----
+    const items = pageFragment instanceof HTMLElement
+      ? pageFragment.querySelectorAll('[data-style-level]')
+      : [];
+
+    items?.forEach(el => {
+      if (el.dataset.splitFrom) return;
+      const level = Number.parseInt(el.dataset.styleLevel ?? '1', 10);
+      const prefix = el.dataset.prefix;
+      const tof = el.dataset.tof;
+      const tot = el.dataset.tot;
+      const isReset = el.dataset.reset === 'true';
+
+      const label: number[] = [];
+      if (tof || tot) {
+        this.handleSpecialCounters(tof, tot, label);
+      } else {
+        this.resetCounters(level, isReset);
+        this.buildLabel(level, label);
+      }
+
+      const counterVal = (prefix ? prefix + ' ' : '') + label.join('.');
+      el.setAttribute('customcounter', counterVal + '.');
+    });
+  }
+
+  public afterRendered(pages) {
+    const getMarginLeft = (el) => globalThis.getComputedStyle(el).marginLeft || '0pt';
+
+    for (const pageObj of pages) {
+      const page = pageObj.element;
+
+      const splitToItems = page.querySelectorAll('p[data-split-to]');
+      if (splitToItems.length > 0) {
+        const el = splitToItems[0];
+        const mLeft = getMarginLeft(el);
+        el.style.setProperty('margin-top', '1pt', 'important');
+        el.style.setProperty('margin-left', '0pt', 'important');
+        el.style.setProperty('padding-left', mLeft, 'important');
+      }
+
+      const splitFromItems = page.querySelectorAll('p[data-split-from]');
+      if (splitFromItems.length > 0) {
+        const el = splitFromItems[0];
+        const mLeft = getMarginLeft(el);
+        el.style.setProperty('margin-left', '0pt', 'important');
+        el.style.setProperty('padding-left', mLeft, 'important');
+      }
+
+      const indentItems = page.querySelectorAll('p[data-indent]');
+      for (const el of indentItems) {
+        const mLeft = getMarginLeft(el);
+        el.style.setProperty('margin-left', '0pt', 'important');
+        el.style.setProperty('padding-left', mLeft, 'important');
+      }
     }
   }
 
-  afterRendered(pages) {
-    info_Icons.pop();
-    if (PreviewForm.general) {
-      const infoIcon_initial = [];
-      let count = 0;
-      for (let i = 0; i < pages.length; i++) {
-        const outerHTMLValue = pages[i].element.outerHTML;
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(outerHTMLValue, 'text/html');
-        const tocElements = doc.querySelectorAll('infoicon');
-        tocElements.forEach((element) => {
-          count++;
-          const description = element.attributes['description'].textContent;
-          const cleanedDescription =
-            ' ' + count + '. ' + description.replace(/<[^>]*>/g, '');
-          const infoIcon_text_obj = {
-            key: i + 1,
-            value: cleanedDescription,
-          };
-          infoIcon_initial.push(infoIcon_text_obj);
-        });
-      }
-      if (info_Icons.length === 0) {
-        info_Icons.push(infoIcon_initial);
+
+  private resetCounters(level: number, isReset: boolean): void {
+    for (let i = level + 1; i <= 10; i++) this.counters[i] = 0;
+
+    if (isReset) {
+      for (let i = 1; i <= level; i++) {
+        this.counters[i] = i === level ? 0 : 1;
       }
     }
   }
 
-  beforePageLayout() {
+  private handleSpecialCounters(tof: string | null, tot: string | null, label: number[]): void {
+    if (tof) {
+      this.counters[11]++;
+      if (this.counters[11]) label.push(this.counters[1], this.counters[11]);
+    } else if (tot) {
+      this.counters[12]++;
+      if (this.counters[12]) label.push(this.counters[1], this.counters[12]);
+    }
+  }
+
+  private buildLabel(level: number, label: number[]): void {
+    if (level === 1 && this.counters[1] > 0) {
+      this.counters[11] = 0;
+      this.counters[12] = 0;
+    }
+
+    this.counters[level]++;
+    for (let i = 1; i <= level; i++) {
+      if (this.counters[i]) label.push(this.counters[i]);
+    }
+  }
+
+
+  stripHTML(html: string): string {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || '';
+  }
+
+  public beforePageLayout(): void {
     this.doIT();
   }
 
-  async doIT() {
+  public async doIT(): Promise<void> {
     const opt2 =
       '.ProseMirror  infoicon { string-set: chapTitled content(text); }';
     const opt = `@bottom-center {
-content: string(chapTitled, last);
-text-align: right;
-}
-@bottom-left {
-content: "Page " counter(page) " of " counter(pages);
-color: #000000;
-}
-`;
+  content: string(chapTitled, last);
+  text-align: right;
+  }
+  @bottom-left {
+  content: "Page " counter(page) " of " counter(pages);
+  color: #000000;
+  }
+  `;
+
+    let lastUpdatedStyle = '';
+    if (PreviewForm['lastUpdated']) {
+      lastUpdatedStyle = `@top-right {
+        content: "${'Last Updated On: ' + PreviewForm['formattedDate']}";
+        text-align: right;
+        font-size: 11px;
+        font-weight: bold;
+        color: #000000;
+      }`;
+    }
 
     if (!this.done) {
       const text = await this['polisher'].convertViaSheet(`@media print {@page {
 ${opt}
+${lastUpdatedStyle}
 }
 ${opt2}
 /* set the style for the list numbering to none */
 #list-toc-generated {
 list-style: none;
+}
+
+.forcePageSpacer {
+  break-after: page;
+  page-break-after: always; 
+  display: block;
+  min-height: 1px;
 }
 
 #list-toc-generated .toc-element {
@@ -122,13 +247,6 @@ margin-left: 25px;
 
 #list-toc-generated {
 counter-reset: counterTocLevel1;
-}
-
-.tocHead{
-  margin-bottom: 700px;
-}
-.titleHead{
-  margin-bottom: 700px;
 }
 
 #list-toc-generated .toc-element-level-1 {
@@ -165,10 +283,147 @@ float: left;
 width: 0;
 padding-left: 5px;
 letter-spacing: 2px;
-color: #000000;
+color: #2A6EBB;
 }
+
+#list-tof-generated {
+list-style: none;
+}
+
+#list-tof-generated .tof-element {
+break-inside: avoid;
+}
+
+#list-tof-generated .tof-element a::after {
+content: target-counter(attr(href), page);
+float: right;
+}
+
+#list-tof-generated .tof-element-level-1 {
+margin-top: 25px;
+font-weight: bold;
+}
+
+#list-tof-generated .tof-element-level-2 {
+margin-left: 25px;
+}
+
+/* counters */
+
+#list-tof-generated {
+counter-reset: counterTocLevel1;
+}
+
+.totHead{
+  margin-bottom: 700px;
+}
+
+#list-tof-generated .tof-element-level-1 {
+counter-increment: counterTocLevel1;
+counter-reset: counterTocLevel2;
+}
+
+#list-tof-generated .tof-element-level-1::before {
+content: counter(counterTocLevel1) ". ";
+padding-right: 5px;
+}
+
+#list-tof-generated .tof-element-level-2 {
+counter-increment: counterTocLevel2;
+}
+
+#list-tof-generated .tof-element-level-2::before {
+content: counter(counterTocLevel1) ". " counter(counterTocLevel2) ". ";
+padding-right: 5px;
+}
+
+/* hack for leaders */
+
+#list-tof-generated {
+overflow-x: hidden;
+}
+
+/* fake leading */
+#list-tof-generated .tof-element::after {
+content: ".............................................."
+".............................................."
+".............................................." "........";
+float: left;
+width: 0;
+padding-left: 5px;
+letter-spacing: 2px;
+color: #2A6EBB;
+}
+
+#list-tot-generated {
+list-style: none;
+}
+
+#list-tot-generated .tot-element {
+break-inside: avoid;
+}
+
+#list-tot-generated .tot-element a::after {
+content: target-counter(attr(href), page);
+float: right;
+}
+
+#list-tot-generated .tot-element-level-1 {
+margin-top: 25px;
+font-weight: bold;
+}
+
+#list-tot-generated .tot-element-level-2 {
+margin-left: 25px;
+}
+
+/* counters */
+
+#list-tot-generated {
+counter-reset: counterTocLevel1;
+}
+
+
+
+#list-tot-generated .tot-element-level-1 {
+counter-increment: counterTocLevel1;
+counter-reset: counterTocLevel2;
+}
+
+#list-tot-generated .tot-element-level-1::before {
+content: counter(counterTocLevel1) ". ";
+padding-right: 5px;
+}
+
+#list-tot-generated .tot-element-level-2 {
+counter-increment: counterTocLevel2;
+}
+
+#list-tot-generated .tot-element-level-2::before {
+content: counter(counterTocLevel1) ". " counter(counterTocLevel2) ". ";
+padding-right: 5px;
+}
+
+/* hack for leaders */
+
+#list-tot-generated {
+overflow-x: hidden;
+}
+
+/* fake leading */
+#list-tot-generated .tot-element::after {
+content: ".............................................."
+".............................................."
+".............................................." "........";
+float: left;
+width: 0;
+padding-left: 5px;
+letter-spacing: 2px;
+color: #2A6EBB;
+}
+
 .pagedjs_page .pagedjs_margin-bottom-center>.pagedjs_margin-content::after {
-  color: #000000;
+  color: #2A6EBB;
 }
 #list-toc-generated .toc-element {
 display: flex;
@@ -183,8 +438,50 @@ padding-left: 6px;
 
 #list-toc-generated .toc-element a {
 right: 0;
+color: #2A6EBB;
 }
+
+#list-tof-generated .tof-element {
+display: flex;
+}
+
+#list-tof-generated .tof-element a::after {
+position: absolute;
+right: 0;
+background-color: white;
+padding-left: 6px;
+}
+
+#list-tof-generated .tof-element a {
+right: 0;
+color: #2A6EBB;
+}
+
+#list-tot-generated .tot-element {
+display: flex;
+}
+
+#list-tot-generated .tot-element a::after {
+position: absolute;
+right: 0;
+background-color: white;
+padding-left: 6px;
+}
+
+#list-tot-generated .tot-element a {
+right: 0;
+color: #2A6EBB;
+}
+
+.prosemirror-editor-wrapper.embedded .ProseMirror {
+ width : unset;
+}
+
 @page {
+ margin-bottom: var(--pagedjs-footer-height, 40px); /* fallback */
+  @bottom-center {
+    content: var(--pagedjs-string-last-chapTitled);
+  }
 .ProseMirror {
 box-shadow: none;
 }
@@ -196,5 +493,9 @@ background-color: #ffffff
       this['polisher'].insert(text);
       this.done = true;
     }
+  }
+
+  finalizePage() {
+    if (!PDFHandler.state.isOnLoad) PDFHandler.state.currentPage++;
   }
 }

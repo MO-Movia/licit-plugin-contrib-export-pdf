@@ -1,83 +1,170 @@
-import {createToc, ExportPDF} from './exportPdf';
-import {EditorView} from 'prosemirror-view';
-import {PreviewForm} from './preview';
-import * as prevF from './preview';
+// exportPDF.test.ts
+import { createTable, ExportPDF } from './exportPdf';
+import { createPopUp } from '@modusoperandi/licit-ui-commands';
+import { Schema } from 'prosemirror-model';
+import { EditorState } from 'prosemirror-state';
+import { EditorView } from 'prosemirror-view';
+import { schema as basicSchema } from 'prosemirror-schema-basic';
+// Mock createPopUp
+jest.mock('@modusoperandi/licit-ui-commands', () => ({
+  createPopUp: jest.fn(),
+}));
 
-jest.mock('html2canvas', () => {
-  return jest.fn().mockResolvedValue(null);
-});
+describe('ExportPDF', () => {
+  let mockPopUp: unknown;
 
-const mockPdfObject = {
-  getNumberOfPages: jest.fn().mockReturnValue(5),
-  internal: {
-    pageSize: {
-      width: 200,
-      height: 300,
-    },
-  },
-  setPage: jest.fn(),
-  text: jest.fn(),
-  save: jest.fn().mockReturnValue('2023-06-09_09:18:09.pdf'),
-};
+  beforeEach(() => {
 
-jest.mock('jspdf', () => {
-  const mockSave = jest.fn();
-  const mockHtml = jest.fn().mockImplementation((_data, options) => {
-    options.callback(mockPdfObject);
+    // Mock PopUp
+    mockPopUp = {
+      close: jest.fn(),
+    };
+    (createPopUp as jest.Mock).mockReturnValue(mockPopUp);
   });
 
-  const mockConstructor = jest.fn().mockImplementation(() => ({
-    save: mockSave,
-    html: mockHtml,
-    text: jest.fn(),
-  }));
-  return mockConstructor;
-});
-describe('createToc', () => {
-  const config = {
-    content: document.createElement('div'),
-    tocElement: 'div',
-    titleElements: ['h1', 'h2', 'h3'],
-  };
-  it('should add classes, data attributes, and ids to title elements', () => {
-    const title1 = document.createElement('p');
-    title1.setAttribute('stylename', 'h1');
-    config.content.appendChild(title1);
+  afterEach(() => {
+    jest.clearAllMocks();
+    document.body.classList.remove('export-pdf-mode');
+  });
 
-    const title2 = document.createElement('p');
-    title2.setAttribute('stylename', 'h2');
-    config.content.appendChild(title2);
 
-    const title3 = document.createElement('p');
-    title3.setAttribute('stylename', 'h3');
-    config.content.appendChild(title3);
+  describe('createToc', () => {
+    let content: HTMLElement;
 
-    const tocElementDiv = document.createElement('div');
-    config.content.appendChild(tocElementDiv);
+    beforeEach(() => {
+      document.body.innerHTML = '';
 
-    createToc(config);
+      content = document.createElement('div');
+      document.body.appendChild(content);
 
-    expect(title1.classList.contains('title-element')).toBeTruthy();
-    expect(title1.getAttribute('data-title-level')).toBe('1');
-    expect(title1.id).toBe('title-element-1');
+      const tocContainer = document.createElement('div');
+      tocContainer.className = 'toc-container';
+      content.appendChild(tocContainer);
+      globalThis.CSS ??= {} as unknown as typeof CSS;
+      globalThis.CSS.escape = jest.fn((str) => `escaped(${str})`);
+    });
 
-    expect(title2.classList.contains('title-element')).toBeTruthy();
-    expect(title2.getAttribute('data-title-level')).toBe('2');
-    expect(title2.id).toBe('title-element-2');
+    afterEach(() => {
+      jest.clearAllMocks();
+    });
 
-    expect(title3.classList.contains('title-element')).toBeTruthy();
-    expect(title3.getAttribute('data-title-level')).toBe('3');
-    expect(title3.id).toBe('title-element-3');
+    it('should create TOC when no existing TOC', () => {
+
+      const p1 = document.createElement('p');
+      p1.setAttribute('stylename', 'Heading1');
+      p1.textContent = 'Title One';
+      content.appendChild(p1);
+
+      const h4 = document.createElement('h4');
+      h4.setAttribute('stylename', 'Heading2');
+      h4.textContent = 'Title Two';
+      content.appendChild(h4);
+
+      createTable({
+        content,
+        tocElement: '.toc-container',
+        titleElements: ['Heading1', 'Heading2'],
+      });
+
+      const generatedToc = content.querySelector('#list-toc-generated');
+      expect(generatedToc).toBeTruthy();
+      expect(generatedToc?.querySelectorAll('p').length).toBe(2);
+
+      const titleElements = content.querySelectorAll('.title-element');
+      expect(titleElements.length).toBe(2);
+
+      titleElements.forEach((el) => {
+        expect(el.classList.contains('title-element')).toBe(true);
+        expect(el.hasAttribute('data-title-level')).toBe(true);
+        expect(el.id).toContain('title-element-');
+      });
+
+      const tocElements = generatedToc?.querySelectorAll('.toc-element');
+      expect(tocElements?.length).toBe(2);
+
+      tocElements?.forEach((el) => {
+        expect(el.querySelector('a')).toBeTruthy();
+        const link = el.querySelector('a')!;
+        expect(link.getAttribute('href')).toContain('title-element-');
+      });
+    });
+
+    it('should not create TOC if #list-toc-generated exists', () => {
+      const existingToc = document.createElement('div');
+      existingToc.id = 'list-toc-generated';
+      content.querySelector('.toc-container')?.appendChild(existingToc);
+
+      const appendChildSpy = jest.spyOn(existingToc.parentElement!, 'appendChild');
+
+      createTable({
+        content,
+        tocElement: '.toc-container',
+        titleElements: ['Heading1'],
+      });
+
+      expect(appendChildSpy).not.toHaveBeenCalledWith(expect.any(HTMLDivElement));
+    });
+
+    it('should truncate long text in TOC', () => {
+      const p = document.createElement('p');
+      p.setAttribute('stylename', 'Heading1');
+      p.textContent = 'A very very very very very very very very very very very very very very very long title that exceeds 70 characters';
+      content.appendChild(p);
+
+      createTable({
+        content,
+        tocElement: '.toc-container',
+        titleElements: ['Heading1'],
+      });
+
+      const tocLink = content.querySelector('#list-toc-generated p a');
+      expect(tocLink?.textContent?.length).toBeLessThanOrEqual(70);
+    });
   });
   it('should handle exportPdf', () => {
-    jest
-      .spyOn(prevF, 'PreviewForm')
-      .mockReturnValue([] as unknown as PreviewForm);
+    const schema = new Schema({
+      nodes: basicSchema.spec.nodes,
+      marks: basicSchema.spec.marks,
+    });
 
-    const exppdf = new ExportPDF();
-    const mockEditorView = {
-      dom: {parentElement: document.createElement('div')},
-    } as unknown as EditorView;
-    expect(exppdf.exportPdf(mockEditorView)).toBeTruthy();
+    // Create a simple document node (you can extend this)
+    const content = schema.node('doc', null, [
+      schema.node('paragraph', null, [
+        schema.text('This is a test paragraph in the mock ProseMirror view.')
+      ])
+    ]);
+
+    // Create a mock state
+    const state = EditorState.create({
+      doc: content,
+      schema,
+    });
+
+    // Create a DOM container for the editor
+    const editorContainer = document.createElement('div');
+    document.body.appendChild(editorContainer);
+
+    // Create a mock EditorView
+    const editorView = new EditorView(editorContainer, {
+      state,
+    });
+    const doc = {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            {
+              type: 'text',
+              text: 'Hello, this is a test document!',
+            },
+          ],
+        },
+      ],
+    };
+
+    const expdf = new ExportPDF();
+    expect(expdf.exportPdf(editorView,doc)).toBeDefined();
+    expect(expdf.exportPdf(editorView,doc)).toBeDefined();
   });
 });

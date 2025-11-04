@@ -1,23 +1,13 @@
-import { ExportPDFPlugin } from './ExportPDFPlugin';
-import { createEditor, doc, p } from 'jest-prosemirror';
+import {ExportPDFPlugin} from './ExportPDFPlugin';
+import {createEditor, doc, p} from 'jest-prosemirror';
 import moment from 'moment';
-import { Schema } from 'prosemirror-model';
+import {Schema} from 'prosemirror-model';
 jest.mock('html2canvas', () => {
   return jest.fn().mockResolvedValue(null);
 });
-jest.mock('../src/assets/dark/Icon_pdf.svg', () => 'Icon SVG content');
-jest.mock('../src/assets/light/Icon_pdf.svg', () => 'Icon SVG content');
-jest.mock('jspdf', () => {
-  const mockSave = jest.fn();
-  const mockHtml = jest.fn();
+jest.mock('../src/assets/images/dark/Icon_pdf.svg', () => 'Icon SVG content');
+jest.mock('../src/assets/images/light/Icon_pdf.svg', () => 'Icon SVG content');
 
-  const mockConstructor = jest.fn().mockImplementation(() => ({
-    save: mockSave,
-    html: mockHtml,
-  }));
-
-  return mockConstructor;
-});
 describe('Export PDF Plugin', () => {
   let plugin: ExportPDFPlugin;
 

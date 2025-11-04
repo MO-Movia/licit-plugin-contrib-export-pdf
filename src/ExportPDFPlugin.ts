@@ -25,11 +25,11 @@ export class ExportPDFPlugin extends Plugin {
   }
 
   // Plugin method that supplies plugin schema to editor
-  getEffectiveSchema(schema: Schema): Schema {
+  public getEffectiveSchema(schema: Schema): Schema {
     return schema;
   }
 
-  initKeyCommands(): unknown {
+  public initKeyCommands(): unknown {
     return createKeyMapPlugin(
       {
         [KEY_EXPORT_PDF.common]: EXPORT_PDF.execute,

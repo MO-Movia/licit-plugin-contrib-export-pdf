@@ -1,24 +1,38 @@
 import { EditorView } from 'prosemirror-view';
+import { EditorState } from 'prosemirror-state';
 import { createPopUp } from '@modusoperandi/licit-ui-commands';
 import { PreviewForm } from './preview';
 
 // [FS] IRAD-1893 2022-07-25
 // Export to PDF file.
 export class ExportPDF {
-  _popUp = null;
+  private _popUp = null;
   /**
    * Export content to pdf and save locally.
    * @param  {EditorView} view
    * @returns boolean
    */
-  exportPdf(view: EditorView): boolean {
+  public exportPdf(view: EditorView, doc: unknown): boolean {
+    const originalState = view.state;
+    const newDoc = view.state?.schema.nodeFromJSON(doc);
+
+    const fullDocState = EditorState.create({
+      doc: newDoc,
+      schema: originalState.schema,
+      plugins: originalState.plugins,
+    });
+    document.body.classList.add('export-pdf-mode');
+    view.updateState(fullDocState);
+
     const viewPops = {
-      editorState: view.state,
+      editorState: fullDocState,
       editorView: view,
-      onClose: () => {
+      onClose: (): void => {
         if (this._popUp) {
           this._popUp.close();
           this._popUp = null;
+          document.body.classList.remove('export-pdf-mode');
+          view.updateState(originalState);
         }
       },
     };
@@ -32,51 +46,120 @@ export class ExportPDF {
   }
 }
 
-export function createToc(config) {
-  const content1 = config.content;
-  const tocElement1 = config.tocElement;
-  const titleElements1 = config.titleElements;
-  const tocElementDiv = content1.querySelector(`${tocElement1}`);
-  if (!content1.querySelector('#list-toc-generated')) {
-    const tocUl = document.createElement('div');
-    tocUl.id = 'list-toc-generated';
-    tocElementDiv.appendChild(tocUl);
+export function createTable(config): void {
+  const {
+    content,
+    tocElement,
+    tofElement,
+    totElement,
+    titleElements,
+    titleElementsTOF,
+    titleElementsTOT,
+  } = config;
 
-    let tocElementNbr = 0;
-    for (let i = 0; i < titleElements1.length; i++) {
-      const titleHierarchy = i + 1;
-      const titleElement = content1.querySelectorAll(
-        `p[stylename="${titleElements1[i]}"], h4[stylename="${titleElements1[i]}"]`
-      );
-      titleElement.forEach(function (element) {
-        // add classes to the element
-        element.classList.add('title-element');
-        element.setAttribute('data-title-level', titleHierarchy.toString());
+  generateList({
+    content,
+    containerSelector: tocElement,
+    titleElements,
+    cssClass: 'title-element',
+    idPrefix: 'title-element',
+    dataAttr: 'data-title-level',
+    generatedListId: 'list-toc-generated',
+    elementClass: 'toc-element',
+    headerText: 'TABLE OF CONTENTS',
+  });
 
-        // add id if doesn't exist
-        tocElementNbr++;
-        const idElement = element.id;
-        if (idElement == '') {
-          element.id = 'title-element-' + tocElementNbr;
-        }
-      });
-    }
-    const tocElements = content1.querySelectorAll('.title-element');
+  generateList({
+    content,
+    containerSelector: tofElement,
+    titleElements: titleElementsTOF,
+    cssClass: 'title-element-tof',
+    idPrefix: 'title-element-tof',
+    dataAttr: 'data-title-level-tof',
+    generatedListId: 'list-tof-generated',
+    elementClass: 'tof-element',
+    headerText: 'LIST OF FIGURES',
+  });
 
-    for (const tocElement of tocElements) {
-      const tocNewLi = document.createElement('p');
+  generateList({
+    content,
+    containerSelector: totElement,
+    titleElements: titleElementsTOT,
+    cssClass: 'title-element-tot',
+    idPrefix: 'title-element-tot',
+    dataAttr: 'data-title-level-tot',
+    generatedListId: 'list-tot-generated',
+    elementClass: 'tot-element',
+    headerText: 'LIST OF TABLES',
+  });
+}
 
-      // Add class for the hierarchy of toc
-      tocNewLi.classList.add('toc-element');
-      let truncateText = tocElement.textContent;
-      if (truncateText.length > 70) {
-        truncateText = truncateText.substring(0, 70).trim();
-        truncateText = truncateText.substring(0, truncateText.lastIndexOf(' '));
+
+function escapeCSSId(id: string): string {
+  return CSS?.escape
+    ? CSS.escape(id)
+    : id.replace(/^\d/, '_$&').replace(/[^a-zA-Z0-9\-_:.]/g, '_');
+}
+
+function generateList({
+  content,
+  containerSelector,
+  titleElements,
+  cssClass,
+  idPrefix,
+  dataAttr,
+  generatedListId,
+  elementClass,
+  headerText,
+}) {
+  const container = content.querySelector(containerSelector);
+  if (!container || content.querySelector(`#${generatedListId}`)) return;
+
+  const listDiv = document.createElement('div');
+  listDiv.id = generatedListId;
+  container.appendChild(listDiv);
+  container.classList.add('prepages');
+  let elementCount = 0;
+
+  titleElements.forEach((styleName, i) => {
+    const titleHierarchy = i + 1;
+    const elements = content.querySelectorAll(
+      `p[stylename="${styleName}"], h4[stylename="${styleName}"]`
+    );
+
+    elements.forEach((el) => {
+      el.classList.add(cssClass);
+      el.setAttribute(dataAttr, titleHierarchy.toString());
+
+      if (!el.id) {
+        elementCount++;
+        el.id = `${idPrefix}-${elementCount}`;
       }
-      // Create the element
-      tocNewLi.innerHTML =
-        '<a href="#' + tocElement.id + '">' + truncateText + '</a>';
-      tocUl.appendChild(tocNewLi);
+    });
+  });
+
+  const allElements = content.querySelectorAll(`.${cssClass}`);
+
+  allElements.forEach((el, index) => {
+    const safeId = escapeCSSId(el.id);
+
+    let text = el.textContent.trim();
+    if (text.length > 70) {
+      text = text.substring(0, 70);
+      text = text.substring(0, text.lastIndexOf(' '));
     }
-  }
+
+    if (index === 0 && headerText) {
+      const headerEl = document.createElement('h4');
+      headerEl.textContent = headerText;
+      headerEl.style.marginBottom = '40px';
+      headerEl.style.color = '#000000';
+      listDiv.appendChild(headerEl);
+    }
+
+    const linkPara = document.createElement('p');
+    linkPara.classList.add(elementClass);
+    linkPara.innerHTML = `<a href="#${safeId}">${text}</a>`;
+    listDiv.appendChild(linkPara);
+  });
 }

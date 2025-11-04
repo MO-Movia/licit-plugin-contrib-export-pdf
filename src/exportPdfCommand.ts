@@ -6,18 +6,21 @@ import { ExportPDF } from './exportPdf';
 import React from 'react';
 
 export class ExportPDFCommand extends UICommand {
-  exportPdf: ExportPDF;
+
+  private static isPreviewFormOpen = false;
+
+  public exportPdf: ExportPDF;
 
   constructor() {
     super();
     this.exportPdf = new ExportPDF();
   }
 
-  isEnabled = (): boolean => {
+  public isEnabled = (): boolean => {
     return true;
   };
 
-  waitForUserInput = (
+  public waitForUserInput = (
     _state: EditorState,
     _dispatch?: (tr: Transform) => void,
     _view?: EditorView,
@@ -26,7 +29,7 @@ export class ExportPDFCommand extends UICommand {
     return Promise.resolve(undefined);
   };
 
-  executeWithUserInput = (
+  public executeWithUserInput = (
     _state: EditorState,
     _dispatch?: (tr: Transform) => void,
     _view?: EditorView,
@@ -35,25 +38,41 @@ export class ExportPDFCommand extends UICommand {
     return false;
   };
 
-  cancel(): void {
+  public cancel(): void {
     return null;
   }
 
-  execute = (
+  public execute = (
     _state: EditorState,
     _dispatch: (tr: Transform) => void,
-    view: EditorView
+    view: EditorView,
+    doc: unknown
   ): boolean => {
-    return this.exportPdf.exportPdf(view);
+    if (ExportPDFCommand.isPreviewFormOpen) {
+      return false;
+    }
+    ExportPDFCommand.isPreviewFormOpen = true;
+    return this.exportPdf.exportPdf(view, doc);
   };
 
-  renderLabel() {
+
+  public renderLabel() {
     return null;
   }
-  isActive(): boolean {
+
+  public isActive(): boolean {
     return true;
   }
-  executeCustom(_state: EditorState, tr: Transform): Transform {
+
+  public executeCustom(_state: EditorState, tr: Transform): Transform {
     return tr;
+  }
+
+  public executeCustomStyleForTable(_state: EditorState, tr: Transform): Transform {
+    return tr;
+  }
+
+  public static closePreviewForm(): void {
+    ExportPDFCommand.isPreviewFormOpen = false;
   }
 }
