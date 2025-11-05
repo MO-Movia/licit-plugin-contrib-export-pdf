@@ -89,10 +89,12 @@ export class PDFHandler extends Handler {
     items?.forEach(el => {
       if (el.dataset.splitFrom) return;
       const level = Number.parseInt(el.dataset.styleLevel ?? '1', 10);
-      const prefix = el.dataset.prefix;
-      const tof = el.dataset.tof;
-      const tot = el.dataset.tot;
-      const isReset = el.dataset.reset === 'true';
+      const prefix = this.getAttr(el, 'prefix');
+      const tof = this.getAttr(el, 'tof');
+      const tot = this.getAttr(el, 'tot');
+      const isReset =
+      el.dataset.reset === 'true' ||
+      (el instanceof HTMLElement && el.style.getPropertyValue('--reset-flag') === '1');
 
       const label: number[] = [];
       if (tof || tot) {
@@ -170,6 +172,13 @@ export class PDFHandler extends Handler {
     for (let i = 1; i <= level; i++) {
       if (this.counters[i]) label.push(this.counters[i]);
     }
+  }
+
+  private getAttr(el: HTMLElement, key: string): string {
+    return (
+      el.dataset[key] ||
+      el.style.getPropertyValue(`--${key}`)
+    );
   }
 
 

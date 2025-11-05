@@ -865,6 +865,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     this.replaceInfoIcons(data1);
     this.updateImageWidths(data1);
     this.updateTableWidths(data1);
+    this.updateStyles(data1);
 
     const paged = new Previewer();
     this._popUp?.close();
@@ -987,6 +988,22 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       });
     }
   }
+
+private updateStyles(data: HTMLElement): void {
+  data.querySelectorAll('[reset="true"], [prefix], [tof="true"], [tot="true"]').forEach(el => {
+    if (!(el instanceof HTMLElement)) return;
+
+    const reset = el.getAttribute('reset');
+    const prefix = el.getAttribute('prefix');
+    const tof = el.getAttribute('tof');
+    const tot = el.getAttribute('tot');
+
+    if (reset === 'true') el.style.setProperty('--reset-flag', '1');
+    if (prefix) el.style.setProperty('--prefix', prefix);
+    if (tof) el.style.setProperty('--tof', tof);
+    if (tot) el.style.setProperty('--tot', tot);
+  });
+}
 
   private updateTableWidths(data: HTMLElement): void {
     for (const element of data.children) {
