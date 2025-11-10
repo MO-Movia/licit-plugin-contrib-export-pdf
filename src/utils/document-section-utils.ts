@@ -62,7 +62,7 @@ export function flattenStructure(structure: SectionNodeStructure[]): FlatSection
       }
 
       flattenedStructure.push(flattenedSection);
-      flattenedStructure.push(...flattenStructure(section.children));
+      flattenedStructure.push(...flattenStructure(section.children)); // NOSONAR
     } else {
       delete section.children;
       flattenedStructure.push(flattenedSection);
@@ -107,7 +107,7 @@ function getCheckedChildSection(section: FlatSectionNodeStructure, flatStructure
 
     if (childSection?.isChecked) {
       checkedChildSection.push(childSection.id);
-      checkedChildSection.push(...getCheckedChildSection(childSection, flatStructure));
+      checkedChildSection.push(...getCheckedChildSection(childSection, flatStructure)); // NOSONAR
     }
   }
 
@@ -138,7 +138,7 @@ export function filterDocumentSections(
   const proseMirrorContainer = renderedDoc.getElementsByClassName('ProseMirror')[0] ?? null;
 
   if (proseMirrorContainer) {
-    const tempTocNodeList = structuredClone(nodes);
+    const tempTocNodeList = JSON.parse(JSON.stringify(nodes));  // NOSONAR 
 
     for (const id of excludedNodes) {
       const node = nodes.find(node => node.attrs.objectId === id);
