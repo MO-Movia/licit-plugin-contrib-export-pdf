@@ -1,7 +1,7 @@
-import { EditorView } from 'prosemirror-view';
-import { EditorState } from 'prosemirror-state';
-import { createPopUp } from '@modusoperandi/licit-ui-commands';
-import { PreviewForm } from './preview';
+import {EditorView} from 'prosemirror-view';
+import {EditorState} from 'prosemirror-state';
+import {createPopUp} from '@modusoperandi/licit-ui-commands';
+import {PreviewForm} from './preview';
 
 // [FS] IRAD-1893 2022-07-25
 // Export to PDF file.
@@ -14,7 +14,7 @@ export class ExportPDF {
    */
   public exportPdf(view: EditorView, doc: unknown): boolean {
     const originalState = view.state;
-    const newDoc = view.state?.schema.nodeFromJSON(doc);
+    const newDoc = view.state?.schema.nodeFromJSON(doc || view.state.doc);
 
     const fullDocState = EditorState.create({
       doc: newDoc,
@@ -93,7 +93,6 @@ export function createTable(config): void {
     headerText: 'LIST OF TABLES',
   });
 }
-
 
 function escapeCSSId(id: string): string {
   return CSS?.escape
