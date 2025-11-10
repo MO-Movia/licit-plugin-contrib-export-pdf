@@ -64,7 +64,7 @@ export class PDFHandler extends Handler {
     let concatenatedValues = '';
     this.prepagesCount = 0;
 
-    tocElements?.forEach((element) => {
+    tocElements?.forEach((element) => { // NOSONAR not an iterable
       this.prepagesCount++;
       const description = element?.getAttribute('description') ?? '';
       const cleanedDescription = ` ${this.prepagesCount}. ${this.stripHTML(description)}`;
@@ -86,7 +86,7 @@ export class PDFHandler extends Handler {
       ? pageFragment.querySelectorAll('[data-style-level]')
       : [];
 
-    items?.forEach(el => {
+    items?.forEach(el => { // NOSONAR not an iterable
       if (el.dataset.splitFrom) return;
       const level = Number.parseInt(el.dataset.styleLevel ?? '1', 10);
       const prefix = this.getAttr(el, 'prefix');

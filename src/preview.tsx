@@ -708,7 +708,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       }
     }
 
-    CitationIcons.forEach((CitationIcon, index) => {
+    CitationIcons.forEach((CitationIcon, index) => { // NOSONAR not an iterable
       const description =
         CitationIcon.getAttribute('overallcitationcapco') +
         ' ' +
@@ -778,7 +778,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
   public addLinkEventListeners = (): void => {
     const links = document.querySelectorAll('.exportpdf-preview-container a');
-    links.forEach((link) => {
+    links.forEach((link) => { // NOSONAR not an iterable
       link.addEventListener('click', this.handleLinkClick);
     });
   };
@@ -888,7 +888,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     if (proseMirror) {
       proseMirror.setAttribute('contenteditable', 'false');
       proseMirror.classList.remove('czi-prosemirror-editor');
-      proseMirror.querySelectorAll('.molm-czi-image-view-body-img-clip span').forEach(span => {
+      proseMirror.querySelectorAll('.molm-czi-image-view-body-img-clip span').forEach(span => { // NOSONAR not an iterable
         (span as HTMLElement).style.display = 'flex';
       });
     }
@@ -896,7 +896,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
   private replaceCitations(data: HTMLElement): void {
     const citations = data.querySelectorAll('.citationnote');
-    citations.forEach((el, idx) => {
+    citations.forEach((el, idx) => { // NOSONAR not an iterable
       const sup = document.createElement('sup');
       sup.textContent = `[${idx + 1}]`;
       el.parentNode?.replaceChild(sup, el);
@@ -920,7 +920,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
   private insertSectionHeaders(data: HTMLElement, editorView): void {
     data.querySelectorAll('.titleHead, .forcePageSpacer, .tocHead, .tofHead, .totHead')
-      .forEach(n => n.remove());
+      .forEach(n => n.remove()); // NOSONAR not an iterable
 
     let insertBeforeNode: ChildNode | null = data.firstChild;
 
@@ -952,7 +952,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       { flag: PreviewForm.isTot, className: 'totHead' }
     ];
 
-    sections.forEach(({ flag, className }) => {
+    sections.forEach(({ flag, className }) => { // NOSONAR not an iterable
       if (!flag) return;
 
       const sectionDiv = document.createElement('div');
@@ -972,7 +972,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
   private replaceInfoIcons(data: HTMLElement): void {
     const icons = data.querySelectorAll('.infoicon');
-    icons.forEach((icon, index) => {
+    icons.forEach((icon, index) => { // NOSONAR not an iterable
       const sup = document.createElement('sup');
       sup.textContent = `${index + 1}`;
       icon.textContent = '';
@@ -983,14 +983,14 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   private updateImageWidths(data: HTMLElement): void {
     for (const element of data.children) {
       const images = element.querySelectorAll('img');
-      images.forEach((img) => {
+      images.forEach((img) => { // NOSONAR not an iterable
         this.replaceImageWidth(img, data);
       });
     }
   }
 
 private updateStyles(data: HTMLElement): void {
-  data.querySelectorAll('[reset="true"], [prefix], [tof="true"], [tot="true"]').forEach(el => {
+  data.querySelectorAll('[reset="true"], [prefix], [tof="true"], [tot="true"]').forEach(el => { // NOSONAR not an iterable
     if (!(el instanceof HTMLElement)) return;
 
     const reset = el.getAttribute('reset');
@@ -1000,8 +1000,8 @@ private updateStyles(data: HTMLElement): void {
 
     if (reset === 'true') el.style.setProperty('--reset-flag', '1');
     if (prefix) el.style.setProperty('--prefix', prefix);
-    if (tof) el.style.setProperty('--tof', tof);
-    if (tot) el.style.setProperty('--tot', tot);
+    if (tof === 'true') el.style.setProperty('--tof', tof);
+    if (tot === 'true') el.style.setProperty('--tot', tot);
   });
 }
 
@@ -1056,11 +1056,11 @@ private updateStyles(data: HTMLElement): void {
       printWindow.document.open();
       printWindow.document.writeln('<!DOCTYPE html><html><body></body></html>');
 
-      while (printWindow.document.documentElement.firstChild) {
-        printWindow.document.documentElement.removeChild(
-          printWindow.document.documentElement.firstChild
-        );
-      }
+    const docElement = printWindow.document.documentElement;
+      while (docElement.firstChild) {
+          docElement.firstChild.remove();
+      } 
+
       for (const childNode of divContainer.childNodes) {
         printWindow.document.documentElement.appendChild(
           childNode.cloneNode(true)

@@ -4,7 +4,7 @@
     "module": "esnext",
     "moduleResolution": "node",
     "lib": [
-      "es2017",
+      "es2022",
       "dom",
       "dom.Iterable"
     ],

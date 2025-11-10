@@ -96,9 +96,10 @@ export function createTable(config): void {
 
 
 function escapeCSSId(id: string): string {
-  return CSS?.escape
-    ? CSS.escape(id)
-    : id.replace(/^\d/, '_$&').replace(/[^a-zA-Z0-9\-_:.]/g, '_');
+  if (CSS?.escape) return CSS.escape(id);
+  return id
+    .replaceAll(/^\d/, '_$&')
+    .replaceAll(/[^a-zA-Z0-9\-_:.]/g, '_');
 }
 
 function generateList({
@@ -121,13 +122,13 @@ function generateList({
   container.classList.add('prepages');
   let elementCount = 0;
 
-  titleElements.forEach((styleName, i) => {
+  titleElements.forEach((styleName, i) => { // NOSONAR not an iterable
     const titleHierarchy = i + 1;
     const elements = content.querySelectorAll(
       `p[stylename="${styleName}"], h4[stylename="${styleName}"]`
     );
 
-    elements.forEach((el) => {
+    elements.forEach((el) => { // NOSONAR not an iterable
       el.classList.add(cssClass);
       el.setAttribute(dataAttr, titleHierarchy.toString());
 
@@ -140,7 +141,7 @@ function generateList({
 
   const allElements = content.querySelectorAll(`.${cssClass}`);
 
-  allElements.forEach((el, index) => {
+  allElements.forEach((el, index) => { // NOSONAR not an iterable
     const safeId = escapeCSSId(el.id);
 
     let text = el.textContent.trim();

@@ -138,7 +138,7 @@ export function filterDocumentSections(
   const proseMirrorContainer = renderedDoc.getElementsByClassName('ProseMirror')[0] ?? null;
 
   if (proseMirrorContainer) {
-    const tempTocNodeList = JSON.parse(JSON.stringify(nodes));
+    const tempTocNodeList = structuredClone(nodes);
 
     for (const id of excludedNodes) {
       const node = nodes.find(node => node.attrs.objectId === id);
