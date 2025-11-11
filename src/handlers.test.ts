@@ -175,17 +175,6 @@ describe('PDFHandler', () => {
     handler.finalizePage();
     expect(PDFHandler.state.currentPage).toBe(1); // no increment
   });
-});
-
-describe('PDFHandler - getAttr and updateStyles (afterPageLayout CSS update) tests', () => {
-  let handler: PDFHandler;
-
-  beforeEach(() => {
-    handler = new PDFHandler(mockChunker, mockPolisher, mockCaller);
-    jest.clearAllMocks();
-    PDFHandler.state.currentPage = 0;
-    PDFHandler.state.isOnLoad = false;
-  });
 
   test('getAttr returns dataset value when present, otherwise falls back to CSS custom property, otherwise empty string', () => {
     const el = document.createElement('div') as HTMLElement;

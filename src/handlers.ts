@@ -59,44 +59,46 @@ export class PDFHandler extends Handler {
     const prepages = page?.element?.querySelector('.prepages');
     if (prepages) return;
 
-    // ---- TOC (infoicon) processing ----
-    const tocElements = page?.element?.querySelectorAll('infoicon');
-    let concatenatedValues = '';
-    this.prepagesCount = 0;
+    const processTocAndFooter = () => {
+      const tocElements = page?.element?.querySelectorAll('infoicon');
+      let concatenatedValues = '';
+      this.prepagesCount = 0;
 
-    tocElements?.forEach((element) => { // NOSONAR not an iterable
-      this.prepagesCount++;
-      const description = element?.getAttribute('description') ?? '';
-      const cleanedDescription = ` ${this.prepagesCount}. ${this.stripHTML(description)}`;
-      concatenatedValues += cleanedDescription + ' ';
-    });
+      if (tocElements) {
+        for (const [, element] of tocElements.entries()) {
+          this.prepagesCount++;
+          const description = element.getAttribute('description') ?? '';
+          const cleanedDescription = ` ${this.prepagesCount}. ${this.stripHTML(description)}`;
+          concatenatedValues += cleanedDescription + ' ';
+        }
+      }
 
-    if (tocElements?.length) {
-      const estimatedLines = Math.ceil(concatenatedValues.length / 80);
-      const footerHeight = 20 + estimatedLines * 12;
+      if (tocElements?.length) {
+        const estimatedLines = Math.ceil(concatenatedValues.length / 80);
+        const footerHeight = 20 + estimatedLines * 12;
 
-      pageFragment.style.setProperty('--pagedjs-string-last-chapTitled', `"${concatenatedValues}"`);
-      pageFragment.style.setProperty('--pagedjs-footer-height', `${footerHeight}px`);
-    } else {
-      pageFragment.style.setProperty('--pagedjs-string-last-chapTitled', '""');
-    }
+        pageFragment.style.setProperty('--pagedjs-string-last-chapTitled', `"${concatenatedValues}"`);
+        pageFragment.style.setProperty('--pagedjs-footer-height', `${footerHeight}px`);
+      } else {
+        pageFragment.style.setProperty('--pagedjs-string-last-chapTitled', '""');
+      }
+    };
 
-    // ---- Counter handling ----
-    const items = pageFragment instanceof HTMLElement
-      ? pageFragment.querySelectorAll('[data-style-level]')
-      : [];
-
-    items?.forEach(el => { // NOSONAR not an iterable
+    const processSingleItem = (el: Element) => {
+      if (!(el instanceof HTMLElement)) return;
       if (el.dataset.splitFrom) return;
+
       const level = Number.parseInt(el.dataset.styleLevel ?? '1', 10);
       const prefix = this.getAttr(el, 'prefix');
       const tof = this.getAttr(el, 'tof');
       const tot = this.getAttr(el, 'tot');
+
       const isReset =
-      el.dataset.reset === 'true' ||
-      (el instanceof HTMLElement && el.style.getPropertyValue('--reset-flag') === '1');
+        el.dataset.reset === 'true' ||
+        (el instanceof HTMLElement && el.style.getPropertyValue('--reset-flag') === '1');
 
       const label: number[] = [];
+
       if (tof || tot) {
         this.handleSpecialCounters(tof, tot, label);
       } else {
@@ -106,7 +108,22 @@ export class PDFHandler extends Handler {
 
       const counterVal = (prefix ? prefix + ' ' : '') + label.join('.');
       el.setAttribute('customcounter', counterVal + '.');
-    });
+    };
+
+    const processCounters = () => {
+      const items = pageFragment instanceof HTMLElement
+        ? pageFragment.querySelectorAll('[data-style-level]')
+        : [];
+
+      if (!items) return;
+
+      for (const [, el] of items.entries()) {
+        processSingleItem(el);
+      }
+    };
+
+    processTocAndFooter();
+    processCounters();
   }
 
   public afterRendered(pages) {
