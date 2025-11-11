@@ -150,39 +150,47 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     });
   }
 
-  public replaceImageWidth = (imageElement, container: HTMLElement): void => {
+  public replaceImageWidth = (imageElement): void => {
     // Get the original width of the image.
     const originalWidth = Number.parseInt(imageElement.getAttribute('width'), 10);
+    const originalHeight = Number.parseInt(imageElement.getAttribute('height'), 10);
 
-    if (originalWidth <= 600) return;
+    if (originalWidth <= 620) return;
+    const contentDiv = imageElement.closest('.enhanced-table-figure-content');
 
-    imageElement.style.maxWidth = '600px';
-    const enhancedFigures = container.querySelectorAll('.enhanced-table-figure[data-type="enhanced-table-figure"]');
-
-    for (const figure of enhancedFigures) {
-      const contentDiv = figure.querySelector<HTMLElement>('.enhanced-table-figure-content');
-      if (!contentDiv) continue;
-
-      const hasEnhancedContent =
-        contentDiv.classList.contains('enhanced-table-figure-content') ||
-        contentDiv.querySelector('.enhanced-table-figure-content');
-
-      if (hasEnhancedContent && originalWidth > 624) {
-        // Rotate image if within enhanced figure
-        imageElement.style.transform = 'rotate(-90deg)';
-        imageElement.style.maxWidth = '575px';
-
-        // Hide overflow in parent wrapper
-        let parent = imageElement.parentElement as HTMLElement | null;
-        while (parent) {
-          if (parent.classList.contains('enhanced-table-figure')) {
-            parent.style.overflow = 'hidden';
+    if (contentDiv) {
+      const figure = contentDiv.closest('.enhanced-table-figure');
+      if (figure) {
+        let prevElement = figure.previousElementSibling;
+        while (prevElement) {
+          const styleName = prevElement.getAttribute('stylename');
+          if (styleName === 'attFigureTitle' || styleName === 'chFigureTitle') {
+            contentDiv.insertBefore(prevElement, contentDiv.firstChild);
+            (prevElement as HTMLElement).style.textAlign = 'left';
+            (prevElement as HTMLElement).style.alignSelf = 'flex-start';
+            (prevElement as HTMLElement).style.marginLeft = '-132px'
             break;
           }
-          parent = parent.parentElement;
-        };
-      };
-    };
+          prevElement = prevElement.previousElementSibling;
+        }
+      }
+
+      // Rotate the entire content div counter-clockwise 90 degrees
+      contentDiv.style.transform = 'rotate(-90deg)';
+      contentDiv.style.transformOrigin = 'center center';
+      contentDiv.style.width = `${originalHeight}px`;
+      contentDiv.style.height = `${originalWidth}px`;
+      contentDiv.style.display = 'flex';
+      contentDiv.style.flexDirection = 'column';
+      contentDiv.style.justifyContent = 'center';
+      contentDiv.style.alignItems = 'center';
+      imageElement.style.maxWidth = 'none';
+
+      if (figure) {
+        figure.style.overflow = 'hidden';
+        figure.style.paddingLeft = '43px';
+      }
+    }
   };
 
   public replaceTableWidth = (tableElement: HTMLElement): void => {
@@ -203,28 +211,75 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     if (totalWidth > 600) {
       tableElement.style.maxWidth = '600px';
 
-      // Rotate table 
+      // Rotate table if width exceeds 624px
       if (totalWidth > 624) {
-        tableElement.style.transform = 'rotate(-90deg)';
-
-        // Hide overflow in parent wrapper
-        const targetClasses = ['enhanced-table-figure', 'enhanced-table-figure-content', 'tableWrapper', 'tablewrapper'];
-        let parent: HTMLElement | null = tableElement.parentElement;
-        while (parent) {
-          if (targetClasses.some((cls) => parent.classList.contains(cls))) {
-            parent.style.overflow = 'hidden';
-            parent.style.overflowX = 'hidden';
-            parent.style.overflowY = 'hidden';
-          };
-          parent = parent.parentElement;
-        };
-
-        // Set table height
-        const tableHeight = tableElement.offsetHeight || totalWidth;
-        tableElement.style.height = `${tableHeight}px`;
-      };
-    };
+        this.rotateWideTable(tableElement, totalWidth);
+      }
+    }
   };
+
+  rotateWideTable(tableElement: HTMLElement, totalWidth: number): void {
+    const tableWrapper = tableElement.closest('.tableWrapper');
+    if (!tableWrapper) return;
+
+    const contentDiv = tableWrapper.closest('.enhanced-table-figure-content');
+    if (!(contentDiv instanceof HTMLElement)) return; 
+
+    // Move table title into contentDiv to rotate together
+    const figure = contentDiv.closest('.enhanced-table-figure');
+    if (figure) {
+      let prevElement = figure.previousElementSibling;
+      while (prevElement) {
+        const styleName = prevElement.getAttribute('stylename');
+        if (styleName === 'attTableTitle' || styleName === 'chTableTitle') {
+          contentDiv.insertBefore(prevElement, contentDiv.firstChild);
+          (prevElement as HTMLElement).style.textAlign = 'left';
+          (prevElement as HTMLElement).style.alignSelf = 'flex-start';
+          break;
+        }
+        prevElement = prevElement.previousElementSibling;
+      }
+    }
+
+    const tableHeight = tableElement.offsetHeight || totalWidth;
+
+    // Rotate the entire content div counter-clockwise 90 degrees
+    Object.assign(contentDiv.style, {
+      transform: 'rotate(-90deg)',
+      transformOrigin: 'center center',
+      paddingTop: '60px',
+      width: `${tableHeight}px`,
+      height: `${totalWidth}px`,
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center',
+    });
+
+    Object.assign(tableElement.style, {
+      maxWidth: 'none',
+      height: `${tableHeight}px`,
+    });
+
+    // Hide overflow in parent wrappers
+    const targetClasses = [
+      'enhanced-table-figure',
+      'enhanced-table-figure-content',
+      'tableWrapper',
+      'tablewrapper',
+    ];
+    let parent: HTMLElement | null = tableElement.parentElement;
+    while (parent) {
+      if (targetClasses.some((cls) => parent.classList.contains(cls))) {
+        Object.assign(parent.style, {
+          overflow: 'hidden',
+          overflowX: 'hidden',
+          overflowY: 'hidden',
+        });
+      }
+      parent = parent.parentElement;
+    }
+  }
 
   public getToc = async (view): Promise<void> => {
       // Reset static lists
@@ -983,7 +1038,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     for (const element of data.children) {
       const images = element.querySelectorAll('img');
       images.forEach((img) => {
-        this.replaceImageWidth(img, data);
+        this.replaceImageWidth(img);
       });
     }
   }
