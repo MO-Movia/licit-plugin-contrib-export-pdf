@@ -175,4 +175,49 @@ describe('PDFHandler', () => {
     handler.finalizePage();
     expect(PDFHandler.state.currentPage).toBe(1); // no increment
   });
+
+  test('getAttr returns dataset value when present, otherwise falls back to CSS custom property, otherwise empty string', () => {
+    const el = document.createElement('div') as HTMLElement;
+    const getter = (handler as unknown as { getAttr(el: HTMLElement, key: string): string }).getAttr;
+    el.dataset.mykey = 'dataset-value';
+    expect(getter.call(handler, el, 'mykey')).toBe('dataset-value');
+    delete el.dataset.mykey;
+    el.style.setProperty('--mykey', 'css-value');
+    expect(getter.call(handler, el, 'mykey')).toBe('css-value');
+    el.style.removeProperty('--mykey');
+    expect(getter.call(handler, el, 'mykey')).toBe('');
+  });
+
+  test('afterPageLayout sets --pagedjs-string-last-chapTitled and --pagedjs-footer-height when infoicon elements present', () => {
+    const pageFragment = document.createElement('div');
+    const pageEl = document.createElement('div');
+    const info1 = document.createElement('infoicon');
+    info1.setAttribute('description', 'First chapter');
+    const info2 = document.createElement('infoicon');
+    info2.setAttribute('description', 'Second chapter with more text');
+
+    pageEl.appendChild(info1);
+    pageEl.appendChild(info2);
+
+    const page = { element: pageEl };
+    handler.afterPageLayout(pageFragment, page);
+
+    const cssString = pageFragment.style.getPropertyValue('--pagedjs-string-last-chapTitled');
+    const footerHeight = pageFragment.style.getPropertyValue('--pagedjs-footer-height');
+
+    expect(cssString).toContain('First chapter');
+    expect(cssString).toContain('Second chapter with more text');
+
+    const concatenatedValues = ` ${1}. ${'First chapter'} ${2}. ${'Second chapter with more text'} `;
+    const estimatedLines = Math.ceil(concatenatedValues.length / 80);
+    const expectedFooter = `${20 + estimatedLines * 12}px`;
+
+    expect(footerHeight).toBe(expectedFooter);
+
+    const pageFragment2 = document.createElement('div');
+    const pageEl2 = document.createElement('div');
+    const page2 = { element: pageEl2 };
+    handler.afterPageLayout(pageFragment2, page2);
+    expect(pageFragment2.style.getPropertyValue('--pagedjs-string-last-chapTitled')).toBe('""');
+  });
 });

@@ -96,9 +96,10 @@ export function createTable(config): void {
 
 
 function escapeCSSId(id: string): string {
-  return CSS?.escape
-    ? CSS.escape(id)
-    : id.replace(/^\d/, '_$&').replace(/[^a-zA-Z0-9\-_:.]/g, '_');
+  if (CSS?.escape) return CSS.escape(id);
+  return id
+    .replaceAll(/^\d/, '_$&')
+    .replaceAll(/[^a-zA-Z0-9\-_:.]/g, '_');
 }
 
 function generateList({
@@ -121,13 +122,13 @@ function generateList({
   container.classList.add('prepages');
   let elementCount = 0;
 
-  titleElements.forEach((styleName, i) => {
+  for (const [i, styleName] of titleElements.entries()) {
     const titleHierarchy = i + 1;
     const elements = content.querySelectorAll(
       `p[stylename="${styleName}"], h4[stylename="${styleName}"]`
     );
 
-    elements.forEach((el) => {
+    for (const [, el] of elements.entries()) {
       el.classList.add(cssClass);
       el.setAttribute(dataAttr, titleHierarchy.toString());
 
@@ -135,12 +136,12 @@ function generateList({
         elementCount++;
         el.id = `${idPrefix}-${elementCount}`;
       }
-    });
-  });
+    }
+  }
 
   const allElements = content.querySelectorAll(`.${cssClass}`);
 
-  allElements.forEach((el, index) => {
+  for (const [index, el] of allElements.entries()) {
     const safeId = escapeCSSId(el.id);
 
     let text = el.textContent.trim();
@@ -161,5 +162,5 @@ function generateList({
     linkPara.classList.add(elementClass);
     linkPara.innerHTML = `<a href="#${safeId}">${text}</a>`;
     listDiv.appendChild(linkPara);
-  });
+  }
 }
