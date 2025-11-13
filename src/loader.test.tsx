@@ -43,4 +43,20 @@ describe('Loader component (no react-test-renderer)', () => {
         loader.componentWillUnmount();
         expect(global.clearInterval).toHaveBeenCalledWith(loader['interval']);
     });
+
+    test('increments pass1Counter when isOnLoad is true', () => {
+
+        PDFHandler.state.isOnLoad = true;
+        loader.componentDidMount();
+
+        const callback = (global.setInterval as jest.Mock).mock.calls[0][0];
+
+        const initialCounter = loader['passCounter'];
+        callback();
+
+        expect(loader['passCounter']).toBe(initialCounter + 1);
+        expect(loader.setState).toHaveBeenCalledWith(
+            expect.objectContaining({ time: expect.any(Number) })
+        );
+    });
 });
