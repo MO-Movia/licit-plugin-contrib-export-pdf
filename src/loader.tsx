@@ -3,14 +3,33 @@ import { PDFHandler } from './handlers';
 
 export class Loader extends React.PureComponent {
   private interval: number;
+  private passCounter: number = 0; 
+
   componentDidMount() {
     // trigger update of static values
-    this.interval = setInterval(() => this.setState({ time: Date.now() }), 1000);
+    this.interval = setInterval(() => {
+
+      if (PDFHandler.state.isOnLoad) {
+        this.passCounter++;
+      }
+      this.setState({ time: Date.now() });
+    }, 1000);
   }
+
   componentWillUnmount() {
-    clearInterval(this.interval);
+    if (this.interval !== null) {
+      clearInterval(this.interval);
+    }
   }
+
   render(): React.ReactElement {
+    const passNum = PDFHandler.state.isOnLoad ? 1 : 2;
+    const totalPasses = 2;
+
+    const counter = PDFHandler.state.isOnLoad
+      ? this.passCounter
+      : PDFHandler.state.currentPage ?? 0;
+
     return (
       <div className="epdf-loader-fullscreen">
         <img
@@ -18,7 +37,7 @@ export class Loader extends React.PureComponent {
           src="assets/images/modus-loading.gif"
           alt="Loading..."
         />
-        <span>Parsing section {PDFHandler.state.currentPage}...</span>
+        <span>Pass {passNum} of {totalPasses}: {counter}</span>
       </div>
     );
   }
