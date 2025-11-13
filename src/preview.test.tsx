@@ -121,8 +121,8 @@ describe('PreviewForm component', () => {
 
   it('should call handleConfirm', () => {
     const props = {
-      editorState: {} as any,
-      editorView: {} as any,
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
       onClose: onCloseMock,
     };
 
@@ -145,8 +145,8 @@ describe('PreviewForm component', () => {
 
   it('should handle handelCitation  ', () => {
     const props = {
-      editorState: {} as any,
-      editorView: {} as any,
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
       onClose: onCloseMock,
     };
 
@@ -160,8 +160,8 @@ describe('PreviewForm component', () => {
 
   it('should handle handelCitation when checked is false', () => {
     const props = {
-      editorState: {} as any,
-      editorView: {} as any,
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
       onClose: onCloseMock,
     };
 
@@ -907,5 +907,216 @@ describe('addLinkEventListeners && handleLinkClick', () => {
     previewForm.handleLinkClick(event);
     expect(preventDefault).toBeDefined();
     expect(scrollSpy).toBeDefined();
+  });
+});
+
+describe('PreviewForm.updateStyles', () => {
+  let previewForm: PreviewForm;
+  const props = {
+    editorState: {} as unknown as EditorState,
+    editorView: {} as unknown as EditorView,
+    onClose: () => {},
+  };
+
+  beforeEach(() => {
+    previewForm = new PreviewForm(props);
+  });
+
+    const callUpdateStyles = (instance: PreviewForm, container: HTMLElement) => {
+    (instance as unknown as { updateStyles(data: HTMLElement): void }).updateStyles(container);
+  };
+
+  test('updateStyles sets CSS custom properties for reset, prefix, tof and tot attributes', () => {
+    const container = document.createElement('div');
+
+    const elReset = document.createElement('div');
+    elReset.setAttribute('reset', 'true');
+
+    const elPrefix = document.createElement('div');
+    elPrefix.setAttribute('prefix', 'A-1');
+
+    const elTof = document.createElement('div');
+    elTof.setAttribute('tof', 'true');
+
+    const elTot = document.createElement('div');
+    elTot.setAttribute('tot', 'true');
+
+    container.appendChild(elReset);
+    container.appendChild(elPrefix);
+    container.appendChild(elTof);
+    container.appendChild(elTot);
+
+    callUpdateStyles(previewForm, container);
+
+    expect(elReset.style.getPropertyValue('--reset-flag')).toBe('1');
+    expect(elPrefix.style.getPropertyValue('--prefix')).toBe('A-1');
+    expect(elTof.style.getPropertyValue('--tof')).toBe('true');
+    expect(elTot.style.getPropertyValue('--tot')).toBe('true');
+  });
+
+  test('updateStyles ignores non-HTMLElement nodes and leaves other elements untouched', () => {
+    const container = document.createElement('div');
+
+    // element without attributes should remain untouched
+    const plain = document.createElement('div');
+    container.appendChild(plain);
+
+    // a text node should be ignored (not an HTMLElement)
+    container.appendChild(document.createTextNode('text-node'));
+
+    callUpdateStyles(previewForm, container);
+
+    expect(plain.style.getPropertyValue('--reset-flag')).toBe('');
+  });
+   test('sets existing CSS vars for reset, prefix, tof and tot', () => {
+    const container = document.createElement('div');
+
+    const elReset = document.createElement('div');
+    elReset.setAttribute('reset', 'true');
+
+    const elPrefix = document.createElement('div');
+    elPrefix.setAttribute('prefix', 'A-1');
+
+    const elTof = document.createElement('div');
+    elTof.setAttribute('tof', 'true');
+
+    const elTot = document.createElement('div');
+    elTot.setAttribute('tot', 'true');
+
+    container.appendChild(elReset);
+    container.appendChild(elPrefix);
+    container.appendChild(elTof);
+    container.appendChild(elTot);
+
+    callUpdateStyles(previewForm, container);
+
+    expect(elReset.style.getPropertyValue('--reset-flag')).toBe('1');
+    expect(elPrefix.style.getPropertyValue('--prefix')).toBe('A-1');
+    expect(elTof.style.getPropertyValue('--tof')).toBe('true');
+    expect(elTot.style.getPropertyValue('--tot')).toBe('true');
+  });
+
+  test('sets --reset-flag and --prefix and mirrors --tof/--tot only when value is "true"', () => {
+    const container = document.createElement('div');
+
+    const elReset = document.createElement('div');
+    elReset.setAttribute('reset', 'true');
+
+    const elPrefix = document.createElement('div');
+    elPrefix.setAttribute('prefix', 'A-1');
+
+    const elTofTrue = document.createElement('div');
+    elTofTrue.setAttribute('tof', 'true');
+
+    const elTotTrue = document.createElement('div');
+    elTotTrue.setAttribute('tot', 'true');
+
+    container.appendChild(elReset);
+    container.appendChild(elPrefix);
+    container.appendChild(elTofTrue);
+    container.appendChild(elTotTrue);
+
+    callUpdateStyles(previewForm, container);
+
+    expect(elReset.style.getPropertyValue('--reset-flag')).toBe('1');
+    expect(elPrefix.style.getPropertyValue('--prefix')).toBe('A-1');
+    expect(elTofTrue.style.getPropertyValue('--tof')).toBe('true');
+    expect(elTotTrue.style.getPropertyValue('--tot')).toBe('true');
+  });
+
+  test('does NOT set css vars for suffix, start, level, numbering, customflag when selector is restrictive', () => {
+    const container = document.createElement('div');
+
+    const elSuffix = document.createElement('div');
+    elSuffix.setAttribute('suffix', 'a');
+
+    const elStart = document.createElement('div');
+    elStart.setAttribute('start', '5');
+
+    const elLevel = document.createElement('div');
+    elLevel.setAttribute('level', '3');
+
+    const elNumbering = document.createElement('div');
+    elNumbering.setAttribute('numbering', 'none');
+
+    const elCustom = document.createElement('div');
+    elCustom.setAttribute('customflag', 'xyz');
+
+    container.appendChild(elSuffix);
+    container.appendChild(elStart);
+    container.appendChild(elLevel);
+    container.appendChild(elNumbering);
+    container.appendChild(elCustom);
+
+    callUpdateStyles(previewForm, container);
+
+    expect(elSuffix.style.getPropertyValue('--suffix')).toBe('');
+    expect(elStart.style.getPropertyValue('--start')).toBe('');
+    expect(elLevel.style.getPropertyValue('--level')).toBe('');
+    expect(elNumbering.style.getPropertyValue('--numbering')).toBe('');
+    expect(elCustom.style.getPropertyValue('--customflag')).toBe('');
+  });
+
+  test('does NOT mirror tof/tot when values are tokens (e.g. "toc") because selector checks for tof="true"', () => {
+    const container = document.createElement('div');
+
+    const elTofToken = document.createElement('div');
+    elTofToken.setAttribute('tof', 'toc'); // token value - should be ignored by current selector
+
+    const elTotToken = document.createElement('div');
+    elTotToken.setAttribute('tot', 'table-of-tot'); // token value
+
+    container.appendChild(elTofToken);
+    container.appendChild(elTotToken);
+
+    callUpdateStyles(previewForm, container);
+
+    expect(elTofToken.style.getPropertyValue('--tof')).toBe('');
+    expect(elTotToken.style.getPropertyValue('--tot')).toBe('');
+  });
+
+  test('ignores non-HTMLElement nodes and leaves unrelated elements untouched', () => {
+    const container = document.createElement('div');
+
+    const plain = document.createElement('div');
+    container.appendChild(plain);
+
+    // a matching element that is not an HTMLElement (text node) should be ignored
+    container.appendChild(document.createTextNode('text'));
+
+    callUpdateStyles(previewForm, container);
+
+    expect(plain.style.length).toBe(0);
+  });
+
+  test('ignores elements without relevant attributes and non-HTMLElements', () => {
+    const container = document.createElement('div');
+
+    const plain = document.createElement('div');
+    container.appendChild(plain);
+
+    // non-HTMLElement node (text node)
+    container.appendChild(document.createTextNode('text'));
+
+    callUpdateStyles(previewForm, container);
+
+    expect(plain.style.length).toBe(0);
+  });
+
+  test('does not set CSS var for empty attribute values', () => {
+    const container = document.createElement('div');
+
+    const elEmptySuffix = document.createElement('div');
+    elEmptySuffix.setAttribute('suffix', '');
+
+    const elEmptyTof = document.createElement('div');
+    elEmptyTof.setAttribute('tof', '');
+
+    container.appendChild(elEmptySuffix);
+    container.appendChild(elEmptyTof);
+
+    callUpdateStyles(previewForm, container);
+    expect(elEmptySuffix.style.getPropertyValue('--suffix')).toBe('');
+    expect(elEmptyTof.style.getPropertyValue('--tof')).toBe('');
   });
 });

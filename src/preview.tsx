@@ -738,8 +738,9 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   };
 
   public insertFooters = (CitationIcons, trialHtml): void => {
+    const icons: HTMLElement[] = Array.from(CitationIcons as Iterable<HTMLElement>); 
     const selector = trialHtml.querySelector('.ProseMirror');
-    if (CitationIcons.length > 0) {
+    if (icons.length > 0) {
       for (let i = 0; i < 7; i++) {
         if (i === 4) {
           const citation_header = document.createElement('h4');
@@ -763,64 +764,49 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       }
     }
 
-    CitationIcons.forEach((CitationIcon, index) => {
-      const description =
-        CitationIcon.getAttribute('overallcitationcapco') +
-        ' ' +
-        CitationIcon.getAttribute('author') +
-        ' ' +
-        CitationIcon.getAttribute('referenceId') +
-        ' ' +
-        'Date Published' +
-        ' ' +
-        CitationIcon.getAttribute('publisheddate') +
-        ' ' +
-        'ICOD Date' +
-        ' ' +
-        CitationIcon.getAttribute('icod') +
-        ' ' +
-        CitationIcon.getAttribute('documenttitlecapco') +
-        ' ' +
-        CitationIcon.getAttribute('documenttitle') +
-        ' ' +
-        'pp.' +
-        ' ' +
-        CitationIcon.getAttribute('pages') +
-        ' ' +
-        'Extracted information is' +
-        ' ' +
-        CitationIcon.getAttribute('extractedinfocapco') +
-        ' ' +
-        'Overall document classification is' +
-        ' ' +
-        CitationIcon.getAttribute('overalldocumentcapco') +
-        ' ' +
-        'Data Accessed' +
-        ' ' +
-        CitationIcon.getAttribute('dateaccessed') +
-        ' ' +
-        CitationIcon.getAttribute('hyperlink') +
-        ' ' +
-        'Declasify Date' +
-        ' ' +
-        CitationIcon.getAttribute('declassifydate');
-      const newDiv = document.createElement('div');
-      const indexSpan = document.createElement('span');
-      indexSpan.textContent = `[${index + 1}]`;
-      indexSpan.style.fontSize = '80%';
+  for (const [index, CitationIcon] of icons.entries()) {
+    const get = (attr: string) => CitationIcon.getAttribute(attr) ?? '';
 
-      const spaceTextNode = document.createTextNode('  ');
+    const description = [
+      get('overallcitationcapco'),
+      get('author'),
+      get('referenceId'),
+      'Date Published',
+      get('publisheddate'),
+      'ICOD Date',
+      get('icod'),
+      get('documenttitlecapco'),
+      get('documenttitle'),
+      'pp.',
+      get('pages'),
+      'Extracted information is',
+      get('extractedinfocapco'),
+      'Overall document classification is',
+      get('overalldocumentcapco'),
+      'Data Accessed',
+      get('dateaccessed'),
+      get('hyperlink'),
+      'Declasify Date',
+      get('declassifydate'),
+    ].filter(Boolean).join(' ');
 
-      const descriptionSpan = document.createElement('span');
-      descriptionSpan.textContent = description;
-      descriptionSpan.style.fontSize = '80%';
+    const newDiv = document.createElement('div');
 
-      // Append the span elements to the new div
-      newDiv.appendChild(indexSpan);
-      newDiv.appendChild(spaceTextNode);
-      newDiv.appendChild(descriptionSpan);
-      selector.appendChild(newDiv);
-    });
+    const indexSpan = document.createElement('span');
+    indexSpan.textContent = `[${index + 1}]`;
+    indexSpan.style.fontSize = '80%';
+
+    const spaceTextNode = document.createTextNode('  ');
+
+    const descriptionSpan = document.createElement('span');
+    descriptionSpan.textContent = description;
+    descriptionSpan.style.fontSize = '80%';
+
+    newDiv.appendChild(indexSpan);
+    newDiv.appendChild(spaceTextNode);
+    newDiv.appendChild(descriptionSpan);
+    selector.appendChild(newDiv);
+  }
   };
 
   public citationDeactive = (): void => {
@@ -833,9 +819,9 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
   public addLinkEventListeners = (): void => {
     const links = document.querySelectorAll('.exportpdf-preview-container a');
-    links.forEach((link) => {
+    for (const [_, link] of links.entries()) {
       link.addEventListener('click', this.handleLinkClick);
-    });
+    }
   };
 
   public handleLinkClick = (event: MouseEvent): void => {
@@ -920,6 +906,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     this.replaceInfoIcons(data1);
     this.updateImageWidths(data1);
     this.updateTableWidths(data1);
+    this.updateStyles(data1);
 
     const paged = new Previewer();
     this._popUp?.close();
@@ -942,19 +929,28 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     if (proseMirror) {
       proseMirror.setAttribute('contenteditable', 'false');
       proseMirror.classList.remove('czi-prosemirror-editor');
-      proseMirror.querySelectorAll('.molm-czi-image-view-body-img-clip span').forEach(span => {
-        (span as HTMLElement).style.display = 'flex';
-      });
+      const spans = proseMirror.querySelectorAll<HTMLElement>(
+        '.molm-czi-image-view-body-img-clip span'
+      );
+      for (const span of spans) {
+        span.style.display = 'flex';
+      }
     }
   }
 
   private replaceCitations(data: HTMLElement): void {
-    const citations = data.querySelectorAll('.citationnote');
-    citations.forEach((el, idx) => {
+    const citations: HTMLElement[] = Array.from(
+      data.querySelectorAll<HTMLElement>('.citationnote')
+    );
+
+    for (const [idx, el] of citations.entries()) {
       const sup = document.createElement('sup');
       sup.textContent = `[${idx + 1}]`;
-      el.parentNode?.replaceChild(sup, el);
-    });
+
+      if (el.parentNode) {
+        el.parentNode.replaceChild(sup, el);
+      }
+    }
     this.insertFooters(citations, data);
   }
 
@@ -973,8 +969,13 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   }
 
   private insertSectionHeaders(data: HTMLElement, editorView): void {
-    data.querySelectorAll('.titleHead, .forcePageSpacer, .tocHead, .tofHead, .totHead')
-      .forEach(n => n.remove());
+    const elements = data.querySelectorAll<HTMLElement>(
+      '.titleHead, .forcePageSpacer, .tocHead, .tofHead, .totHead'
+    );
+
+    for (const el of elements) {
+      el.remove();
+    }
 
     let insertBeforeNode: ChildNode | null = data.firstChild;
 
@@ -1006,8 +1007,9 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       { flag: PreviewForm.isTot, className: 'totHead' }
     ];
 
-    sections.forEach(({ flag, className }) => {
-      if (!flag) return;
+    for (const [_, section] of sections.entries()) {
+      const { flag, className } = section;
+      if (!flag) continue;
 
       const sectionDiv = document.createElement('div');
       sectionDiv.classList.add(className);
@@ -1019,29 +1021,47 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       sectionSpacer.innerHTML = '&nbsp;';
       insertBeforeNode?.before(sectionSpacer);
       insertBeforeNode = sectionSpacer.nextSibling;
-    });
-  }
-
-
-
-  private replaceInfoIcons(data: HTMLElement): void {
-    const icons = data.querySelectorAll('.infoicon');
-    icons.forEach((icon, index) => {
-      const sup = document.createElement('sup');
-      sup.textContent = `${index + 1}`;
-      icon.textContent = '';
-      icon.appendChild(sup);
-    });
-  }
-
-  private updateImageWidths(data: HTMLElement): void {
-    for (const element of data.children) {
-      const images = element.querySelectorAll('img');
-      images.forEach((img) => {
-        this.replaceImageWidth(img);
-      });
     }
   }
+
+
+
+    private replaceInfoIcons(data: HTMLElement): void {
+      const icons = data.querySelectorAll<HTMLElement>('.infoicon');
+      for (const [index, icon] of icons.entries()) {
+        const sup = document.createElement('sup');
+        sup.textContent = `${index + 1}`;
+        icon.textContent = '';
+        icon.appendChild(sup);
+      }
+    }
+
+    private updateImageWidths(data: HTMLElement): void {
+      for (const element of Array.from(data.children)) {
+        const images = element.querySelectorAll<HTMLImageElement>('img');
+        for (const [_, img] of images.entries()) {
+          this.replaceImageWidth(img);
+        }
+      }
+    }
+
+    private updateStyles(data: HTMLElement): void {
+      const elements = data.querySelectorAll<HTMLElement>(
+        '[reset="true"], [prefix], [tof="true"], [tot="true"]'
+      );
+
+      for (const [_, el] of elements.entries()) {
+        const reset = el.getAttribute('reset');
+        const prefix = el.getAttribute('prefix');
+        const tof = el.getAttribute('tof');
+        const tot = el.getAttribute('tot');
+
+        if (reset === 'true') el.style.setProperty('--reset-flag', '1');
+        if (prefix) el.style.setProperty('--prefix', prefix);
+        if (tof === 'true') el.style.setProperty('--tof', tof);
+        if (tot === 'true') el.style.setProperty('--tot', tot);
+      }
+    }
 
   private updateTableWidths(data: HTMLElement): void {
     for (const element of data.children) {
@@ -1094,11 +1114,11 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       printWindow.document.open();
       printWindow.document.writeln('<!DOCTYPE html><html><body></body></html>');
 
-      while (printWindow.document.documentElement.firstChild) {
-        printWindow.document.documentElement.removeChild(
-          printWindow.document.documentElement.firstChild
-        );
-      }
+    const docElement = printWindow.document.documentElement;
+      while (docElement.firstChild) {
+          docElement.firstChild.remove();
+      } 
+
       for (const childNode of divContainer.childNodes) {
         printWindow.document.documentElement.appendChild(
           childNode.cloneNode(true)
