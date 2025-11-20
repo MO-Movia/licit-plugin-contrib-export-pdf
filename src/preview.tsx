@@ -133,7 +133,6 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     });
   }
 
-
   public showAlert(): void {
     const anchor = null;
     PDFHandler.state.currentPage = 0;
@@ -185,7 +184,8 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       contentDiv.style.justifyContent = 'center';
       contentDiv.style.alignItems = 'center';
       imageElement.style.maxWidth = 'none';
-
+      const notesDiv = contentDiv.querySelector('.enhanced-table-figure-notes');
+      if (notesDiv) { (notesDiv as HTMLElement).style.width = `${originalWidth}px` }
       if (figure) {
         figure.style.overflow = 'hidden';
         figure.style.paddingLeft = '43px';
@@ -242,23 +242,22 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     }
 
     const tableHeight = tableElement.offsetHeight || totalWidth;
-
+    const notesDiv = contentDiv.querySelector('.enhanced-table-figure-notes');
+    if (notesDiv) { (notesDiv as HTMLElement).style.width = `${totalWidth}px` }
     // Rotate the entire content div counter-clockwise 90 degrees
     Object.assign(contentDiv.style, {
       transform: 'rotate(-90deg)',
       transformOrigin: 'center center',
-      paddingTop: '60px',
       width: `${tableHeight}px`,
       height: `${totalWidth}px`,
       display: 'flex',
       flexDirection: 'column',
-      justifyContent: 'center',
       alignItems: 'center',
     });
 
     Object.assign(tableElement.style, {
       maxWidth: 'none',
-      height: `${tableHeight}px`,
+      height: '555px',
     });
 
     // Hide overflow in parent wrappers
