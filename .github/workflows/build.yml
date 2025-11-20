@@ -48,7 +48,7 @@ jobs:
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         with:
           args: >
-            -Dsonar.projectVersion=$TAG
+            -Dsonar.projectVersion=${{ env.TAG }}
       # Sonar verify https://github.com/marketplace/actions/sonarqube-quality-gate-check
       - name: SonarQube Quality Gate check
         if: github.actor != 'dependabot[bot]' # Don't scan/block dependabot updates
