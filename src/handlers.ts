@@ -57,8 +57,8 @@ export class PDFHandler extends Handler {
 
 public afterPageLayout(pageFragment, page, breakToken): void {
     const styles = [
-    "chapterTitle",
-    "attachmentTitle",
+    'chapterTitle',
+    'attachmentTitle',
   ];
     const pageEl = page?.element instanceof HTMLElement ? page.element : null;
     if (!pageEl) return;
@@ -66,7 +66,7 @@ public afterPageLayout(pageFragment, page, breakToken): void {
     const prepages = page?.element?.querySelector('.prepages');
     if (prepages) return;
     // Page break handling for chapters/attachments
-    const selector = styles.map(s => `[stylename="${s}"]`).join(", ");
+    const selector = styles.map(s => `[stylename="${s}"]`).join(', ');
      if (breakToken && page.area) {
     const chapterCandidates = Array.from(
       page.area.querySelectorAll(selector)
