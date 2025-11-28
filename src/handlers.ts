@@ -4,7 +4,7 @@ import { PreviewForm } from './preview';
 
 export class PDFHandler extends Handler {
   // static field needs to be readonly for sonar
-  private processedChapterRefs = new Set<string>();
+  private readonly processedChapterRefs = new Set<string>();
   public static readonly state = {
     currentPage: 0,
     isOnLoad: false,
@@ -55,11 +55,11 @@ export class PDFHandler extends Handler {
 
   }
 
-public afterPageLayout(pageFragment, page, breakToken): void {
+  public afterPageLayout(pageFragment, page, breakToken): void {
     const styles = [
-    'chapterTitle',
-    'attachmentTitle',
-  ];
+      'chapterTitle',
+      'attachmentTitle',
+    ];
     const pageEl = page?.element instanceof HTMLElement ? page.element : null;
     if (!pageEl) return;
 
@@ -67,41 +67,42 @@ public afterPageLayout(pageFragment, page, breakToken): void {
     if (prepages) return;
     // Page break handling for chapters/attachments
     const selector = styles.map(s => `[stylename="${s}"]`).join(', ');
-     if (breakToken && page.area) {
-    const chapterCandidates = Array.from(
-      page.area.querySelectorAll(selector)
-    ) as HTMLElement[];
+    if (breakToken && page.area) {
+      // NO SONAR
+      const chapterCandidates = Array.from(
+        page.area.querySelectorAll(selector)
+      ) as HTMLElement[];
 
-    // First item on this page that we haven't already handled
-    const chapterEl = chapterCandidates.find((el) => {
-      const ref = el.dataset.ref;
-      return !!ref && !this.processedChapterRefs.has(ref);
-    });
+      // First item on this page that we haven't already handled
+      const chapterEl = chapterCandidates.find((el) => {
+        const ref = el.dataset.ref;
+        return !!ref && !this.processedChapterRefs.has(ref);
+      });
 
-    if (chapterEl && chapterEl.dataset.ref) {
-      const ref = chapterEl.dataset.ref;
-      this.processedChapterRefs.add(ref); // mark as handled
+      if (chapterEl?.dataset?.ref) {
+        const ref = chapterEl.dataset.ref;
+        this.processedChapterRefs.add(ref); // mark as handled
 
-      // Find same chapter node in original source DOM
-      const chapterSource = this.chunker.source.querySelector(
-        `[data-ref="${ref}"]`
-      ) as HTMLElement | null;
+        // Find same chapter node in original source DOM
+        const chapterSource = this.chunker.source.querySelector(
+          `[data-ref="${ref}"]`
+        ) as HTMLElement | null;
 
-      if (chapterSource) {
-        // Tell Paged.js: next page starts AT this chapter node
-        breakToken.node = chapterSource;
-        breakToken.offset = 0;
+        if (chapterSource) {
+          // Tell Paged.js: next page starts AT this chapter node
+          breakToken.node = chapterSource;
+          breakToken.offset = 0;
 
-        // Remove chapter and everything after it from current page fragment
-        let cur: Element | null = chapterEl;
-        while (cur) {
-          const next = cur.nextElementSibling;
-          cur.remove();
-          cur = next;
+          // Remove chapter and everything after it from current page fragment
+          let cur: Element | null = chapterEl;
+          while (cur) {
+            const next = cur.nextElementSibling;
+            cur.remove();
+            cur = next;
+          }
         }
       }
     }
-  }
 
     const processTocAndFooter = () => {
       const tocElements = page?.element?.querySelectorAll('infoicon');
