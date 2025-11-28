@@ -18,7 +18,7 @@ jobs:
 
     timeout-minutes: 60 # Default 5 days for self hosted
     # Ignore PRs from master. Assumtion is master is always a good branch, so this PR is just a sync.
-    if: ${{ github.head_ref || github.ref_name }} != 'main' && ${{ github.head_ref || github.ref_name }} != 'master'
+    if: ${{ (github.head_ref || github.ref_name) != 'main' && (github.head_ref || github.ref_name) != 'master' }}
     steps:
       - uses: actions/checkout@v4
         with:
