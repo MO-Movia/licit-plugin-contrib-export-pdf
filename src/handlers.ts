@@ -68,7 +68,7 @@ export class PDFHandler extends Handler {
     // Page break handling for chapters/attachments
     const selector = styles.map(s => `[stylename="${s}"]`).join(', ');
     if (breakToken && page.area) {
-      const chapterCandidates = Array.from(   // NOSONAR
+      const chapterCandidates = Array.from(
         page.area.querySelectorAll(selector)
       ) as HTMLElement[];
 
