@@ -62,9 +62,6 @@ export class PDFHandler extends Handler {
     ];
     const pageEl = page?.element instanceof HTMLElement ? page.element : null;
     if (!pageEl) return;
-
-    const prepages = page?.element?.querySelector('.prepages');
-    if (prepages) return;
     // Page break handling for chapters/attachments
     const selector = styles.map(s => `[stylename="${s}"]`).join(', ');
     if (breakToken && page.area) {
@@ -553,7 +550,9 @@ color: #2A6EBB;
     content: var(--pagedjs-string-last-chapTitled);
   }
 .ProseMirror {
-box-shadow: none;
+  box-shadow: none;
+  contain: none;
+  overflow: visible;
 }
 .pagedjs_pagebox * {
 background-color: #ffffff

@@ -119,7 +119,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     if (!data || !divContainer) return;
 
     const data1 = data.cloneNode(true) as HTMLElement;
-
+    this.insertSectionHeaders(data1, editorView);
     this.replaceInfoIcons(data1);
     this.updateImageWidths(data1);
     this.prepareEditorContent(data1);
@@ -968,61 +968,122 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   }
 
   private insertSectionHeaders(data: HTMLElement, editorView): void {
-    const elements = data.querySelectorAll<HTMLElement>(
-      '.titleHead, .forcePageSpacer, .tocHead, .tofHead, .totHead'
+    // Clean previous inserts
+    const existing = data.querySelectorAll<HTMLElement>(
+      '.titleHead, .forcePageSpacer, .tocHead, .tofHead, .totHead, .prepages'
     );
+    for (const el of existing) el.remove();
+    const docType =
+    editorView?.state?.doc?.attrs?.objectMetaData?.type ?? '';
 
-    for (const el of elements) {
-      el.remove();
+    const isAfttp =
+      typeof docType === 'string' && docType.includes('Afttp');
+
+    // Find the .ProseMirror element
+    const prose = data.querySelector<HTMLElement>('.ProseMirror');
+
+    // Work inside .ProseMirror if present
+    let preNodes: globalThis.ChildNode[] = [];
+    if (prose && isAfttp) {
+      const proseChildren = Array.from(prose.childNodes) as globalThis.ChildNode[];
+      const firstChapterTitle = prose.querySelector<HTMLElement>('p[stylename="chapterTitle"]');
+      if (firstChapterTitle) {
+        // find the direct child of .ProseMirror that contains the chapter title
+        let proseAnchorIndex = -1;
+        for (let i = 0; i < proseChildren.length; i++) {
+          const pc = proseChildren[i];
+          if (pc === firstChapterTitle || (pc instanceof HTMLElement && pc.contains(firstChapterTitle))) {
+            proseAnchorIndex = i;
+            break;
+          }
+        }
+
+        if (proseAnchorIndex > 0) {
+          const before = proseChildren.slice(0, proseAnchorIndex);
+          for (const n of before) {
+            if ((n as unknown as globalThis.Node).parentNode === prose) {
+              prose.removeChild(n as unknown as globalThis.Node);
+            }
+            preNodes.push(n);
+          }
+        }
+      }
     }
 
-    let insertBeforeNode: ChildNode | null = data.firstChild;
+    if (isAfttp) {
+    data.innerHTML = '';
+    }
 
     if (PreviewForm.isTitle) {
       const titleDiv = document.createElement('div');
       titleDiv.classList.add('titleHead', 'prepages');
-
       const header = document.createElement('h4');
       header.style.marginBottom = '40px';
       header.style.color = '#2A6EBB';
       header.style.textAlign = 'center';
       header.style.fontWeight = 'bold';
       header.textContent = editorView?.state?.doc?.attrs?.objectMetaData?.name ?? 'Untitled';
-
       titleDiv.appendChild(header);
-      insertBeforeNode?.before(titleDiv);
-      insertBeforeNode = titleDiv.nextSibling;
+      data.appendChild(titleDiv);
 
       const titleSpacer = document.createElement('div');
       titleSpacer.classList.add('forcePageSpacer');
       titleSpacer.innerHTML = '&nbsp;';
-      insertBeforeNode?.before(titleSpacer);
-      insertBeforeNode = titleSpacer.nextSibling;
+      // keep only a single forced page break after the title
+      titleSpacer.style.breakAfter = 'page';
+      titleSpacer.style.pageBreakAfter = 'always';
+      data.appendChild(titleSpacer);
     }
 
-    const sections = [
-      { flag: PreviewForm.isToc, className: 'tocHead' },
-      { flag: PreviewForm.isTof, className: 'tofHead' },
-      { flag: PreviewForm.isTot, className: 'totHead' }
-    ];
+    // 2) Insert preNodes wrapped if any (these were moved out of .ProseMirror)
+    if (preNodes.length > 0  && isAfttp)  {
+      const preContainer = document.createElement('div');
+      preContainer.classList.add('prepages');
 
-    for (const [_, section] of sections.entries()) {
-      const { flag, className } = section;
-      if (!flag) continue;
+          // Create a ProseMirror wrapper to maintain styles
+      const proseMirrorWrapper = document.createElement('div');
+      proseMirrorWrapper.classList.add('ProseMirror');
+      proseMirrorWrapper.setAttribute('contenteditable', 'false');
+      // don't over-force breaks on the preContainer; let paged.js manage pages
+      Object.assign(preContainer.style, {
+        position: 'static',
+        display: 'block',
+      });
+          // Add nodes to the ProseMirror wrapper instead
+      for (const n of preNodes) proseMirrorWrapper.appendChild(n as unknown as globalThis.Node);
+      preContainer.appendChild(proseMirrorWrapper);
+      data.appendChild(preContainer);
+    }
 
+    const makeSection = (className: string, id: string) => {
       const sectionDiv = document.createElement('div');
       sectionDiv.classList.add(className);
-      insertBeforeNode?.before(sectionDiv);
-      insertBeforeNode = sectionDiv.nextSibling;
+      sectionDiv.id = id;
+      Object.assign(sectionDiv.style, {
+        position: 'static',
+        display: 'block',
+        breakBefore: 'page',
+        pageBreakBefore: 'always',
+      } as Partial<CSSStyleDeclaration>);
+      return sectionDiv;
+    };
 
-      const sectionSpacer = document.createElement('div');
-      sectionSpacer.classList.add('forcePageSpacer');
-      sectionSpacer.innerHTML = '&nbsp;';
-      insertBeforeNode?.before(sectionSpacer);
-      insertBeforeNode = sectionSpacer.nextSibling;
+    const sections = [
+      { flag: PreviewForm.isToc, className: 'tocHead', id: 'licit-toc-block' },
+      { flag: PreviewForm.isTof, className: 'tofHead', id: 'licit-tof-block' },
+      { flag: PreviewForm.isTot, className: 'totHead', id: 'licit-tot-block' }
+    ];
+
+    for (const { flag, className, id } of sections) {
+      if (!flag) continue;
+      const sectionDiv = makeSection(className, id);
+      data.appendChild(sectionDiv);
+    }
+
+    if (prose && isAfttp) {
+      data.appendChild(prose);
     }
   }
-
 
 
     private replaceInfoIcons(data: HTMLElement): void {
