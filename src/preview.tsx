@@ -968,123 +968,144 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   }
 
   private insertSectionHeaders(data: HTMLElement, editorView): void {
-    // Clean previous inserts
-    const existing = data.querySelectorAll<HTMLElement>(
-      '.titleHead, .forcePageSpacer, .tocHead, .tofHead, .totHead, .prepages'
-    );
-    for (const el of existing) el.remove();
-    const docType =
-    editorView?.state?.doc?.attrs?.objectMetaData?.type ?? '';
+    this.removeExistingHeaders(data);
 
-    const isAfttp =
-      typeof docType === 'string' && docType.includes('Afttp');
-
-    // Find the .ProseMirror element
+    const isAfttp = this.isAfttpDoc(editorView);
     const prose = data.querySelector<HTMLElement>('.ProseMirror');
 
-    // Work inside .ProseMirror if present
-    let preNodes: globalThis.ChildNode[] = [];
-    if (prose && isAfttp) {
-      const proseChildren = Array.from(prose.childNodes) as globalThis.ChildNode[];
-      const firstChapterTitle = prose.querySelector<HTMLElement>('p[stylename="chapterTitle"]');
-      if (firstChapterTitle) {
-        // find the direct child of .ProseMirror that contains the chapter title
-        let proseAnchorIndex = -1;
-        for (let i = 0; i < proseChildren.length; i++) {
-          const pc = proseChildren[i];
-          if (pc === firstChapterTitle || (pc instanceof HTMLElement && pc.contains(firstChapterTitle))) {
-            proseAnchorIndex = i;
-            break;
-          }
-        }
-
-        if (proseAnchorIndex > 0) {
-          const before = proseChildren.slice(0, proseAnchorIndex);
-          for (const n of before) {
-            if ((n as unknown as globalThis.Node).parentNode === prose) {
-              prose.removeChild(n as unknown as globalThis.Node);
-            }
-            preNodes.push(n);
-          }
-        }
-      }
-    }
+    const preNodes =
+      prose && isAfttp ? this.extractPreChapterNodes(prose) : [];
 
     if (isAfttp) {
-    data.innerHTML = '';
+      data.innerHTML = '';
     }
 
     if (PreviewForm.isTitle) {
-      const titleDiv = document.createElement('div');
-      titleDiv.classList.add('titleHead', 'prepages');
-      const header = document.createElement('h4');
-      header.style.marginBottom = '40px';
-      header.style.color = '#2A6EBB';
-      header.style.textAlign = 'center';
-      header.style.fontWeight = 'bold';
-      header.textContent = editorView?.state?.doc?.attrs?.objectMetaData?.name ?? 'Untitled';
-      titleDiv.appendChild(header);
-      data.appendChild(titleDiv);
-
-      const titleSpacer = document.createElement('div');
-      titleSpacer.classList.add('forcePageSpacer');
-      titleSpacer.innerHTML = '&nbsp;';
-      // keep only a single forced page break after the title
-      titleSpacer.style.breakAfter = 'page';
-      titleSpacer.style.pageBreakAfter = 'always';
-      data.appendChild(titleSpacer);
+      this.insertTitleSection(data, editorView);
     }
 
-    // 2) Insert preNodes wrapped if any (these were moved out of .ProseMirror)
-    if (preNodes.length > 0  && isAfttp)  {
-      const preContainer = document.createElement('div');
-      preContainer.classList.add('prepages');
-
-          // Create a ProseMirror wrapper to maintain styles
-      const proseMirrorWrapper = document.createElement('div');
-      proseMirrorWrapper.classList.add('ProseMirror');
-      proseMirrorWrapper.setAttribute('contenteditable', 'false');
-      // don't over-force breaks on the preContainer; let paged.js manage pages
-      Object.assign(preContainer.style, {
-        position: 'static',
-        display: 'block',
-      });
-          // Add nodes to the ProseMirror wrapper instead
-      for (const n of preNodes) proseMirrorWrapper.appendChild(n as unknown as globalThis.Node);
-      preContainer.appendChild(proseMirrorWrapper);
-      data.appendChild(preContainer);
+    if (isAfttp && preNodes.length > 0) {
+      this.insertPrePages(data, preNodes);
     }
 
-    const makeSection = (className: string, id: string) => {
-      const sectionDiv = document.createElement('div');
-      sectionDiv.classList.add(className);
-      sectionDiv.id = id;
-      Object.assign(sectionDiv.style, {
-        position: 'static',
-        display: 'block',
-        breakBefore: 'page',
-        pageBreakBefore: 'always',
-      } as Partial<CSSStyleDeclaration>);
-      return sectionDiv;
-    };
-
-    const sections = [
-      { flag: PreviewForm.isToc, className: 'tocHead', id: 'licit-toc-block' },
-      { flag: PreviewForm.isTof, className: 'tofHead', id: 'licit-tof-block' },
-      { flag: PreviewForm.isTot, className: 'totHead', id: 'licit-tot-block' }
-    ];
-
-    for (const { flag, className, id } of sections) {
-      if (!flag) continue;
-      const sectionDiv = makeSection(className, id);
-      data.appendChild(sectionDiv);
-    }
+    this.insertOptionalSections(data);
 
     if (prose && isAfttp) {
       data.appendChild(prose);
     }
   }
 
+  private removeExistingHeaders(root: HTMLElement): void {
+    const nodes = root.querySelectorAll<HTMLElement>(
+      '.titleHead, .forcePageSpacer, .tocHead, .tofHead, .totHead, .prepages'
+    );
+
+    for (const el of nodes) {
+      el.remove();
+    }
+  }
+
+  private isAfttpDoc(editorView): boolean {
+  const docType =
+    editorView?.state?.doc?.attrs?.objectMetaData?.type ?? '';
+  return typeof docType === 'string' && docType.includes('Afttp');
+ }
+
+  private extractPreChapterNodes(prose: HTMLElement): ChildNode[] {
+    const proseChildren = Array.from(prose.childNodes);
+    const firstChapter = prose.querySelector<HTMLElement>(
+      'p[stylename="chapterTitle"]'
+    );
+
+    if (!firstChapter) return [];
+
+    let anchorIndex = -1;
+    for (let i = 0; i < proseChildren.length; i++) {
+      const n = proseChildren[i];
+      if (n === firstChapter || (n instanceof HTMLElement && n.contains(firstChapter))) {
+        anchorIndex = i;
+        break;
+      }
+    }
+
+    if (anchorIndex <= 0) return [];
+
+    const extracted: ChildNode[] = [];
+    for (let i = 0; i < anchorIndex; i++) {
+      const n = proseChildren[i] as unknown as ChildNode;
+      n.remove();
+      extracted.push(n);
+    }
+
+    return extracted;
+  }
+
+  private insertTitleSection(data: HTMLElement, editorView): void {
+    const titleDiv = document.createElement('div');
+    titleDiv.classList.add('titleHead', 'prepages');
+
+    const header = document.createElement('h4');
+    Object.assign(header.style, {
+      marginBottom: '40px',
+      color: '#2A6EBB',
+      textAlign: 'center',
+      fontWeight: 'bold',
+    });
+
+    header.textContent =
+      editorView?.state?.doc?.attrs?.objectMetaData?.name ?? 'Untitled';
+
+    titleDiv.appendChild(header);
+    data.appendChild(titleDiv);
+
+    const spacer = document.createElement('div');
+    spacer.classList.add('forcePageSpacer');
+    spacer.innerHTML = '&nbsp;';
+    spacer.style.breakAfter = 'page';
+
+    data.appendChild(spacer);
+ }
+
+  private insertPrePages(data: HTMLElement, nodes: ChildNode[]): void {
+    const container = document.createElement('div');
+    container.classList.add('prepages');
+
+    const proseWrapper = document.createElement('div');
+    proseWrapper.classList.add('ProseMirror');
+    proseWrapper.setAttribute('contenteditable', 'false');
+
+    for (const n of nodes) {
+      proseWrapper.appendChild(n);
+    }
+
+    container.appendChild(proseWrapper);
+    data.appendChild(container);
+  }
+ 
+  private insertOptionalSections(data: HTMLElement): void {
+    const sections = [
+      { flag: PreviewForm.isToc, className: 'tocHead', id: 'licit-toc-block' },
+      { flag: PreviewForm.isTof, className: 'tofHead', id: 'licit-tof-block' },
+      { flag: PreviewForm.isTot, className: 'totHead', id: 'licit-tot-block' },
+    ];
+
+    for (const { flag, className, id } of sections) {
+      if (!flag) continue;
+
+      const div = document.createElement('div');
+      div.classList.add(className);
+      div.id = id;
+
+      Object.assign(div.style, {
+        position: 'static',
+        display: 'block',
+        breakBefore: 'page',
+        pageBreakBefore: 'always',
+      });
+
+      data.appendChild(div);
+    }
+  }
 
     private replaceInfoIcons(data: HTMLElement): void {
       const icons = data.querySelectorAll<HTMLElement>('.infoicon');

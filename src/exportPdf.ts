@@ -136,7 +136,7 @@ function generateList({
     for (const [, el] of elements.entries()) {
       // Remove old class if it exists to avoid duplicates
       el.classList.remove(cssClass);
-      
+
       el.classList.add(cssClass);
       el.setAttribute(dataAttr, titleHierarchy.toString());
 
@@ -144,9 +144,9 @@ function generateList({
       elementCount++;
       const newId = `${idPrefix}-${elementCount}`;
       el.id = newId;
-      
+
       // Also set data-ref for internal linking
-      el.setAttribute('data-ref', newId);
+      el.dataset.ref = String(newId);
     }
   }
 

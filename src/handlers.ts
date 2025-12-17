@@ -67,7 +67,7 @@ export class PDFHandler extends Handler {
     if (breakToken && page.area) {
       const chapterCandidates = Array.from(
         page.area.querySelectorAll(selector)
-      ) as HTMLElement[];
+      ) as unknown as HTMLElement[];
 
       // First item on this page that we haven't already handled
       const chapterEl = chapterCandidates.find((el) => {
