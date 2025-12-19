@@ -128,12 +128,12 @@ describe('PDFHandler', () => {
 
   test('calls patchTocEntries with pages', () => {
     const pages = [
-      createPage(`<div></div>`),
-      createPage(`<div></div>`),
+      createPage('<div></div>'),
+      createPage('<div></div>'),
     ];
 
     const spy = jest.spyOn(
-      handler as any,
+      handler as unknown as { patchTocEntries(pages: TestPagedPage[]): void },
       'patchTocEntries'
     );
 
@@ -347,11 +347,11 @@ describe('buildRefToPageMap', () => {
 
   test('maps data-ref to first page number (1-based)', () => {
     const pages = [
-      createPage(`<div data-ref="sec1"></div>`),
-      createPage(`<div data-ref="sec2"></div>`),
+      createPage('<div data-ref="sec1"></div>'),
+      createPage('<div data-ref="sec2"></div>'),
     ];
 
-    const map = (handler as any).buildRefToPageMap(pages);
+    const map = (handler as unknown as { buildRefToPageMap(pages: TestPagedPage[]): Map<string, number> }).buildRefToPageMap(pages);
 
     expect(map.get('sec1')).toBe(1);
     expect(map.get('sec2')).toBe(2);
@@ -359,22 +359,22 @@ describe('buildRefToPageMap', () => {
 
   test('uses first occurrence when same data-ref appears on multiple pages', () => {
     const pages = [
-      createPage(`<div data-ref="dup"></div>`),
-      createPage(`<div data-ref="dup"></div>`),
+      createPage('<div data-ref="dup"></div>'),
+      createPage('<div data-ref="dup"></div>'),
     ];
 
-    const map = (handler as any).buildRefToPageMap(pages);
+    const map = (handler as unknown as { buildRefToPageMap(pages: TestPagedPage[]): Map<string, number> }).buildRefToPageMap(pages);
 
     expect(map.get('dup')).toBe(1);
   });
 
   test('ignores elements without data-ref', () => {
     const pages = [
-      createPage(`<div></div>`),
-      createPage(`<div data-ref="valid"></div>`),
+      createPage('<div></div>'),
+      createPage('<div data-ref="valid"></div>'),
     ];
 
-    const map = (handler as any).buildRefToPageMap(pages);
+    const map = (handler as unknown as { buildRefToPageMap(pages: TestPagedPage[]): Map<string, number> }).buildRefToPageMap(pages);
 
     expect(map.has('valid')).toBe(true);
     expect(map.size).toBe(1);
@@ -389,7 +389,7 @@ describe('buildRefToPageMap', () => {
       `),
     ];
 
-    const map = (handler as any).buildRefToPageMap(pages);
+    const map = (handler as unknown as { buildRefToPageMap(pages: TestPagedPage[]): Map<string, number> }).buildRefToPageMap(pages);
 
     expect(map.get('a')).toBe(1);
     expect(map.get('b')).toBe(1);
@@ -404,14 +404,14 @@ describe('buildRefToPageMap', () => {
       `),
     ];
 
-    const map = (handler as any).buildRefToPageMap(pages);
+    const map = (handler as unknown as { buildRefToPageMap(pages: TestPagedPage[]): Map<string, number> }).buildRefToPageMap(pages);
 
     expect(map.has('')).toBe(false);
     expect(map.get('valid')).toBe(1);
   });
 
   test('returns empty map when pages array is empty', () => {
-    const map = (handler as any).buildRefToPageMap([]);
+    const map = (handler as unknown as { buildRefToPageMap(pages: TestPagedPage[]): Map<string, number> }).buildRefToPageMap([]);
 
     expect(map.size).toBe(0);
   });
@@ -434,7 +434,7 @@ describe('applyTocPageNumbers', () => {
 
     const refToPage = new Map<string, number>([['sec1', 3]]);
 
-    (handler as any).applyTocPageNumbers(pages, refToPage);
+    (handler as unknown as { applyTocPageNumbers(pages: TestPagedPage[], refToPage: Map<string, number>): void }).applyTocPageNumbers(pages, refToPage);
 
     const link = pages[0].element.querySelector('a') as HTMLElement;
     expect(link.dataset.page).toBe('3');
@@ -451,7 +451,7 @@ describe('applyTocPageNumbers', () => {
 
     const refToPage = new Map<string, number>();
 
-    (handler as any).applyTocPageNumbers(pages, refToPage);
+    (handler as unknown as { applyTocPageNumbers(pages: TestPagedPage[], refToPage: Map<string, number>): void }).applyTocPageNumbers(pages, refToPage);
 
     const link = pages[0].element.querySelector('a') as HTMLElement;
     expect(link.dataset.page).toBeUndefined();
@@ -469,10 +469,10 @@ describe('applyTocPageNumbers', () => {
     const refToPage = new Map<string, number>([['sec1', 1]]);
 
     expect(() =>
-      (handler as any).applyTocPageNumbers(pages, refToPage)
+      (handler as unknown as { applyTocPageNumbers(pages: TestPagedPage[], refToPage: Map<string, number>): void }).applyTocPageNumbers(pages, refToPage)
     ).not.toThrow();
   });
-  
+
   test('skips non-HTMLElement nodes inside .toc-element', () => {
     const page = document.createElement('div');
     const wrapper = document.createElement('div');
@@ -484,7 +484,7 @@ describe('applyTocPageNumbers', () => {
     const pages = [{ element: page }];
 
     expect(() =>
-      (handler as any).applyTocPageNumbers(pages, new Map())
+      (handler as unknown as { applyTocPageNumbers(pages: TestPagedPage[], refToPage: Map<string, number>): void }).applyTocPageNumbers(pages, new Map())
     ).not.toThrow();
   });
 
@@ -499,7 +499,7 @@ describe('applyTocPageNumbers', () => {
 
     const refToPage = new Map<string, number>([['sec1', 2]]);
 
-    (handler as any).applyTocPageNumbers(pages, refToPage);
+    (handler as unknown as { applyTocPageNumbers(pages: TestPagedPage[], refToPage: Map<string, number>): void }).applyTocPageNumbers(pages, refToPage);
 
     const link = pages[0].element.querySelector('a') as HTMLElement;
     expect(link.dataset.page).toBeUndefined();
@@ -516,7 +516,7 @@ describe('applyTocPageNumbers', () => {
 
     const refToPage = new Map<string, number>([['anything', 1]]);
 
-    (handler as any).applyTocPageNumbers(pages, refToPage);
+    (handler as unknown as { applyTocPageNumbers(pages: TestPagedPage[], refToPage: Map<string, number>): void }).applyTocPageNumbers(pages, refToPage);
 
     const link = pages[0].element.querySelector('a') as HTMLElement;
     expect(link.dataset.page).toBeUndefined();
@@ -538,7 +538,7 @@ describe('applyTocPageNumbers', () => {
       ['b', 7],
     ]);
 
-    (handler as any).applyTocPageNumbers(pages, refToPage);
+    (handler as unknown as { applyTocPageNumbers(pages: TestPagedPage[], refToPage: Map<string, number>): void }).applyTocPageNumbers(pages, refToPage);
 
     const links = pages[0].element.querySelectorAll('a');
     expect(links[0].dataset.page).toBe('5');
@@ -556,7 +556,7 @@ describe('applyTocPageNumbers', () => {
 
     const refToPage = new Map<string, number>([['sec1', 9]]);
 
-    (handler as any).applyTocPageNumbers(pages, refToPage);
+    (handler as unknown as { applyTocPageNumbers(pages: TestPagedPage[], refToPage: Map<string, number>): void }).applyTocPageNumbers(pages, refToPage);
 
     const link = pages[0].element.querySelector('a') as HTMLElement;
     expect(link.dataset.page).toBe('9');
@@ -585,7 +585,7 @@ describe('patchTocEntries', () => {
       `),
     ];
 
-    (handler as any).patchTocEntries(pages);
+    (handler as unknown as { patchTocEntries(pages: TestPagedPage[]): void }).patchTocEntries(pages);
 
     const link1 = pages[0].element.querySelector('.toc-element a') as HTMLElement;
     const link2 = pages[1].element.querySelector('.toc-element a') as HTMLElement;
@@ -596,12 +596,12 @@ describe('patchTocEntries', () => {
 
   test('does not crash when no TOC elements exist', () => {
     const pages = [
-      createPage(`<div data-ref="sec1"></div>`),
-      createPage(`<div></div>`),
+      createPage('<div data-ref="sec1"></div>'),
+      createPage('<div></div>'),
     ];
 
     expect(() =>
-      (handler as any).patchTocEntries(pages)
+      (handler as unknown as { patchTocEntries(pages: TestPagedPage[]): void }).patchTocEntries(pages)
     ).not.toThrow();
   });
 });
