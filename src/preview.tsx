@@ -968,32 +968,90 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   }
 
   private insertSectionHeaders(data: HTMLElement, editorView): void {
+    const isAfttp = this.isAfttpDoc(editorView);
+
+    if (!isAfttp) {
+      this.insertSectionHeadersLegacy(data, editorView);
+      return;
+    }
+
     this.removeExistingHeaders(data);
 
-    const isAfttp = this.isAfttpDoc(editorView);
     const prose = data.querySelector<HTMLElement>('.ProseMirror');
-
     const preNodes =
-      prose && isAfttp ? this.extractPreChapterNodes(prose) : [];
+      prose ? this.extractPreChapterNodes(prose) : [];
 
-    if (isAfttp) {
-      data.innerHTML = '';
-    }
+    data.innerHTML = '';
 
     if (PreviewForm.isTitle) {
       this.insertTitleSection(data, editorView);
     }
 
-    if (isAfttp && preNodes.length > 0) {
+    if (preNodes.length > 0) {
       this.insertPrePages(data, preNodes);
     }
 
     this.insertOptionalSections(data);
 
-    if (prose && isAfttp) {
+    if (prose) {
       data.appendChild(prose);
     }
   }
+
+
+  private insertSectionHeadersLegacy(data: HTMLElement, editorView): void {
+  const elements = data.querySelectorAll<HTMLElement>(
+    '.titleHead, .forcePageSpacer, .tocHead, .tofHead, .totHead'
+  );
+
+  for (const el of elements) el.remove();
+
+  let insertBeforeNode: ChildNode | null = data.firstChild;
+
+  if (PreviewForm.isTitle) {
+    const titleDiv = document.createElement('div');
+    titleDiv.classList.add('titleHead', 'prepages');
+
+    const header = document.createElement('h4');
+    header.style.marginBottom = '40px';
+    header.style.color = '#2A6EBB';
+    header.style.textAlign = 'center';
+    header.style.fontWeight = 'bold';
+    header.textContent =
+      editorView?.state?.doc?.attrs?.objectMetaData?.name ?? 'Untitled';
+
+    titleDiv.appendChild(header);
+    insertBeforeNode?.before(titleDiv);
+    insertBeforeNode = titleDiv.nextSibling;
+
+    const titleSpacer = document.createElement('div');
+    titleSpacer.classList.add('forcePageSpacer');
+    titleSpacer.innerHTML = '&nbsp;';
+    insertBeforeNode?.before(titleSpacer);
+    insertBeforeNode = titleSpacer.nextSibling;
+  }
+
+  const sections = [
+    { flag: PreviewForm.isToc, className: 'tocHead' },
+    { flag: PreviewForm.isTof, className: 'tofHead' },
+    { flag: PreviewForm.isTot, className: 'totHead' },
+  ];
+
+  for (const { flag, className } of sections) {
+    if (!flag) continue;
+
+    const sectionDiv = document.createElement('div');
+    sectionDiv.classList.add(className);
+    insertBeforeNode?.before(sectionDiv);
+    insertBeforeNode = sectionDiv.nextSibling;
+
+    const spacer = document.createElement('div');
+    spacer.classList.add('forcePageSpacer');
+    spacer.innerHTML = '&nbsp;';
+    insertBeforeNode?.before(spacer);
+    insertBeforeNode = spacer.nextSibling;
+  }
+}
 
   private removeExistingHeaders(root: HTMLElement): void {
     const nodes = root.querySelectorAll<HTMLElement>(

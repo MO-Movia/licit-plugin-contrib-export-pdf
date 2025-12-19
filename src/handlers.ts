@@ -2,6 +2,9 @@ import { Handler } from 'pagedjs';
 import { createTable } from './exportPdf';
 import { PreviewForm } from './preview';
 
+interface PagedPage {
+  element: HTMLElement;
+}
 export class PDFHandler extends Handler {
   // static field needs to be readonly for sonar
   private readonly processedChapterRefs = new Set<string>();
@@ -9,6 +12,7 @@ export class PDFHandler extends Handler {
     currentPage: 0,
     isOnLoad: false,
   };
+
   public done = false;
   public countTOC = 0;
   public pageFooters: Array<HTMLElement> = [];
@@ -29,6 +33,7 @@ export class PDFHandler extends Handler {
     11: 0, // this is for the tof
     12: 0// this is for the tot
   };
+
   constructor(chunker, polisher, caller) {
     super(chunker, polisher, caller);
     this.caller = caller;
@@ -75,7 +80,10 @@ export class PDFHandler extends Handler {
         return !!ref && !this.processedChapterRefs.has(ref);
       });
 
-      if (chapterEl?.dataset?.ref) {
+      if (
+        chapterEl?.dataset?.ref &&
+        chapterEl !== page.area.firstElementChild.children[0].children[0]
+      ) {
         const ref = chapterEl.dataset.ref;
         this.processedChapterRefs.add(ref); // mark as handled
 
@@ -168,6 +176,7 @@ export class PDFHandler extends Handler {
   }
 
   public afterRendered(pages) {
+    this.patchTocEntries(pages);
     const getMarginLeft = (el) => globalThis.getComputedStyle(el).marginLeft || '0pt';
 
     for (const pageObj of pages) {
@@ -246,6 +255,51 @@ export class PDFHandler extends Handler {
     return tmp.textContent || tmp.innerText || '';
   }
 
+  private patchTocEntries(pages: PagedPage[]): void {
+    const refToPage = this.buildRefToPageMap(pages);
+    this.applyTocPageNumbers(pages, refToPage);
+  }
+
+  private buildRefToPageMap(pages: PagedPage[]): Map<string, number> {
+    const refToPage = new Map<string, number>();
+
+    for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
+      const pageEl = pages[pageIndex].element;
+
+      const targets = pageEl.querySelectorAll<HTMLElement>('[data-ref]');
+      for (const el of targets) {
+        const ref = el.dataset.ref;
+        if (ref && !refToPage.has(ref)) {
+          refToPage.set(ref, pageIndex + 1); // pages are 1-based
+        }
+      }
+    }
+
+    return refToPage;
+  }
+
+  private applyTocPageNumbers(
+    pages: PagedPage[],
+    refToPage: Map<string, number>
+  ): void {
+    for (const pageObj of pages) {
+      const pageEl = pageObj.element;
+
+      const tocLinks = pageEl.querySelectorAll('.toc-element a');
+
+      for (const link of tocLinks) {
+        if (!(link instanceof HTMLElement)) continue;
+
+        const id = link.getAttribute('href')?.slice(1);
+        const pageNum = id ? refToPage.get(id) : undefined;
+
+        if (pageNum !== undefined) {
+          link.dataset.page = String(pageNum);
+        }
+      }
+    }
+  }
+
   public beforePageLayout(): void {
     this.doIT();
   }
@@ -297,7 +351,7 @@ break-inside: avoid;
 }
 
 #list-toc-generated .toc-element a::after {
-content: target-counter(attr(href), page);
+content: attr(data-page);
 float: right;
 }
 

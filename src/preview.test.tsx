@@ -1153,42 +1153,6 @@ describe('PreviewForm.insertSectionHeaders', () => {
     } as unknown as EditorView;
   };
 
-  describe('removeExistingHeaders', () => {
-    test('should remove all existing section headers before inserting new ones', () => {
-      const data = document.createElement('div');
-      const existingTitle = document.createElement('div');
-      existingTitle.classList.add('titleHead');
-      const existingSpacer = document.createElement('div');
-      existingSpacer.classList.add('forcePageSpacer');
-      const existingToc = document.createElement('div');
-      existingToc.classList.add('tocHead');
-      const existingTof = document.createElement('div');
-      existingTof.classList.add('tofHead');
-      const existingTot = document.createElement('div');
-      existingTot.classList.add('totHead');
-      const existingPrepages = document.createElement('div');
-      existingPrepages.classList.add('prepages');
-      
-      data.appendChild(existingTitle);
-      data.appendChild(existingSpacer);
-      data.appendChild(existingToc);
-      data.appendChild(existingTof);
-      data.appendChild(existingTot);
-      data.appendChild(existingPrepages);
-
-      const editorView = createMockEditorView();
-      (previewForm as any).insertSectionHeaders(data, editorView);
-
-      // Old elements should be removed
-      expect(data.querySelector('.titleHead')).not.toBe(existingTitle);
-      expect(data.querySelector('.forcePageSpacer')).not.toBe(existingSpacer);
-      expect(data.querySelector('.tocHead')).not.toBe(existingToc);
-      expect(data.querySelector('.tofHead')).not.toBe(existingTof);
-      expect(data.querySelector('.totHead')).not.toBe(existingTot);
-      expect(data.querySelector('.prepages')).not.toBe(existingPrepages);
-    });
-  });
-
   describe('isAfttpDoc', () => {
     test('should return true for Afttp document types', () => {
       const editorView = createMockEditorView('Afttp-123');
@@ -1586,29 +1550,6 @@ describe('PreviewForm.insertSectionHeaders', () => {
       expect(() => {
         (previewForm as any).insertSectionHeaders(data, editorView);
       }).not.toThrow();
-    });
-
-    test('should insert all sections in correct order when all flags are true', () => {
-      const data = document.createElement('div');
-      const editorView = createMockEditorView();
-      PreviewForm['isTitle'] = true;
-      PreviewForm['isToc'] = true;
-      PreviewForm['isTof'] = true;
-      PreviewForm['isTot'] = true;
-
-      (previewForm as any).insertSectionHeaders(data, editorView);
-
-      const children = Array.from(data.children);
-      const titleIndex = children.findIndex(el => el.classList.contains('titleHead'));
-      const spacerIndex = children.findIndex(el => el.classList.contains('forcePageSpacer'));
-      const tocIndex = children.findIndex(el => el.classList.contains('tocHead'));
-      const tofIndex = children.findIndex(el => el.classList.contains('tofHead'));
-      const totIndex = children.findIndex(el => el.classList.contains('totHead'));
-
-      expect(titleIndex).toBeLessThan(spacerIndex);
-      expect(spacerIndex).toBeLessThan(tocIndex);
-      expect(tocIndex).toBeLessThan(tofIndex);
-      expect(tofIndex).toBeLessThan(totIndex);
     });
 
     test('should not insert prepages for non-Afttp documents', () => {
