@@ -1120,3 +1120,484 @@ describe('PreviewForm.updateStyles', () => {
     expect(elEmptyTof.style.getPropertyValue('--tof')).toBe('');
   });
 });
+
+describe('PreviewForm.insertSectionHeaders', () => {
+  let previewForm: PreviewForm;
+  let mockEditorView: EditorView;
+
+  beforeEach(() => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: jest.fn(),
+    };
+    previewForm = new PreviewForm(props);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  const createMockEditorView = (docType: string = '', docName: string = 'Test Document'): EditorView => {
+    return {
+      state: {
+        doc: {
+          attrs: {
+            objectMetaData: {
+              type: docType,
+              name: docName,
+            },
+          },
+        },
+      },
+    } as unknown as EditorView;
+  };
+
+  describe('isAfttpDoc', () => {
+    test('should return true for Afttp document types', () => {
+      const editorView = createMockEditorView('Afttp-123');
+      const result = (previewForm as any).isAfttpDoc(editorView);
+      expect(result).toBe(true);
+    });
+
+    test('should return false for non-Afttp document types', () => {
+      const editorView = createMockEditorView('Regular');
+      const result = (previewForm as any).isAfttpDoc(editorView);
+      expect(result).toBe(false);
+    });
+
+    test('should be case-sensitive (lowercase afttp should return false)', () => {
+      const editorView = createMockEditorView('afttp-test');
+      const result = (previewForm as any).isAfttpDoc(editorView);
+      expect(result).toBe(false);
+    });
+
+    test('should return false when docType is undefined', () => {
+      const editorView = {
+        state: {
+          doc: {
+            attrs: {
+              objectMetaData: {},
+            },
+          },
+        },
+      } as unknown as EditorView;
+      const result = (previewForm as any).isAfttpDoc(editorView);
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('extractPreChapterNodes', () => {
+    test('should extract nodes before first chapterTitle', () => {
+      const prose = document.createElement('div');
+      prose.classList.add('ProseMirror');
+      
+      const preNode1 = document.createElement('p');
+      preNode1.textContent = 'Pre content 1';
+      const preNode2 = document.createElement('p');
+      preNode2.textContent = 'Pre content 2';
+      const chapterTitle = document.createElement('p');
+      chapterTitle.setAttribute('stylename', 'chapterTitle');
+      chapterTitle.textContent = 'Chapter 1';
+      const postNode = document.createElement('p');
+      postNode.textContent = 'Chapter content';
+      
+      prose.appendChild(preNode1);
+      prose.appendChild(preNode2);
+      prose.appendChild(chapterTitle);
+      prose.appendChild(postNode);
+
+      const extracted = (previewForm as any).extractPreChapterNodes(prose);
+
+      expect(extracted.length).toBe(2);
+      expect(prose.children.length).toBe(2); // Only chapterTitle and postNode remain
+      expect(prose.children[0]).toBe(chapterTitle);
+      expect(prose.children[1]).toBe(postNode);
+    });
+
+    test('should return empty array when no chapterTitle is found', () => {
+      const prose = document.createElement('div');
+      prose.classList.add('ProseMirror');
+      prose.innerHTML = '<p>No chapter title</p>';
+
+      const extracted = (previewForm as any).extractPreChapterNodes(prose);
+
+      expect(extracted.length).toBe(0);
+    });
+
+    test('should return empty array when chapterTitle is first element', () => {
+      const prose = document.createElement('div');
+      prose.classList.add('ProseMirror');
+      
+      const chapterTitle = document.createElement('p');
+      chapterTitle.setAttribute('stylename', 'chapterTitle');
+      const postNode = document.createElement('p');
+      
+      prose.appendChild(chapterTitle);
+      prose.appendChild(postNode);
+
+      const extracted = (previewForm as any).extractPreChapterNodes(prose);
+
+      expect(extracted.length).toBe(0);
+    });
+
+    test('should handle nested chapterTitle within wrapper element', () => {
+      const prose = document.createElement('div');
+      prose.classList.add('ProseMirror');
+      
+      const preNode = document.createElement('p');
+      const wrapper = document.createElement('div');
+      const chapterTitle = document.createElement('p');
+      chapterTitle.setAttribute('stylename', 'chapterTitle');
+      wrapper.appendChild(chapterTitle);
+      
+      prose.appendChild(preNode);
+      prose.appendChild(wrapper);
+
+      const extracted = (previewForm as any).extractPreChapterNodes(prose);
+
+      expect(extracted.length).toBe(1);
+      expect(extracted[0]).toBe(preNode);
+    });
+  });
+
+  describe('insertTitleSection', () => {
+    test('should insert title header with document name when isTitle is true', () => {
+      const data = document.createElement('div');
+      const editorView = createMockEditorView('', 'My Test Document');
+      PreviewForm['isTitle'] = true;
+
+      (previewForm as any).insertTitleSection(data, editorView);
+
+      const titleDiv = data.querySelector('.titleHead');
+      expect(titleDiv).toBeTruthy();
+      expect(titleDiv?.classList.contains('prepages')).toBe(true);
+      
+      const header = titleDiv?.querySelector('h4') as HTMLElement;
+      expect(header?.textContent).toBe('My Test Document');
+      expect(header?.style.color).toBe('rgb(42, 110, 187)');
+      expect(header?.style.textAlign).toBe('center');
+      expect(header?.style.fontWeight).toBe('bold');
+      expect(header?.style.marginBottom).toBe('40px');
+    });
+
+    test('should use "Untitled" when document name is not available', () => {
+      const data = document.createElement('div');
+      const editorView = {
+        state: {
+          doc: {
+            attrs: {
+              objectMetaData: {},
+            },
+          },
+        },
+      } as unknown as EditorView;
+
+      (previewForm as any).insertTitleSection(data, editorView);
+
+      const header = data.querySelector('.titleHead h4');
+      expect(header?.textContent).toBe('Untitled');
+    });
+
+    test('should insert page break spacer after title', () => {
+      const data = document.createElement('div');
+      const editorView = createMockEditorView();
+
+      (previewForm as any).insertTitleSection(data, editorView);
+
+      const spacer = data.querySelector('.forcePageSpacer') as HTMLElement;
+      expect(spacer).toBeTruthy();
+      expect(spacer?.innerHTML).toBe('&nbsp;');
+      expect(spacer?.style.breakAfter).toBe('page');
+    });
+  });
+
+  describe('insertPrePages', () => {
+    test('should wrap nodes in ProseMirror container with prepages class', () => {
+      const data = document.createElement('div');
+      const node1 = document.createElement('p');
+      node1.textContent = 'Pre node 1';
+      const node2 = document.createElement('p');
+      node2.textContent = 'Pre node 2';
+
+      (previewForm as any).insertPrePages(data, [node1, node2]);
+
+      const prepages = data.querySelector('.prepages');
+      expect(prepages).toBeTruthy();
+      
+      const proseWrapper = prepages?.querySelector('.ProseMirror');
+      expect(proseWrapper).toBeTruthy();
+      expect(proseWrapper?.getAttribute('contenteditable')).toBe('false');
+      expect(proseWrapper?.children.length).toBe(2);
+    });
+
+    test('should handle empty nodes array', () => {
+      const data = document.createElement('div');
+
+      (previewForm as any).insertPrePages(data, []);
+
+      const prepages = data.querySelector('.prepages');
+      expect(prepages).toBeTruthy();
+      
+      const proseWrapper = prepages?.querySelector('.ProseMirror');
+      expect(proseWrapper?.children.length).toBe(0);
+    });
+  });
+
+  describe('insertOptionalSections', () => {
+    test('should insert TOC section when isToc is true', () => {
+      const data = document.createElement('div');
+      PreviewForm['isToc'] = true;
+      PreviewForm['isTof'] = false;
+      PreviewForm['isTot'] = false;
+
+      (previewForm as any).insertOptionalSections(data);
+
+      const tocSection = data.querySelector('.tocHead') as HTMLElement;
+      expect(tocSection).toBeTruthy();
+      expect(tocSection?.id).toBe('licit-toc-block');
+      expect(tocSection?.style.breakBefore).toBe('page');
+      expect(tocSection?.style.pageBreakBefore).toBe('always');
+      expect(tocSection?.style.position).toBe('static');
+      expect(tocSection?.style.display).toBe('block');
+    });
+
+    test('should insert TOF section when isTof is true', () => {
+      const data = document.createElement('div');
+      PreviewForm['isToc'] = false;
+      PreviewForm['isTof'] = true;
+      PreviewForm['isTot'] = false;
+
+      (previewForm as any).insertOptionalSections(data);
+
+      const tofSection = data.querySelector('.tofHead') as HTMLElement;
+      expect(tofSection).toBeTruthy();
+      expect(tofSection?.id).toBe('licit-tof-block');
+      expect(tofSection?.style.breakBefore).toBe('page');
+      expect(tofSection?.style.pageBreakBefore).toBe('always');
+    });
+
+    test('should insert TOT section when isTot is true', () => {
+      const data = document.createElement('div');
+      PreviewForm['isToc'] = false;
+      PreviewForm['isTof'] = false;
+      PreviewForm['isTot'] = true;
+
+      (previewForm as any).insertOptionalSections(data);
+
+      const totSection = data.querySelector('.totHead') as HTMLElement;
+      expect(totSection).toBeTruthy();
+      expect(totSection?.id).toBe('licit-tot-block');
+      expect(totSection?.style.breakBefore).toBe('page');
+      expect(totSection?.style.pageBreakBefore).toBe('always');
+    });
+
+    test('should insert all sections when all flags are true', () => {
+      const data = document.createElement('div');
+      PreviewForm['isToc'] = true;
+      PreviewForm['isTof'] = true;
+      PreviewForm['isTot'] = true;
+
+      (previewForm as any).insertOptionalSections(data);
+
+      expect(data.querySelector('.tocHead')).toBeTruthy();
+      expect(data.querySelector('.tofHead')).toBeTruthy();
+      expect(data.querySelector('.totHead')).toBeTruthy();
+    });
+
+    test('should not insert any sections when all flags are false', () => {
+      const data = document.createElement('div');
+      PreviewForm['isToc'] = false;
+      PreviewForm['isTof'] = false;
+      PreviewForm['isTot'] = false;
+
+      (previewForm as any).insertOptionalSections(data);
+
+      expect(data.querySelector('.tocHead')).toBeNull();
+      expect(data.querySelector('.tofHead')).toBeNull();
+      expect(data.querySelector('.totHead')).toBeNull();
+    });
+
+    test('should maintain correct order of sections', () => {
+      const data = document.createElement('div');
+      PreviewForm['isToc'] = true;
+      PreviewForm['isTof'] = true;
+      PreviewForm['isTot'] = true;
+
+      (previewForm as any).insertOptionalSections(data);
+
+      const children = Array.from(data.children);
+      const tocIndex = children.findIndex(el => el.classList.contains('tocHead'));
+      const tofIndex = children.findIndex(el => el.classList.contains('tofHead'));
+      const totIndex = children.findIndex(el => el.classList.contains('totHead'));
+
+      expect(tocIndex).toBeLessThan(tofIndex);
+      expect(tofIndex).toBeLessThan(totIndex);
+    });
+  });
+
+  describe('insertSectionHeaders - Integration', () => {
+    test('should not insert title when isTitle is false', () => {
+      const data = document.createElement('div');
+      const editorView = createMockEditorView();
+      PreviewForm['isTitle'] = false;
+
+      (previewForm as any).insertSectionHeaders(data, editorView);
+
+      const titleDiv = data.querySelector('.titleHead');
+      expect(titleDiv).toBeNull();
+    });
+
+    test('should handle Afttp document with pre-chapter nodes', () => {
+      const data = document.createElement('div');
+      const proseMirror = document.createElement('div');
+      proseMirror.classList.add('ProseMirror');
+      
+      const preNode = document.createElement('p');
+      preNode.textContent = 'Pre content';
+      const chapterTitle = document.createElement('p');
+      chapterTitle.setAttribute('stylename', 'chapterTitle');
+      chapterTitle.textContent = 'Chapter 1';
+      
+      proseMirror.appendChild(preNode);
+      proseMirror.appendChild(chapterTitle);
+      data.appendChild(proseMirror);
+
+      const editorView = createMockEditorView('Afttp-123');
+      PreviewForm['isTitle'] = false;
+      PreviewForm['isToc'] = false;
+      PreviewForm['isTof'] = false;
+      PreviewForm['isTot'] = false;
+
+      (previewForm as any).insertSectionHeaders(data, editorView);
+
+      // Should have prepages container with ProseMirror wrapper
+      const prepages = data.querySelector('.prepages .ProseMirror');
+      expect(prepages).toBeTruthy();
+      expect(prepages?.children.length).toBe(1); // preNode
+    });
+
+    test('should clear data innerHTML for Afttp documents', () => {
+      const data = document.createElement('div');
+      const originalChild = document.createElement('p');
+      originalChild.textContent = 'Original content';
+      originalChild.id = 'original';
+      data.appendChild(originalChild);
+      
+      const editorView = createMockEditorView('Afttp-Document');
+      PreviewForm['isTitle'] = false;
+      PreviewForm['isToc'] = false;
+      PreviewForm['isTof'] = false;
+      PreviewForm['isTot'] = false;
+
+      (previewForm as any).insertSectionHeaders(data, editorView);
+
+      // Original content should be cleared for Afttp
+      expect(data.querySelector('#original')).toBeNull();
+    });
+
+    test('should append ProseMirror back to data for Afttp documents', () => {
+      const data = document.createElement('div');
+      const proseMirror = document.createElement('div');
+      proseMirror.classList.add('ProseMirror');
+      proseMirror.innerHTML = '<p>Content</p>';
+      data.appendChild(proseMirror);
+
+      const editorView = createMockEditorView('Afttp-Test');
+      PreviewForm['isTitle'] = false;
+      PreviewForm['isToc'] = false;
+      PreviewForm['isTof'] = false;
+      PreviewForm['isTot'] = false;
+
+      (previewForm as any).insertSectionHeaders(data, editorView);
+
+      // ProseMirror should be re-appended
+      const proseMirrorElements = data.querySelectorAll(':scope > .ProseMirror');
+      expect(proseMirrorElements.length).toBe(1);
+    });
+
+    test('should handle document without ProseMirror element', () => {
+      const data = document.createElement('div');
+      data.innerHTML = '<p>No ProseMirror here</p>';
+
+      const editorView = createMockEditorView();
+      PreviewForm['isTitle'] = true;
+      PreviewForm['isToc'] = false;
+      PreviewForm['isTof'] = false;
+      PreviewForm['isTot'] = false;
+
+      expect(() => {
+        (previewForm as any).insertSectionHeaders(data, editorView);
+      }).not.toThrow();
+
+      // Should still insert title
+      expect(data.querySelector('.titleHead')).toBeTruthy();
+    });
+
+    test('should handle Afttp document without chapterTitle', () => {
+      const data = document.createElement('div');
+      const proseMirror = document.createElement('div');
+      proseMirror.classList.add('ProseMirror');
+      proseMirror.innerHTML = '<p>No chapter title</p>';
+      data.appendChild(proseMirror);
+
+      const editorView = createMockEditorView('Afttp-NoChapter');
+      PreviewForm['isTitle'] = false;
+      PreviewForm['isToc'] = false;
+      PreviewForm['isTof'] = false;
+      PreviewForm['isTot'] = false;
+
+      expect(() => {
+        (previewForm as any).insertSectionHeaders(data, editorView);
+      }).not.toThrow();
+    });
+
+    test('should not insert prepages for non-Afttp documents', () => {
+      const data = document.createElement('div');
+      const proseMirror = document.createElement('div');
+      proseMirror.classList.add('ProseMirror');
+      data.appendChild(proseMirror);
+
+      const editorView = createMockEditorView('Regular-Doc');
+      PreviewForm['isTitle'] = false;
+
+      (previewForm as any).insertSectionHeaders(data, editorView);
+
+      // Should not have prepages for non-Afttp
+      const prepages = data.querySelector('.prepages');
+      expect(prepages).toBeNull();
+    });
+
+    test('should handle Afttp document with all features enabled', () => {
+      const data = document.createElement('div');
+      const proseMirror = document.createElement('div');
+      proseMirror.classList.add('ProseMirror');
+      
+      const preNode = document.createElement('p');
+      preNode.textContent = 'Pre content';
+      const chapterTitle = document.createElement('p');
+      chapterTitle.setAttribute('stylename', 'chapterTitle');
+      
+      proseMirror.appendChild(preNode);
+      proseMirror.appendChild(chapterTitle);
+      data.appendChild(proseMirror);
+
+      const editorView = createMockEditorView('Afttp-Full', 'Full Document');
+      PreviewForm['isTitle'] = true;
+      PreviewForm['isToc'] = true;
+      PreviewForm['isTof'] = true;
+      PreviewForm['isTot'] = true;
+
+      (previewForm as any).insertSectionHeaders(data, editorView);
+
+      // Check all components are present
+      expect(data.querySelector('.titleHead')).toBeTruthy();
+      expect(data.querySelector('.forcePageSpacer')).toBeTruthy();
+      expect(data.querySelector('.prepages')).toBeTruthy();
+      expect(data.querySelector('.tocHead')).toBeTruthy();
+      expect(data.querySelector('.tofHead')).toBeTruthy();
+      expect(data.querySelector('.totHead')).toBeTruthy();
+      expect(data.querySelector(':scope > .ProseMirror')).toBeTruthy();
+    });
+  });
+});

@@ -119,7 +119,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     if (!data || !divContainer) return;
 
     const data1 = data.cloneNode(true) as HTMLElement;
-
+    this.insertSectionHeaders(data1, editorView);
     this.replaceInfoIcons(data1);
     this.updateImageWidths(data1);
     this.prepareEditorContent(data1);
@@ -968,62 +968,202 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   }
 
   private insertSectionHeaders(data: HTMLElement, editorView): void {
-    const elements = data.querySelectorAll<HTMLElement>(
-      '.titleHead, .forcePageSpacer, .tocHead, .tofHead, .totHead'
-    );
+    const isAfttp = this.isAfttpDoc(editorView);
 
-    for (const el of elements) {
-      el.remove();
+    if (!isAfttp) {
+      this.insertSectionHeadersLegacy(data, editorView);
+      return;
     }
 
-    let insertBeforeNode: ChildNode | null = data.firstChild;
+    this.removeExistingHeaders(data);
+
+    const prose = data.querySelector<HTMLElement>('.ProseMirror');
+    const preNodes =
+      prose ? this.extractPreChapterNodes(prose) : [];
+
+    data.innerHTML = '';
 
     if (PreviewForm.isTitle) {
-      const titleDiv = document.createElement('div');
-      titleDiv.classList.add('titleHead', 'prepages');
-
-      const header = document.createElement('h4');
-      header.style.marginBottom = '40px';
-      header.style.color = '#2A6EBB';
-      header.style.textAlign = 'center';
-      header.style.fontWeight = 'bold';
-      header.textContent = editorView?.state?.doc?.attrs?.objectMetaData?.name ?? 'Untitled';
-
-      titleDiv.appendChild(header);
-      insertBeforeNode?.before(titleDiv);
-      insertBeforeNode = titleDiv.nextSibling;
-
-      const titleSpacer = document.createElement('div');
-      titleSpacer.classList.add('forcePageSpacer');
-      titleSpacer.innerHTML = '&nbsp;';
-      insertBeforeNode?.before(titleSpacer);
-      insertBeforeNode = titleSpacer.nextSibling;
+      this.insertTitleSection(data, editorView);
     }
 
-    const sections = [
-      { flag: PreviewForm.isToc, className: 'tocHead' },
-      { flag: PreviewForm.isTof, className: 'tofHead' },
-      { flag: PreviewForm.isTot, className: 'totHead' }
-    ];
+    if (preNodes.length > 0) {
+      this.insertPrePages(data, preNodes);
+    }
 
-    for (const [_, section] of sections.entries()) {
-      const { flag, className } = section;
-      if (!flag) continue;
+    this.insertOptionalSections(data);
 
-      const sectionDiv = document.createElement('div');
-      sectionDiv.classList.add(className);
-      insertBeforeNode?.before(sectionDiv);
-      insertBeforeNode = sectionDiv.nextSibling;
-
-      const sectionSpacer = document.createElement('div');
-      sectionSpacer.classList.add('forcePageSpacer');
-      sectionSpacer.innerHTML = '&nbsp;';
-      insertBeforeNode?.before(sectionSpacer);
-      insertBeforeNode = sectionSpacer.nextSibling;
+    if (prose) {
+      data.appendChild(prose);
     }
   }
 
 
+  private insertSectionHeadersLegacy(data: HTMLElement, editorView): void {
+  const elements = data.querySelectorAll<HTMLElement>(
+    '.titleHead, .forcePageSpacer, .tocHead, .tofHead, .totHead'
+  );
+
+  for (const el of elements) el.remove();
+
+  let insertBeforeNode: ChildNode | null = data.firstChild;
+
+  if (PreviewForm.isTitle) {
+    const titleDiv = document.createElement('div');
+    titleDiv.classList.add('titleHead', 'prepages');
+
+    const header = document.createElement('h4');
+    header.style.marginBottom = '40px';
+    header.style.color = '#2A6EBB';
+    header.style.textAlign = 'center';
+    header.style.fontWeight = 'bold';
+    header.textContent =
+      editorView?.state?.doc?.attrs?.objectMetaData?.name ?? 'Untitled';
+
+    titleDiv.appendChild(header);
+    insertBeforeNode?.before(titleDiv);
+    insertBeforeNode = titleDiv.nextSibling;
+
+    const titleSpacer = document.createElement('div');
+    titleSpacer.classList.add('forcePageSpacer');
+    titleSpacer.innerHTML = '&nbsp;';
+    insertBeforeNode?.before(titleSpacer);
+    insertBeforeNode = titleSpacer.nextSibling;
+  }
+
+  const sections = [
+    { flag: PreviewForm.isToc, className: 'tocHead' },
+    { flag: PreviewForm.isTof, className: 'tofHead' },
+    { flag: PreviewForm.isTot, className: 'totHead' },
+  ];
+
+  for (const { flag, className } of sections) {
+    if (!flag) continue;
+
+    const sectionDiv = document.createElement('div');
+    sectionDiv.classList.add(className);
+    insertBeforeNode?.before(sectionDiv);
+    insertBeforeNode = sectionDiv.nextSibling;
+
+    const spacer = document.createElement('div');
+    spacer.classList.add('forcePageSpacer');
+    spacer.innerHTML = '&nbsp;';
+    insertBeforeNode?.before(spacer);
+    insertBeforeNode = spacer.nextSibling;
+  }
+}
+
+  private removeExistingHeaders(root: HTMLElement): void {
+    const nodes = root.querySelectorAll<HTMLElement>(
+      '.titleHead, .forcePageSpacer, .tocHead, .tofHead, .totHead, .prepages'
+    );
+
+    for (const el of nodes) {
+      el.remove();
+    }
+  }
+
+  private isAfttpDoc(editorView): boolean {
+  const docType =
+    editorView?.state?.doc?.attrs?.objectMetaData?.type ?? '';
+  return typeof docType === 'string' && docType.includes('Afttp');
+ }
+
+  private extractPreChapterNodes(prose: HTMLElement): ChildNode[] {
+    const proseChildren = Array.from(prose.childNodes);
+    const firstChapter = prose.querySelector<HTMLElement>(
+      'p[stylename="chapterTitle"]'
+    );
+
+    if (!firstChapter) return [];
+
+    let anchorIndex = -1;
+    for (let i = 0; i < proseChildren.length; i++) {
+      const n = proseChildren[i];
+      if (n === firstChapter || (n instanceof HTMLElement && n.contains(firstChapter))) {
+        anchorIndex = i;
+        break;
+      }
+    }
+
+    if (anchorIndex <= 0) return [];
+
+    const extracted: ChildNode[] = [];
+    for (let i = 0; i < anchorIndex; i++) {
+      const n = proseChildren[i] as unknown as ChildNode;
+      n.remove();
+      extracted.push(n);
+    }
+
+    return extracted;
+  }
+
+  private insertTitleSection(data: HTMLElement, editorView): void {
+    const titleDiv = document.createElement('div');
+    titleDiv.classList.add('titleHead', 'prepages');
+
+    const header = document.createElement('h4');
+    Object.assign(header.style, {
+      marginBottom: '40px',
+      color: '#2A6EBB',
+      textAlign: 'center',
+      fontWeight: 'bold',
+    });
+
+    header.textContent =
+      editorView?.state?.doc?.attrs?.objectMetaData?.name ?? 'Untitled';
+
+    titleDiv.appendChild(header);
+    data.appendChild(titleDiv);
+
+    const spacer = document.createElement('div');
+    spacer.classList.add('forcePageSpacer');
+    spacer.innerHTML = '&nbsp;';
+    spacer.style.breakAfter = 'page';
+
+    data.appendChild(spacer);
+ }
+
+  private insertPrePages(data: HTMLElement, nodes: ChildNode[]): void {
+    const container = document.createElement('div');
+    container.classList.add('prepages');
+
+    const proseWrapper = document.createElement('div');
+    proseWrapper.classList.add('ProseMirror');
+    proseWrapper.setAttribute('contenteditable', 'false');
+
+    for (const n of nodes) {
+      proseWrapper.appendChild(n);
+    }
+
+    container.appendChild(proseWrapper);
+    data.appendChild(container);
+  }
+ 
+  private insertOptionalSections(data: HTMLElement): void {
+    const sections = [
+      { flag: PreviewForm.isToc, className: 'tocHead', id: 'licit-toc-block' },
+      { flag: PreviewForm.isTof, className: 'tofHead', id: 'licit-tof-block' },
+      { flag: PreviewForm.isTot, className: 'totHead', id: 'licit-tot-block' },
+    ];
+
+    for (const { flag, className, id } of sections) {
+      if (!flag) continue;
+
+      const div = document.createElement('div');
+      div.classList.add(className);
+      div.id = id;
+
+      Object.assign(div.style, {
+        position: 'static',
+        display: 'block',
+        breakBefore: 'page',
+        pageBreakBefore: 'always',
+      });
+
+      data.appendChild(div);
+    }
+  }
 
     private replaceInfoIcons(data: HTMLElement): void {
       const icons = data.querySelectorAll<HTMLElement>('.infoicon');
