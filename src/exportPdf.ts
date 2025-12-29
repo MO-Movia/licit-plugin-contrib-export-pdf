@@ -1,6 +1,7 @@
 import { EditorView } from 'prosemirror-view';
 import { createPopUp } from '@modusoperandi/licit-ui-commands';
 import { PreviewForm } from './preview';
+import { processDocumentTables } from './table-image-helper';
 
 // [FS] IRAD-1893 2022-07-25
 // Export to PDF file.
@@ -27,6 +28,11 @@ export class ExportPDF {
 
     document.body.classList.add('export-pdf-mode');
     view.updateState(fullDocState);
+
+    const data1 = view.dom?.parentElement?.parentElement;
+    for (const element of data1.children) {
+      processDocumentTables(element as HTMLElement);
+    }
 
     const viewPops = {
       editorState: fullDocState,

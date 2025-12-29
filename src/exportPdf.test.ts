@@ -48,6 +48,47 @@ describe('ExportPDF', () => {
       jest.clearAllMocks();
     });
 
+    it('should create TOC when no existing TOC', () => {
+
+      const p1 = document.createElement('p');
+      p1.setAttribute('stylename', 'Heading1');
+      p1.textContent = 'Title One';
+      content.appendChild(p1);
+
+      const h4 = document.createElement('h4');
+      h4.setAttribute('stylename', 'Heading2');
+      h4.textContent = 'Title Two';
+      content.appendChild(h4);
+
+      createTable({
+        content,
+        tocElement: '.toc-container',
+        titleElements: ['Heading1', 'Heading2'],
+      });
+
+      const generatedToc = content.querySelector('#list-toc-generated');
+      expect(generatedToc).toBeTruthy();
+      expect(generatedToc?.querySelectorAll('p').length).toBe(2);
+
+      const titleElements = content.querySelectorAll('.title-element');
+      expect(titleElements.length).toBe(2);
+
+      titleElements.forEach((el) => {
+        expect(el.classList.contains('title-element')).toBe(true);
+        expect(el.hasAttribute('data-title-level')).toBe(true);
+        expect(el.id).toContain('title-element-');
+      });
+
+      const tocElements = generatedToc?.querySelectorAll('.toc-element');
+      expect(tocElements?.length).toBe(2);
+
+      tocElements?.forEach((el) => {
+        expect(el.querySelector('a')).toBeTruthy();
+        const link = el.querySelector('a')!;
+        expect(link.getAttribute('href')).toContain('title-element-');
+      });
+    });
+
     it('should not create TOC if #list-toc-generated exists', () => {
       const existingToc = document.createElement('div');
       existingToc.id = 'list-toc-generated';
@@ -64,6 +105,22 @@ describe('ExportPDF', () => {
       expect(appendChildSpy).not.toHaveBeenCalledWith(expect.any(HTMLDivElement));
     });
 
+    it('should truncate long text in TOC', () => {
+      const p = document.createElement('p');
+      p.setAttribute('stylename', 'Heading1');
+      p.textContent = 'A very very very very very very very very very very very very very very very long title that exceeds 70 characters';
+      content.appendChild(p);
+
+      createTable({
+        content,
+        tocElement: '.toc-container',
+        titleElements: ['Heading1'],
+      });
+
+      const tocLink = content.querySelector('#list-toc-generated p a');
+      expect(tocLink?.textContent?.length).toBeLessThanOrEqual(70);
+    });
+  });
   it('should handle exportPdf', () => {
     const schema = new Schema({
       nodes: basicSchema.spec.nodes,
@@ -110,5 +167,4 @@ describe('ExportPDF', () => {
     expect(expdf.exportPdf(editorView,doc)).toBeDefined();
     expect(expdf.exportPdf(editorView,doc)).toBeDefined();
   });
-});
 });
