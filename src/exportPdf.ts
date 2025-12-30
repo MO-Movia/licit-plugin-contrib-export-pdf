@@ -14,7 +14,13 @@ export class ExportPDF {
    */
   public exportPdf(view: EditorView, doc: unknown): boolean {
     const originalState = view.state;
-    const newDoc = view.state?.schema.nodeFromJSON(doc || view.state.doc);
+    let newDoc;
+    if (doc) {
+           newDoc = view.state?.schema?.nodeFromJSON(doc);
+        }
+        else{
+             newDoc = view.state.doc;
+        }
 
     const fullDocState = EditorState.create({
       doc: newDoc,
