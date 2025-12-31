@@ -608,8 +608,9 @@ color: #2A6EBB;
   contain: none;
   overflow: visible;
 }
-.pagedjs_pagebox * {
-background-color: #ffffff
+.pagedjs_pagebox,
+.pagedjs_page {
+  background-color: #ffffff;
 }
 }
 }`);
