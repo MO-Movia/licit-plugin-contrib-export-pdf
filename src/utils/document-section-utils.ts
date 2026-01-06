@@ -37,7 +37,7 @@ export function buildSectionStructure(nodeList: Node[], styles: StoredStyle[]): 
       children: []
     };
     nodes[level] = value.children;
-    nodes[level - 1].push(value);
+    nodes[level - 1]?.push(value);
     return nodes;
   }, [[]]).shift();
 

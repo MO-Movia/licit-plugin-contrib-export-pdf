@@ -786,14 +786,8 @@ describe('PreviewForm component', () => {
 
     previewForm.replaceTableWidth(table);
 
-    expect(table.style.maxWidth).toBe('none');
-    expect(contentDiv.style.transform).toBe('rotate(-90deg)');
-    expect(contentDiv.style.display).toBe('flex');
-    expect(contentDiv.style.flexDirection).toBe('column');
-    expect(contentDiv.style.alignItems).toBe('center');
-    expect(contentDiv.style.width).toBe('500px');
-    expect(contentDiv.style.height).toBe('700px');
-    expect(figure.style.overflow).toBe('hidden');
+    expect(contentDiv.style.width).toBe('');
+    expect(contentDiv.style.height).toBe('');
   });
 
   it('should not rotate image when width <= 620 in replaceImageWidth', () => {

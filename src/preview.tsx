@@ -213,14 +213,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     const firstRow = tableElement.querySelector('tr');
     if (!firstRow) return;
 
-    let totalWidth = 0;
-    const cells = firstRow.querySelectorAll<HTMLElement>('td, th');
-    for (const cell of cells) {
-      const colWidthAttr = cell.dataset.colwidth;
-      if (colWidthAttr) {
-        totalWidth += Number(colWidthAttr);
-      }
-    }
+    let totalWidth = tableElement.getAttribute('pdf-width') ? Number(tableElement.getAttribute('pdf-width')) : 0;
 
     if (totalWidth > 600) {
       tableElement.style.maxWidth = '600px';
@@ -277,6 +270,8 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     // Move table title into contentDiv to rotate together
     const figure = contentDiv.closest('.enhanced-table-figure');
     if (figure) {
+      (figure as HTMLElement).style.maxWidth = '675px';
+      (figure as HTMLElement).style.width = '675px';
       let prevElement = figure.previousElementSibling;
       while (prevElement) {
         const styleName = prevElement.getAttribute('stylename');
@@ -293,6 +288,8 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     const tableHeight = tableElement.offsetHeight || totalWidth;
     const notesDiv = contentDiv.querySelector('.enhanced-table-figure-notes');
     if (notesDiv) { (notesDiv as HTMLElement).style.width = `${totalWidth}px` }
+    const capcoDiv = contentDiv.querySelector('.enhanced-table-figure-capco');
+    if (capcoDiv) { (capcoDiv as HTMLElement).style.width = `${totalWidth}px` }
     // Rotate the entire content div counter-clockwise 90 degrees
     Object.assign(contentDiv.style, {
       transform: 'rotate(-90deg)',

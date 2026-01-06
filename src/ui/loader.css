@@ -31,3 +31,10 @@
 .pagedjs_margin-bottom-center {
   text-align: center !important;
 }
+.pagedjs_area .tableWrapper table tr {
+  height: auto !important;
+}
+
+.pagedjs_area .tableWrapper table {
+  height: auto !important;
+}
