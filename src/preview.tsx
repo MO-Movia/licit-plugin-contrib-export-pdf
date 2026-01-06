@@ -50,6 +50,11 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   private static readonly tocNodeList: Node[] = [];
   private static readonly tofNodeList: Node[] = [];
   private static readonly totNodeList: Node[] = [];
+  private static documentTitle: string = '';
+  private static extractedCui: {
+    text: string;
+    color: string;
+  } | null = null;
   public sectionListElements: React.ReactElement<any>[] = [];
   private _popUp = null;
 
@@ -101,6 +106,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   }
 
   public componentDidMount(): void {
+    PreviewForm.extractedCui = null;
     const paged = new Previewer();
     this.showAlert();
 
@@ -124,7 +130,15 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     this.updateImageWidths(data1);
     this.prepareEditorContent(data1);
     this.updateTableWidths(data1);
-
+    if (this.isAfttpDoc(editorView)) {
+      const cuiData = this.extractCuiFromTableWrapper(data1);
+      const docTitle = this.isDocumentTitle(editorView);
+      PreviewForm.documentTitle = docTitle;
+      PreviewForm.extractedCui = cuiData;
+    } else {
+      PreviewForm.extractedCui = null;
+      PreviewForm.documentTitle = null;
+    }
     editorView.dispatch(editorView.state?.tr.setMeta('suppressOnChange', true));
     PDFHandler.state.isOnLoad = true;
     paged.preview(data1, [], divContainer).then(() => {
@@ -217,6 +231,41 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       }
     }
   };
+
+  public extractCuiFromTableWrapper(
+    root: HTMLElement
+  ): { text: string; color: string } | null {
+
+    const tableWrapper = root.querySelector('.tableWrapper');
+    if (!tableWrapper) return null;
+
+    // Only first row matters
+    const firstRow = tableWrapper.querySelector('tr');
+    if (!firstRow) return null;
+
+    // Find elements that explicitly define color
+    const styledElements = Array.from(
+      firstRow.querySelectorAll<HTMLElement>('[style]')
+    ).filter(el =>
+      /color\s*:\s*[^;]+/i.test(el.getAttribute('style') || '')
+    );
+
+    if (!styledElements.length) return null;
+
+    // Pick the deepest one (most specific)
+    const target = styledElements.at(-1);
+
+    const styleAttr = target.getAttribute('style');
+    const match = /color\s*:\s*([^;]+)/i.exec(styleAttr);
+
+    if (!match) return null;
+
+    return {
+      text: target.textContent?.trim() ?? '',
+      color: match[1].trim(),
+    };
+  }
+
 
   rotateWideTable(tableElement: HTMLElement, totalWidth: number): void {
     const tableWrapper = tableElement.closest('.tableWrapper');
@@ -875,6 +924,8 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   };
 
   public calcLogic = (): void => {
+    PreviewForm.extractedCui = null;
+
     const divContainer = document.getElementById('holder');
     if (!divContainer) return;
     divContainer.innerHTML = '';
@@ -906,6 +957,15 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     this.updateImageWidths(data1);
     this.updateTableWidths(data1);
     this.updateStyles(data1);
+    if (this.isAfttpDoc(editorView)) {
+      const cuiData = this.extractCuiFromTableWrapper(data1);
+      const docTitle = this.isDocumentTitle(editorView);
+      PreviewForm.documentTitle = docTitle;
+      PreviewForm.extractedCui = cuiData;
+    } else {
+      PreviewForm.extractedCui = null;
+      PreviewForm.documentTitle = null;
+    }
 
     const paged = new Previewer();
     this._popUp?.close();
@@ -1068,6 +1128,10 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     editorView?.state?.doc?.attrs?.objectMetaData?.type ?? '';
   return typeof docType === 'string' && docType.includes('Afttp');
  }
+
+  public isDocumentTitle(editorView): string {
+    return editorView?.state?.doc?.attrs?.objectMetaData?.name ?? '';
+  }
 
   private extractPreChapterNodes(prose: HTMLElement): ChildNode[] {
     const proseChildren = Array.from(prose.childNodes);

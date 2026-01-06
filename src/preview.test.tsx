@@ -119,6 +119,364 @@ describe('PreviewForm component', () => {
     jest.clearAllMocks();
   });
 
+  it('should handle AFTTP document and extract CUI data in componentDidMount', () => {
+    const dommock = document.createElement('div');
+    const parentelement = document.createElement('div');
+    parentelement.appendChild(dommock);
+    const parparentElement = document.createElement('div');
+    const prosimer_cls_element = document.createElement('div');
+    prosimer_cls_element.className = 'ProseMirror';
+    parparentElement.appendChild(parentelement);
+    parparentElement.appendChild(prosimer_cls_element);
+    
+    const tableWrapper = document.createElement('div');
+    tableWrapper.className = 'tableWrapper';
+    const table = document.createElement('table');
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    const styledSpan = document.createElement('span');
+    styledSpan.setAttribute('style', 'color: rgb(255, 0, 0);');
+    styledSpan.textContent = 'CUI//SP-CTI';
+    cell.appendChild(styledSpan);
+    row.appendChild(cell);
+    table.appendChild(row);
+    tableWrapper.appendChild(table);
+    parparentElement.appendChild(tableWrapper);
+
+    jest.spyOn(document, 'getElementById').mockReturnValue(document.createElement('div'));
+
+    const props = {
+      editorState: { doc: { attrs: { gg: null } } } as unknown as EditorState,
+      editorView: {
+        dom: dommock,
+        state: { 
+          doc: { attrs: { gg: null } },
+          tr: { setMeta: jest.fn().mockReturnThis() }
+        },
+        dispatch: jest.fn()
+      } as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    jest.spyOn(previewForm, 'isAfttpDoc').mockReturnValue(true);
+    jest.spyOn(previewForm, 'isDocumentTitle').mockReturnValue('Test Document');
+    jest.spyOn(previewForm, 'getToc').mockResolvedValue();
+    jest.spyOn(previewForm, 'showAlert').mockImplementation(() => {});
+    jest.spyOn(previewForm, 'insertSectionHeaders').mockImplementation(() => {});
+    jest.spyOn(previewForm, 'replaceInfoIcons').mockImplementation(() => {});
+    jest.spyOn(previewForm, 'updateImageWidths').mockImplementation(() => {});
+    jest.spyOn(previewForm, 'prepareEditorContent').mockImplementation(() => {});
+    jest.spyOn(previewForm, 'updateTableWidths').mockImplementation(() => {});
+
+    previewForm.componentDidMount();
+
+    expect(PreviewForm['documentTitle']).toBe('Test Document');
+    expect(PreviewForm['extractedCui']).toEqual({
+      text: 'CUI//SP-CTI',
+      color: 'rgb(255, 0, 0)'
+    });
+    expect(PreviewForm['isAfttp']).toBeUndefined();
+  });
+
+  it('should reset AFTTP properties when document is not AFTTP in componentDidMount', () => {
+    const dommock = document.createElement('div');
+    const parentelement = document.createElement('div');
+    parentelement.appendChild(dommock);
+    const parparentElement = document.createElement('div');
+    const prosimer_cls_element = document.createElement('div');
+    prosimer_cls_element.className = 'ProseMirror';
+    parparentElement.appendChild(parentelement);
+    parparentElement.appendChild(prosimer_cls_element);
+
+    jest.spyOn(document, 'getElementById').mockReturnValue(document.createElement('div'));
+
+    const props = {
+      editorState: { doc: { attrs: { gg: null } } } as unknown as EditorState,
+      editorView: {
+        dom: dommock,
+        state: { 
+          doc: { attrs: { gg: null } },
+          tr: { setMeta: jest.fn().mockReturnThis() }
+        },
+        dispatch: jest.fn()
+      } as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    jest.spyOn(previewForm, 'isAfttpDoc').mockReturnValue(false);
+    jest.spyOn(previewForm, 'getToc').mockResolvedValue();
+    jest.spyOn(previewForm, 'showAlert').mockImplementation(() => {});
+    jest.spyOn(previewForm, 'insertSectionHeaders').mockImplementation(() => {});
+    jest.spyOn(previewForm, 'replaceInfoIcons').mockImplementation(() => {});
+    jest.spyOn(previewForm, 'updateImageWidths').mockImplementation(() => {});
+    jest.spyOn(previewForm, 'prepareEditorContent').mockImplementation(() => {});
+    jest.spyOn(previewForm, 'updateTableWidths').mockImplementation(() => {});
+
+    previewForm.componentDidMount();
+
+    expect(PreviewForm['documentTitle']).toBeNull();
+    expect(PreviewForm['extractedCui']).toBeNull();
+    expect(PreviewForm['isAfttp']).toBeUndefined();
+  });
+
+  it('should return null when tableWrapper is not found in extractCuiFromTableWrapper', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    const root = document.createElement('div');
+
+    const result = previewForm.extractCuiFromTableWrapper(root);
+
+    expect(result).toBeNull();
+  });
+
+  it('should return null when first row is not found in extractCuiFromTableWrapper', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    const root = document.createElement('div');
+    const tableWrapper = document.createElement('div');
+    tableWrapper.className = 'tableWrapper';
+    const table = document.createElement('table');
+    tableWrapper.appendChild(table);
+    root.appendChild(tableWrapper);
+
+    const result = previewForm.extractCuiFromTableWrapper(root);
+
+    expect(result).toBeNull();
+  });
+
+  it('should return null when no styled elements are found in extractCuiFromTableWrapper', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    const root = document.createElement('div');
+    const tableWrapper = document.createElement('div');
+    tableWrapper.className = 'tableWrapper';
+    const table = document.createElement('table');
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.textContent = 'No color';
+    row.appendChild(cell);
+    table.appendChild(row);
+    tableWrapper.appendChild(table);
+    root.appendChild(tableWrapper);
+
+    const result = previewForm.extractCuiFromTableWrapper(root);
+
+    expect(result).toBeNull();
+  });
+
+  it('should return null when color match is not found in extractCuiFromTableWrapper', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    const root = document.createElement('div');
+    const tableWrapper = document.createElement('div');
+    tableWrapper.className = 'tableWrapper';
+    const table = document.createElement('table');
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    const styledSpan = document.createElement('span');
+    styledSpan.setAttribute('style', 'font-weight: bold;');
+    styledSpan.textContent = 'No color attribute';
+    cell.appendChild(styledSpan);
+    row.appendChild(cell);
+    table.appendChild(row);
+    tableWrapper.appendChild(table);
+    root.appendChild(tableWrapper);
+
+    const result = previewForm.extractCuiFromTableWrapper(root);
+
+    expect(result).toBeNull();
+  });
+
+  it('should extract CUI data with text and color from styled element in extractCuiFromTableWrapper', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    const root = document.createElement('div');
+    const tableWrapper = document.createElement('div');
+    tableWrapper.className = 'tableWrapper';
+    const table = document.createElement('table');
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    const styledSpan = document.createElement('span');
+    styledSpan.setAttribute('style', 'color: rgb(255, 0, 0); font-weight: bold;');
+    styledSpan.textContent = '  CUI//SP-CTI  ';
+    cell.appendChild(styledSpan);
+    row.appendChild(cell);
+    table.appendChild(row);
+    tableWrapper.appendChild(table);
+    root.appendChild(tableWrapper);
+
+    const result = previewForm.extractCuiFromTableWrapper(root);
+
+    expect(result).toEqual({
+      text: 'CUI//SP-CTI',
+      color: 'rgb(255, 0, 0)'
+    });
+  });
+
+  it('should pick the deepest styled element when multiple color elements exist in extractCuiFromTableWrapper', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    const root = document.createElement('div');
+    const tableWrapper = document.createElement('div');
+    tableWrapper.className = 'tableWrapper';
+    const table = document.createElement('table');
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    
+    const outerSpan = document.createElement('span');
+    outerSpan.setAttribute('style', 'color: blue;');
+    outerSpan.textContent = 'Outer';
+    
+    const innerSpan = document.createElement('span');
+    innerSpan.setAttribute('style', 'color: red;');
+    innerSpan.textContent = 'Inner CUI';
+    
+    outerSpan.appendChild(innerSpan);
+    cell.appendChild(outerSpan);
+    row.appendChild(cell);
+    table.appendChild(row);
+    tableWrapper.appendChild(table);
+    root.appendChild(tableWrapper);
+
+    const result = previewForm.extractCuiFromTableWrapper(root);
+
+    expect(result).toEqual({
+      text: 'Inner CUI',
+      color: 'red'
+    });
+  });
+
+  it('should return document title from editorView in isDocumentTitle', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    
+    const mockEditorView = {
+      state: {
+        doc: {
+          attrs: {
+            objectMetaData: {
+              name: 'Test Document Title'
+            }
+          }
+        }
+      }
+    };
+
+    const result = previewForm.isDocumentTitle(mockEditorView);
+
+    expect(result).toBe('Test Document Title');
+  });
+
+  it('should return empty string when objectMetaData.name is undefined in isDocumentTitle', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    
+    const mockEditorView = {
+      state: {
+        doc: {
+          attrs: {
+            objectMetaData: {}
+          }
+        }
+      }
+    };
+
+    const result = previewForm.isDocumentTitle(mockEditorView);
+
+    expect(result).toBe('');
+  });
+
+  it('should return empty string when objectMetaData is undefined in isDocumentTitle', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    
+    const mockEditorView = {
+      state: {
+        doc: {
+          attrs: {}
+        }
+      }
+    };
+
+    const result = previewForm.isDocumentTitle(mockEditorView);
+
+    expect(result).toBe('');
+  });
+
+  it('should return empty string when editorView is null in isDocumentTitle', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+
+    const result = previewForm.isDocumentTitle(null);
+
+    expect(result).toBe('');
+  });
+
+  it('should return empty string when editorView is undefined in isDocumentTitle', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+
+    const result = previewForm.isDocumentTitle(undefined);
+
+    expect(result).toBe('');
+  });
   it('should call handleConfirm', () => {
     const props = {
       editorState: {} as unknown as EditorState,

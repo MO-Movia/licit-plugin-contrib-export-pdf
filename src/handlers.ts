@@ -8,6 +8,7 @@ interface PagedPage {
 export class PDFHandler extends Handler {
   // static field needs to be readonly for sonar
   private readonly processedChapterRefs = new Set<string>();
+  private static lastMode: 'afttp' | 'non-afttp' | null = null;
   public static readonly state = {
     currentPage: 0,
     isOnLoad: false,
@@ -45,6 +46,9 @@ export class PDFHandler extends Handler {
     this.prepagesCount = 0;
     PDFHandler.state.currentPage = 0;
     this.done = false;
+    document.documentElement.style.removeProperty(
+    '--pagedjs-string-last-chapTitled'
+  );
 
     if (PreviewForm.showToc() || PreviewForm.showTof() || PreviewForm.showTot()) {
       createTable({
@@ -171,9 +175,32 @@ export class PDFHandler extends Handler {
       }
     };
 
-    processTocAndFooter();
+    this.handleAfttpFooter(pageFragment as HTMLElement, processTocAndFooter);
+
     processCounters();
   }
+
+  private handleAfttpFooter(
+    pageFragment: HTMLElement,
+    processTocAndFooter: () => void
+  ): void {
+    const cuiData = PreviewForm['extractedCui'];
+    const isAfttp = !!cuiData;
+
+    if (isAfttp) {
+      pageFragment.style.removeProperty(
+        '--pagedjs-string-last-chapTitled'
+      );
+      pageFragment.style.setProperty(
+        '--pagedjs-string-last-chapTitled',
+        '""'
+      );
+      return;
+    }
+
+    processTocAndFooter();
+  }
+
 
   public afterRendered(pages) {
     this.patchTocEntries(pages);
@@ -300,40 +327,146 @@ export class PDFHandler extends Handler {
     }
   }
 
+    private truncateTitle(title: string, maxLength = 22): string {
+    if (!title || title.length <= maxLength) {
+      return title;
+    }
+    return title.slice(0, maxLength) + '...';
+  }
+
   public beforePageLayout(): void {
     this.doIT();
   }
 
-  public async doIT(): Promise<void> {
-    const opt2 =
-      '.ProseMirror  infoicon { string-set: chapTitled content(text); }';
-    const opt = `@bottom-center {
-  content: string(chapTitled, last);
-  text-align: right;
-  }
-  @bottom-left {
-  content: "Page " counter(page) " of " counter(pages);
-  color: #000000;
-  }
-  `;
+public async doIT(): Promise<void> {
+  const cuiData = PreviewForm['extractedCui'];
+  const isAfttp = !!cuiData;
+  const rawTitle = PreviewForm['documentTitle'];
+  const titleData = this.truncateTitle(rawTitle);
 
-    let lastUpdatedStyle = '';
-    if (PreviewForm['lastUpdated']) {
-      lastUpdatedStyle = `@top-right {
-        content: "${'Last Updated On: ' + PreviewForm['formattedDate']}";
-        text-align: right;
-        font-size: 11px;
-        font-weight: bold;
-        color: #000000;
+  let nonAfttpFooterColor = '';
+  let opt = '';
+  let opt2 = '';
+  let pageOverride = '';
+  let headerTitleContent = '';
+
+  // 🔥 CLEAR ALL FOOTER-RELATED STYLES WHEN SWITCHING MODES
+  document.documentElement.style.removeProperty('--pagedjs-string-last-chapTitled');
+  document.documentElement.style.removeProperty('--pagedjs-footer-height');
+
+  // Remove previously injected styles to avoid conflicts
+const currentMode = cuiData ? 'afttp' : 'non-afttp';
+
+if (PDFHandler.lastMode !== currentMode) {
+  const existingStyles = document.querySelectorAll(
+    'style[data-licit-pdf-handler]'
+  );
+  for (const style of existingStyles) {
+    style.remove();
+  }
+  PDFHandler.lastMode = currentMode;
+}
+
+  if (!isAfttp) {
+    pageOverride = `
+      @page {
+        margin-bottom: var(--pagedjs-footer-height, 40px);
+        @bottom-center {
+          content: var(--pagedjs-string-last-chapTitled);
+        }
       }`;
-    }
 
-    if (!this.done) {
-      const text = await this['polisher'].convertViaSheet(`@media print {@page {
+    nonAfttpFooterColor = `
+      .pagedjs_page 
+      .pagedjs_margin-bottom-center > .pagedjs_margin-content::after {
+        color: #2A6EBB;
+      }
+    `;
+  }
+
+  if (isAfttp && cuiData) {
+      if (titleData) {
+    headerTitleContent = `
+      @top-left {
+        content: "${titleData}";
+        font-family: "Times New Roman", Times, serif;
+        font-size: 12pt;
+        text-align: left;
+        color: #333333;
+        padding-top: 60px;
+      }
+    `;
+    }
+    opt = `
+      @top-center {
+        content: "${cuiData.text}";
+        font-family: "Times New Roman", Times, serif;
+        font-size: 14pt;
+        text-align: center;
+        color: ${cuiData.color};
+        padding-left: 0.9in;
+      }
+
+      @bottom-center {
+        content: "${cuiData.text}";
+        font-family: "Times New Roman", Times, serif;
+        font-size: 14pt;
+        text-align: center;
+        color: ${cuiData.color};
+        padding-top: 72px;
+      }
+
+      @bottom-left {
+        content: "Page " counter(page) " of " counter(pages);
+        color: #333333;
+      }
+    `;
+    opt2 = `
+    .ProseMirror infoicon {
+      string-set: none !important;
+    }
+  `;
+  } else {
+    opt2 = `
+      .ProseMirror infoicon {
+        string-set: chapTitled content(text);
+      }
+    `;
+
+    opt = `
+      @bottom-center {
+        content: string(chapTitled, last);
+        text-align: right;
+      }
+
+      @bottom-left {
+        content: "Page " counter(page) " of " counter(pages);
+        color: #333333;
+      }
+    `;
+  }
+
+  let lastUpdatedStyle = '';
+  if (PreviewForm['lastUpdated']) {
+    lastUpdatedStyle = `@top-right {
+      content: "${'Last Updated On: ' + PreviewForm['formattedDate']}";
+      text-align: right;
+      font-size: 11px;
+      color: #333333;
+      padding-top: 63px;
+      font-style: italic;
+    }`;
+  }
+
+  // Always regenerate styles to ensure correct mode
+  const text = await this['polisher'].convertViaSheet(`@media print {@page {
 ${opt}
 ${lastUpdatedStyle}
+${headerTitleContent}
 }
+${pageOverride}
 ${opt2}
+${nonAfttpFooterColor}
 /* set the style for the list numbering to none */
 #list-toc-generated {
 list-style: none;
@@ -543,9 +676,6 @@ letter-spacing: 2px;
 color: #2A6EBB;
 }
 
-.pagedjs_page .pagedjs_margin-bottom-center>.pagedjs_margin-content::after {
-  color: #2A6EBB;
-}
 #list-toc-generated .toc-element {
 display: flex;
 }
@@ -597,26 +727,25 @@ color: #2A6EBB;
 .prosemirror-editor-wrapper.embedded .ProseMirror {
  width : unset;
 }
-
-@page {
- margin-bottom: var(--pagedjs-footer-height, 40px); /* fallback */
-  @bottom-center {
-    content: var(--pagedjs-string-last-chapTitled);
-  }
-.ProseMirror {
+ .ProseMirror {
   box-shadow: none;
   contain: none;
   overflow: visible;
-}
-.pagedjs_pagebox * {
-background-color: #ffffff
-}
-}
+ } 
+ .pagedjs_pagebox * {
+  background-color: #ffffff
+ }
 }`);
-      this['polisher'].insert(text);
-      this.done = true;
-    }
+
+  // Mark the inserted style for easy removal on next call
+  const insertedStyle = this['polisher'].insert(text);
+  if (insertedStyle) {
+    insertedStyle.dataset.licitPdfHandler = 'true';
   }
+
+  // Reset the done flag to allow regeneration
+  this.done = false;
+}
 
   finalizePage() {
     if (!PDFHandler.state.isOnLoad) PDFHandler.state.currentPage++;
