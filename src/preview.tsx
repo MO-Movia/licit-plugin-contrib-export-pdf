@@ -50,8 +50,8 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   private static readonly tocNodeList: Node[] = [];
   private static readonly tofNodeList: Node[] = [];
   private static readonly totNodeList: Node[] = [];
-  private static readonly documentTitle: string = '';
-  private static readonly pageBanner: {
+  private static documentTitle: string = '';
+  private static pageBanner: {
     text: string;
     color: string;
   } | null = null;
@@ -106,6 +106,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   }
 
   public componentDidMount(): void {
+    PreviewForm.pageBanner = null;
     const paged = new Previewer();
     this.showAlert();
 
@@ -130,8 +131,13 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     this.prepareEditorContent(data1);
     this.updateTableWidths(data1);
     if (this.isAfttpDoc(editorView)) {
-      this.extractBannerMarkingFromTableWrapper(data1);
-      this.getDocumentTitle(editorView);
+      const markingData  = this.extractBannerMarkingFromTableWrapper(data1);
+      const docTitle = this.getDocumentTitle(editorView);
+      PreviewForm.documentTitle = docTitle;
+      PreviewForm.pageBanner = markingData ;
+    } else {
+      PreviewForm.pageBanner = null;
+      PreviewForm.documentTitle = null;
     }
     editorView.dispatch(editorView.state?.tr.setMeta('suppressOnChange', true));
     PDFHandler.state.isOnLoad = true;
@@ -911,6 +917,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   };
 
   public calcLogic = (): void => {
+    PreviewForm.pageBanner = null;
 
     const divContainer = document.getElementById('holder');
     if (!divContainer) return;
@@ -944,9 +951,15 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     this.updateTableWidths(data1);
     this.updateStyles(data1);
     if (this.isAfttpDoc(editorView)) {
-      this.extractBannerMarkingFromTableWrapper(data1);
-      this.getDocumentTitle(editorView);
+      const markingData  = this.extractBannerMarkingFromTableWrapper(data1);
+      const docTitle = this.getDocumentTitle(editorView);
+      PreviewForm.documentTitle = docTitle;
+      PreviewForm.pageBanner = markingData ;
+    } else {
+      PreviewForm.pageBanner = null;
+      PreviewForm.documentTitle = null;
     }
+
     const paged = new Previewer();
     this._popUp?.close();
     this.showAlert();
@@ -960,6 +973,8 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       this._popUp?.close();
     });
   };
+
+
 
   private prepareEditorContent(data: HTMLElement): void {
     const proseMirror = data.querySelector('.ProseMirror');
@@ -1107,7 +1122,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   return typeof docType === 'string' && docType.includes('Afttp');
  }
 
-  public getDocumentTitle (editorView): string {
+  public getDocumentTitle(editorView): string {
     return editorView?.state?.doc?.attrs?.objectMetaData?.name ?? '';
   }
 

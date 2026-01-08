@@ -184,7 +184,7 @@ export class PDFHandler extends Handler {
     pageFragment: HTMLElement,
     processTocAndFooter: () => void
   ): void {
-    const markingData  = PreviewForm['extractedCui'];
+    const markingData  = PreviewForm['pageBanner'];
     const hasBannerMarking  = !!markingData ;
 
     if (hasBannerMarking ) {
@@ -339,7 +339,7 @@ export class PDFHandler extends Handler {
   }
 
 public async doIT(): Promise<void> {
-  const markingData  = PreviewForm['extractedCui'];
+  const markingData  = PreviewForm['pageBanner'];
   const hasBannerMarking  = !!markingData ;
   const rawTitle = PreviewForm['documentTitle'];
   const titleData = this.truncateTitle(rawTitle);

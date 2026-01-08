@@ -171,8 +171,11 @@ describe('PreviewForm component', () => {
 
     previewForm.componentDidMount();
 
-    expect(PreviewForm['documentTitle']).toBe('');
-    expect(PreviewForm['pageBanner']).toBeNull();
+    expect(PreviewForm['documentTitle']).toBe('Test Document');
+    expect(PreviewForm['pageBanner']).toEqual({
+      color: 'rgb(255, 0, 0)',
+      text: 'CUI//SP-CTI',
+    });
     expect(PreviewForm['isAfttp']).toBeUndefined();
   });
 
@@ -213,7 +216,7 @@ describe('PreviewForm component', () => {
 
     previewForm.componentDidMount();
 
-    expect(PreviewForm['documentTitle']).toBe('')
+    expect(PreviewForm['documentTitle']).toBeNull();
     expect(PreviewForm['pageBanner']).toBeNull();
     expect(PreviewForm['isAfttp']).toBeUndefined();
   });
