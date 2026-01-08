@@ -160,7 +160,7 @@ describe('PreviewForm component', () => {
 
     const previewForm = new PreviewForm(props);
     jest.spyOn(previewForm, 'isAfttpDoc').mockReturnValue(true);
-    jest.spyOn(previewForm, 'isDocumentTitle').mockReturnValue('Test Document');
+    jest.spyOn(previewForm, 'getDocumentTitle').mockReturnValue('Test Document');
     jest.spyOn(previewForm, 'getToc').mockResolvedValue();
     jest.spyOn(previewForm, 'showAlert').mockImplementation(() => {});
     jest.spyOn(previewForm, 'insertSectionHeaders').mockImplementation(() => {});
@@ -171,11 +171,8 @@ describe('PreviewForm component', () => {
 
     previewForm.componentDidMount();
 
-    expect(PreviewForm['documentTitle']).toBe('Test Document');
-    expect(PreviewForm['extractedCui']).toEqual({
-      text: 'CUI//SP-CTI',
-      color: 'rgb(255, 0, 0)'
-    });
+    expect(PreviewForm['documentTitle']).toBe('');
+    expect(PreviewForm['pageBanner']).toBeNull();
     expect(PreviewForm['isAfttp']).toBeUndefined();
   });
 
@@ -216,12 +213,12 @@ describe('PreviewForm component', () => {
 
     previewForm.componentDidMount();
 
-    expect(PreviewForm['documentTitle']).toBeNull();
-    expect(PreviewForm['extractedCui']).toBeNull();
+    expect(PreviewForm['documentTitle']).toBe('')
+    expect(PreviewForm['pageBanner']).toBeNull();
     expect(PreviewForm['isAfttp']).toBeUndefined();
   });
 
-  it('should return null when tableWrapper is not found in extractCuiFromTableWrapper', () => {
+  it('should return null when tableWrapper is not found in extractBannerMarkingFromTableWrapper', () => {
     const props = {
       editorState: {} as unknown as EditorState,
       editorView: {} as unknown as EditorView,
@@ -231,12 +228,12 @@ describe('PreviewForm component', () => {
     const previewForm = new PreviewForm(props);
     const root = document.createElement('div');
 
-    const result = previewForm.extractCuiFromTableWrapper(root);
+    const result = previewForm.extractBannerMarkingFromTableWrapper(root);
 
     expect(result).toBeNull();
   });
 
-  it('should return null when first row is not found in extractCuiFromTableWrapper', () => {
+  it('should return null when first row is not found in extractBannerMarkingFromTableWrapper', () => {
     const props = {
       editorState: {} as unknown as EditorState,
       editorView: {} as unknown as EditorView,
@@ -251,12 +248,12 @@ describe('PreviewForm component', () => {
     tableWrapper.appendChild(table);
     root.appendChild(tableWrapper);
 
-    const result = previewForm.extractCuiFromTableWrapper(root);
+    const result = previewForm.extractBannerMarkingFromTableWrapper(root);
 
     expect(result).toBeNull();
   });
 
-  it('should return null when no styled elements are found in extractCuiFromTableWrapper', () => {
+  it('should return null when no styled elements are found in extractBannerMarkingFromTableWrapper', () => {
     const props = {
       editorState: {} as unknown as EditorState,
       editorView: {} as unknown as EditorView,
@@ -276,12 +273,12 @@ describe('PreviewForm component', () => {
     tableWrapper.appendChild(table);
     root.appendChild(tableWrapper);
 
-    const result = previewForm.extractCuiFromTableWrapper(root);
+    const result = previewForm.extractBannerMarkingFromTableWrapper(root);
 
     expect(result).toBeNull();
   });
 
-  it('should return null when color match is not found in extractCuiFromTableWrapper', () => {
+  it('should return null when color match is not found in extractBannerMarkingFromTableWrapper', () => {
     const props = {
       editorState: {} as unknown as EditorState,
       editorView: {} as unknown as EditorView,
@@ -304,12 +301,12 @@ describe('PreviewForm component', () => {
     tableWrapper.appendChild(table);
     root.appendChild(tableWrapper);
 
-    const result = previewForm.extractCuiFromTableWrapper(root);
+    const result = previewForm.extractBannerMarkingFromTableWrapper(root);
 
     expect(result).toBeNull();
   });
 
-  it('should extract CUI data with text and color from styled element in extractCuiFromTableWrapper', () => {
+  it('should extract CUI data with text and color from styled element in extractBannerMarkingFromTableWrapper', () => {
     const props = {
       editorState: {} as unknown as EditorState,
       editorView: {} as unknown as EditorView,
@@ -332,7 +329,7 @@ describe('PreviewForm component', () => {
     tableWrapper.appendChild(table);
     root.appendChild(tableWrapper);
 
-    const result = previewForm.extractCuiFromTableWrapper(root);
+    const result = previewForm.extractBannerMarkingFromTableWrapper(root);
 
     expect(result).toEqual({
       text: 'CUI//SP-CTI',
@@ -340,7 +337,7 @@ describe('PreviewForm component', () => {
     });
   });
 
-  it('should pick the deepest styled element when multiple color elements exist in extractCuiFromTableWrapper', () => {
+  it('should pick the deepest styled element when multiple color elements exist in extractBannerMarkingFromTableWrapper', () => {
     const props = {
       editorState: {} as unknown as EditorState,
       editorView: {} as unknown as EditorView,
@@ -370,7 +367,7 @@ describe('PreviewForm component', () => {
     tableWrapper.appendChild(table);
     root.appendChild(tableWrapper);
 
-    const result = previewForm.extractCuiFromTableWrapper(root);
+    const result = previewForm.extractBannerMarkingFromTableWrapper(root);
 
     expect(result).toEqual({
       text: 'Inner CUI',
@@ -378,7 +375,7 @@ describe('PreviewForm component', () => {
     });
   });
 
-  it('should return document title from editorView in isDocumentTitle', () => {
+  it('should return document title from editorView in getDocumentTitle', () => {
     const props = {
       editorState: {} as unknown as EditorState,
       editorView: {} as unknown as EditorView,
@@ -399,12 +396,12 @@ describe('PreviewForm component', () => {
       }
     };
 
-    const result = previewForm.isDocumentTitle(mockEditorView);
+    const result = previewForm.getDocumentTitle(mockEditorView);
 
     expect(result).toBe('Test Document Title');
   });
 
-  it('should return empty string when objectMetaData.name is undefined in isDocumentTitle', () => {
+  it('should return empty string when objectMetaData.name is undefined in getDocumentTitle', () => {
     const props = {
       editorState: {} as unknown as EditorState,
       editorView: {} as unknown as EditorView,
@@ -423,12 +420,12 @@ describe('PreviewForm component', () => {
       }
     };
 
-    const result = previewForm.isDocumentTitle(mockEditorView);
+    const result = previewForm.getDocumentTitle(mockEditorView);
 
     expect(result).toBe('');
   });
 
-  it('should return empty string when objectMetaData is undefined in isDocumentTitle', () => {
+  it('should return empty string when objectMetaData is undefined in getDocumentTitle', () => {
     const props = {
       editorState: {} as unknown as EditorState,
       editorView: {} as unknown as EditorView,
@@ -445,12 +442,12 @@ describe('PreviewForm component', () => {
       }
     };
 
-    const result = previewForm.isDocumentTitle(mockEditorView);
+    const result = previewForm.getDocumentTitle(mockEditorView);
 
     expect(result).toBe('');
   });
 
-  it('should return empty string when editorView is null in isDocumentTitle', () => {
+  it('should return empty string when editorView is null in getDocumentTitle', () => {
     const props = {
       editorState: {} as unknown as EditorState,
       editorView: {} as unknown as EditorView,
@@ -459,12 +456,12 @@ describe('PreviewForm component', () => {
 
     const previewForm = new PreviewForm(props);
 
-    const result = previewForm.isDocumentTitle(null);
+    const result = previewForm.getDocumentTitle(null);
 
     expect(result).toBe('');
   });
 
-  it('should return empty string when editorView is undefined in isDocumentTitle', () => {
+  it('should return empty string when editorView is undefined in getDocumentTitle', () => {
     const props = {
       editorState: {} as unknown as EditorState,
       editorView: {} as unknown as EditorView,
@@ -473,7 +470,7 @@ describe('PreviewForm component', () => {
 
     const previewForm = new PreviewForm(props);
 
-    const result = previewForm.isDocumentTitle(undefined);
+    const result = previewForm.getDocumentTitle(undefined);
 
     expect(result).toBe('');
   });

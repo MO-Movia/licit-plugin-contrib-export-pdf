@@ -50,8 +50,8 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   private static readonly tocNodeList: Node[] = [];
   private static readonly tofNodeList: Node[] = [];
   private static readonly totNodeList: Node[] = [];
-  private static documentTitle: string = '';
-  private static extractedCui: {
+  private static readonly documentTitle: string = '';
+  private static readonly pageBanner: {
     text: string;
     color: string;
   } | null = null;
@@ -106,7 +106,6 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   }
 
   public componentDidMount(): void {
-    PreviewForm.extractedCui = null;
     const paged = new Previewer();
     this.showAlert();
 
@@ -131,13 +130,8 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     this.prepareEditorContent(data1);
     this.updateTableWidths(data1);
     if (this.isAfttpDoc(editorView)) {
-      const cuiData = this.extractCuiFromTableWrapper(data1);
-      const docTitle = this.isDocumentTitle(editorView);
-      PreviewForm.documentTitle = docTitle;
-      PreviewForm.extractedCui = cuiData;
-    } else {
-      PreviewForm.extractedCui = null;
-      PreviewForm.documentTitle = null;
+      this.extractBannerMarkingFromTableWrapper(data1);
+      this.getDocumentTitle(editorView);
     }
     editorView.dispatch(editorView.state?.tr.setMeta('suppressOnChange', true));
     PDFHandler.state.isOnLoad = true;
@@ -225,32 +219,29 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     }
   };
 
-  public extractCuiFromTableWrapper(
+  public extractBannerMarkingFromTableWrapper(
     root: HTMLElement
   ): { text: string; color: string } | null {
 
-    const tableWrapper = root.querySelector('.tableWrapper');
-    if (!tableWrapper) return null;
-
     // Only first row matters
-    const firstRow = tableWrapper.querySelector('tr');
+    const firstRow = root.querySelector('.tableWrapper tr');
     if (!firstRow) return null;
 
     // Find elements that explicitly define color
     const styledElements = Array.from(
       firstRow.querySelectorAll<HTMLElement>('[style]')
     ).filter(el =>
-      /color\s*:\s*[^;]+/i.test(el.getAttribute('style') || '')
+      /color\s{0,10}:\s{0,10}[^;]{1,50}/i.test(
+        el.getAttribute('style') || ''
+      )
     );
-
     if (!styledElements.length) return null;
 
     // Pick the deepest one (most specific)
     const target = styledElements.at(-1);
 
     const styleAttr = target.getAttribute('style');
-    const match = /color\s*:\s*([^;]+)/i.exec(styleAttr);
-
+    const match = /color\s{0,10}:\s{0,10}([^;]{1,50})/i.exec(styleAttr);
     if (!match) return null;
 
     return {
@@ -258,7 +249,6 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       color: match[1].trim(),
     };
   }
-
 
   rotateWideTable(tableElement: HTMLElement, totalWidth: number): void {
     const tableWrapper = tableElement.closest('.tableWrapper');
@@ -921,7 +911,6 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   };
 
   public calcLogic = (): void => {
-    PreviewForm.extractedCui = null;
 
     const divContainer = document.getElementById('holder');
     if (!divContainer) return;
@@ -955,15 +944,9 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     this.updateTableWidths(data1);
     this.updateStyles(data1);
     if (this.isAfttpDoc(editorView)) {
-      const cuiData = this.extractCuiFromTableWrapper(data1);
-      const docTitle = this.isDocumentTitle(editorView);
-      PreviewForm.documentTitle = docTitle;
-      PreviewForm.extractedCui = cuiData;
-    } else {
-      PreviewForm.extractedCui = null;
-      PreviewForm.documentTitle = null;
+      this.extractBannerMarkingFromTableWrapper(data1);
+      this.getDocumentTitle(editorView);
     }
-
     const paged = new Previewer();
     this._popUp?.close();
     this.showAlert();
@@ -977,8 +960,6 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       this._popUp?.close();
     });
   };
-
-
 
   private prepareEditorContent(data: HTMLElement): void {
     const proseMirror = data.querySelector('.ProseMirror');
@@ -1126,7 +1107,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   return typeof docType === 'string' && docType.includes('Afttp');
  }
 
-  public isDocumentTitle(editorView): string {
+  public getDocumentTitle (editorView): string {
     return editorView?.state?.doc?.attrs?.objectMetaData?.name ?? '';
   }
 
