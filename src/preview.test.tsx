@@ -483,6 +483,124 @@ describe('PreviewForm component', () => {
 
     expect(setStyleSpy).not.toHaveBeenCalled();
   });
+
+  it('should call rotateWideTable when pdf-width > 624', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: jest.fn(),
+    };
+
+    const previewForm = new PreviewForm(props);
+    const rotateSpy = jest
+      .spyOn(previewForm as any, 'rotateWideTable')
+      .mockImplementation(() => { });
+
+    const table = document.createElement('table');
+    table.setAttribute('pdf-width', '700');
+
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    row.appendChild(cell);
+    table.appendChild(row);
+
+    previewForm.replaceTableWidth(table);
+
+    expect(table.style.maxWidth).toBe('600px');
+    expect(rotateSpy).toHaveBeenCalledWith(table, 700);
+  });
+  
+  it('should rotate table and apply styles in rotateWideTable', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: jest.fn(),
+    };
+
+    const previewForm = new PreviewForm(props);
+
+    const figure = document.createElement('div');
+    figure.className = 'enhanced-table-figure';
+
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'enhanced-table-figure-content';
+
+    const tableWrapper = document.createElement('div');
+    tableWrapper.className = 'tableWrapper';
+
+    const table = document.createElement('table');
+    table.setAttribute('pdf-height', '400');
+
+    Object.defineProperty(table, 'offsetHeight', {
+      value: 500,
+    });
+
+    tableWrapper.appendChild(table);
+    contentDiv.appendChild(tableWrapper);
+    figure.appendChild(contentDiv);
+
+    const notesDiv = document.createElement('div');
+    notesDiv.className = 'enhanced-table-figure-notes';
+
+    const capcoDiv = document.createElement('div');
+    capcoDiv.className = 'enhanced-table-figure-capco';
+
+    contentDiv.appendChild(notesDiv);
+    contentDiv.appendChild(capcoDiv);
+
+    const tableTitle = document.createElement('div');
+    tableTitle.setAttribute('stylename', 'attTableTitle');
+
+    document.body.appendChild(tableTitle);
+    document.body.appendChild(figure);
+    tableTitle.insertAdjacentElement('afterend', figure);
+
+    previewForm.rotateWideTable(table, 700);
+
+    expect(contentDiv.style.transform).toBe('rotate(-90deg)');
+    expect(contentDiv.style.transformOrigin).toBe('center center');
+    expect(contentDiv.style.display).toBe('flex');
+    expect(figure.style.width).toBeDefined();
+    expect(figure.style.maxWidth).toBe('675px');
+    expect(table.style.height).toBe('555px');
+    expect(tableWrapper.style.overflow).toBe('hidden');
+  });
+
+  it('should return early in rotateWideTable when tableWrapper is missing', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: jest.fn(),
+    };
+
+    const previewForm = new PreviewForm(props);
+    const table = document.createElement('table');
+
+    previewForm.rotateWideTable(table, 700);
+
+    expect(table.style.height).toBe('');
+  });
+
+  it('should return early in rotateWideTable when contentDiv is missing', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: jest.fn(),
+    };
+
+    const previewForm = new PreviewForm(props);
+
+    const tableWrapper = document.createElement('div');
+    tableWrapper.className = 'tableWrapper';
+
+    const table = document.createElement('table');
+    tableWrapper.appendChild(table);
+    document.body.appendChild(tableWrapper);
+
+    previewForm.rotateWideTable(table, 700);
+
+    expect(table.style.height).toBe('');
+  });
 });
 
 describe('addLinkEventListeners && handleLinkClick', () => {
