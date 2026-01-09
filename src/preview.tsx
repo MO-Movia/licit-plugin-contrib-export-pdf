@@ -262,19 +262,15 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     }
 
     // ---------- NOTES & CAPCO ----------
-    if (notesDiv) {
-      notesDiv.style.width = `${totalWidth}px`;
-      tableContHeight += EXTRA_BLOCK_HEIGHT;
-    }
-
-    if (capcoDiv) {
-      capcoDiv.style.width = `${totalWidth}px`;
-      tableContHeight += EXTRA_BLOCK_HEIGHT;
-    }
-
-    if (figure && tableContHeight < MAX_ROTATED_WIDTH) {
-      figure.style.width = `${tableContHeight}px`;
-    }
+    this.adjustNotesCapcoAndFigureWidth(
+      notesDiv,
+      capcoDiv,
+      figure,
+      totalWidth,
+      tableContHeight,
+      EXTRA_BLOCK_HEIGHT,
+      MAX_ROTATED_WIDTH
+    );
 
     // ---------- ROTATION ----------
     Object.assign(contentDiv.style, {
@@ -307,14 +303,42 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     ]);
 
     let parent: HTMLElement | null = tableElement.parentElement;
+
     while (parent) {
-      for (const cls of targetClasses) {
-        if (parent.classList.contains(cls)) {
-          Object.assign(parent.style, overflowStyle);
-          break;
-        }
+      const hasTargetClass = Array.from(targetClasses).some(cls =>
+        parent.classList.contains(cls)
+      );
+
+      if (hasTargetClass) {
+        Object.assign(parent.style, overflowStyle);
       }
+
       parent = parent.parentElement;
+    }
+
+  }
+
+  private adjustNotesCapcoAndFigureWidth(
+    notesDiv: HTMLElement | null,
+    capcoDiv: HTMLElement | null,
+    figure: HTMLElement | null,
+    totalWidth: number,
+    tableContHeight: number,
+    EXTRA_BLOCK_HEIGHT: number,
+    MAX_ROTATED_WIDTH: number
+  ): void {
+    if (notesDiv) {
+      notesDiv.style.width = `${totalWidth}px`;
+      tableContHeight += EXTRA_BLOCK_HEIGHT;
+    }
+
+    if (capcoDiv) {
+      capcoDiv.style.width = `${totalWidth}px`;
+      tableContHeight += EXTRA_BLOCK_HEIGHT;
+    }
+
+    if (figure && tableContHeight < MAX_ROTATED_WIDTH) {
+      figure.style.width = `${tableContHeight}px`;
     }
   }
 
