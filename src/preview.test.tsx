@@ -119,6 +119,364 @@ describe('PreviewForm component', () => {
     jest.clearAllMocks();
   });
 
+  it('should handle AFTTP document and extract CUI data in componentDidMount', () => {
+    const dommock = document.createElement('div');
+    const parentelement = document.createElement('div');
+    parentelement.appendChild(dommock);
+    const parparentElement = document.createElement('div');
+    const prosimer_cls_element = document.createElement('div');
+    prosimer_cls_element.className = 'ProseMirror';
+    parparentElement.appendChild(parentelement);
+    parparentElement.appendChild(prosimer_cls_element);
+    
+    const tableWrapper = document.createElement('div');
+    tableWrapper.className = 'tableWrapper';
+    const table = document.createElement('table');
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    const styledSpan = document.createElement('span');
+    styledSpan.setAttribute('style', 'color: rgb(255, 0, 0);');
+    styledSpan.textContent = 'CUI//SP-CTI';
+    cell.appendChild(styledSpan);
+    row.appendChild(cell);
+    table.appendChild(row);
+    tableWrapper.appendChild(table);
+    parparentElement.appendChild(tableWrapper);
+
+    jest.spyOn(document, 'getElementById').mockReturnValue(document.createElement('div'));
+
+    const props = {
+      editorState: { doc: { attrs: { gg: null } } } as unknown as EditorState,
+      editorView: {
+        dom: dommock,
+        state: { 
+          doc: { attrs: { gg: null } },
+          tr: { setMeta: jest.fn().mockReturnThis() }
+        },
+        dispatch: jest.fn()
+      } as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    jest.spyOn(previewForm, 'isAfttpDoc').mockReturnValue(true);
+    jest.spyOn(previewForm, 'getDocumentTitle').mockReturnValue('Test Document');
+    jest.spyOn(previewForm, 'getToc').mockResolvedValue();
+    jest.spyOn(previewForm, 'showAlert').mockImplementation(() => {});
+    jest.spyOn(previewForm, 'insertSectionHeaders').mockImplementation(() => {});
+    jest.spyOn(previewForm, 'replaceInfoIcons').mockImplementation(() => {});
+    jest.spyOn(previewForm, 'updateImageWidths').mockImplementation(() => {});
+    jest.spyOn(previewForm, 'prepareEditorContent').mockImplementation(() => {});
+    jest.spyOn(previewForm, 'updateTableWidths').mockImplementation(() => {});
+
+    previewForm.componentDidMount();
+
+    expect(PreviewForm['documentTitle']).toBe('Test Document');
+    expect(PreviewForm['pageBanner']).toEqual({
+      color: 'rgb(255, 0, 0)',
+      text: 'CUI//SP-CTI',
+    });
+    expect(PreviewForm['isAfttp']).toBeUndefined();
+  });
+
+  it('should reset AFTTP properties when document is not AFTTP in componentDidMount', () => {
+    const dommock = document.createElement('div');
+    const parentelement = document.createElement('div');
+    parentelement.appendChild(dommock);
+    const parparentElement = document.createElement('div');
+    const prosimer_cls_element = document.createElement('div');
+    prosimer_cls_element.className = 'ProseMirror';
+    parparentElement.appendChild(parentelement);
+    parparentElement.appendChild(prosimer_cls_element);
+
+    jest.spyOn(document, 'getElementById').mockReturnValue(document.createElement('div'));
+
+    const props = {
+      editorState: { doc: { attrs: { gg: null } } } as unknown as EditorState,
+      editorView: {
+        dom: dommock,
+        state: { 
+          doc: { attrs: { gg: null } },
+          tr: { setMeta: jest.fn().mockReturnThis() }
+        },
+        dispatch: jest.fn()
+      } as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    jest.spyOn(previewForm, 'isAfttpDoc').mockReturnValue(false);
+    jest.spyOn(previewForm, 'getToc').mockResolvedValue();
+    jest.spyOn(previewForm, 'showAlert').mockImplementation(() => {});
+    jest.spyOn(previewForm, 'insertSectionHeaders').mockImplementation(() => {});
+    jest.spyOn(previewForm, 'replaceInfoIcons').mockImplementation(() => {});
+    jest.spyOn(previewForm, 'updateImageWidths').mockImplementation(() => {});
+    jest.spyOn(previewForm, 'prepareEditorContent').mockImplementation(() => {});
+    jest.spyOn(previewForm, 'updateTableWidths').mockImplementation(() => {});
+
+    previewForm.componentDidMount();
+
+    expect(PreviewForm['documentTitle']).toBeNull();
+    expect(PreviewForm['pageBanner']).toBeNull();
+    expect(PreviewForm['isAfttp']).toBeUndefined();
+  });
+
+  it('should return null when tableWrapper is not found in extractBannerMarkingFromTableWrapper', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    const root = document.createElement('div');
+
+    const result = previewForm.extractBannerMarkingFromTableWrapper(root);
+
+    expect(result).toBeNull();
+  });
+
+  it('should return null when first row is not found in extractBannerMarkingFromTableWrapper', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    const root = document.createElement('div');
+    const tableWrapper = document.createElement('div');
+    tableWrapper.className = 'tableWrapper';
+    const table = document.createElement('table');
+    tableWrapper.appendChild(table);
+    root.appendChild(tableWrapper);
+
+    const result = previewForm.extractBannerMarkingFromTableWrapper(root);
+
+    expect(result).toBeNull();
+  });
+
+  it('should return null when no styled elements are found in extractBannerMarkingFromTableWrapper', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    const root = document.createElement('div');
+    const tableWrapper = document.createElement('div');
+    tableWrapper.className = 'tableWrapper';
+    const table = document.createElement('table');
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.textContent = 'No color';
+    row.appendChild(cell);
+    table.appendChild(row);
+    tableWrapper.appendChild(table);
+    root.appendChild(tableWrapper);
+
+    const result = previewForm.extractBannerMarkingFromTableWrapper(root);
+
+    expect(result).toBeNull();
+  });
+
+  it('should return null when color match is not found in extractBannerMarkingFromTableWrapper', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    const root = document.createElement('div');
+    const tableWrapper = document.createElement('div');
+    tableWrapper.className = 'tableWrapper';
+    const table = document.createElement('table');
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    const styledSpan = document.createElement('span');
+    styledSpan.setAttribute('style', 'font-weight: bold;');
+    styledSpan.textContent = 'No color attribute';
+    cell.appendChild(styledSpan);
+    row.appendChild(cell);
+    table.appendChild(row);
+    tableWrapper.appendChild(table);
+    root.appendChild(tableWrapper);
+
+    const result = previewForm.extractBannerMarkingFromTableWrapper(root);
+
+    expect(result).toBeNull();
+  });
+
+  it('should extract CUI data with text and color from styled element in extractBannerMarkingFromTableWrapper', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    const root = document.createElement('div');
+    const tableWrapper = document.createElement('div');
+    tableWrapper.className = 'tableWrapper';
+    const table = document.createElement('table');
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    const styledSpan = document.createElement('span');
+    styledSpan.setAttribute('style', 'color: rgb(255, 0, 0); font-weight: bold;');
+    styledSpan.textContent = '  CUI//SP-CTI  ';
+    cell.appendChild(styledSpan);
+    row.appendChild(cell);
+    table.appendChild(row);
+    tableWrapper.appendChild(table);
+    root.appendChild(tableWrapper);
+
+    const result = previewForm.extractBannerMarkingFromTableWrapper(root);
+
+    expect(result).toEqual({
+      text: 'CUI//SP-CTI',
+      color: 'rgb(255, 0, 0)'
+    });
+  });
+
+  it('should pick the deepest styled element when multiple color elements exist in extractBannerMarkingFromTableWrapper', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    const root = document.createElement('div');
+    const tableWrapper = document.createElement('div');
+    tableWrapper.className = 'tableWrapper';
+    const table = document.createElement('table');
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    
+    const outerSpan = document.createElement('span');
+    outerSpan.setAttribute('style', 'color: blue;');
+    outerSpan.textContent = 'Outer';
+    
+    const innerSpan = document.createElement('span');
+    innerSpan.setAttribute('style', 'color: red;');
+    innerSpan.textContent = 'Inner CUI';
+    
+    outerSpan.appendChild(innerSpan);
+    cell.appendChild(outerSpan);
+    row.appendChild(cell);
+    table.appendChild(row);
+    tableWrapper.appendChild(table);
+    root.appendChild(tableWrapper);
+
+    const result = previewForm.extractBannerMarkingFromTableWrapper(root);
+
+    expect(result).toEqual({
+      text: 'Inner CUI',
+      color: 'red'
+    });
+  });
+
+  it('should return document title from editorView in getDocumentTitle', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    
+    const mockEditorView = {
+      state: {
+        doc: {
+          attrs: {
+            objectMetaData: {
+              name: 'Test Document Title'
+            }
+          }
+        }
+      }
+    };
+
+    const result = previewForm.getDocumentTitle(mockEditorView);
+
+    expect(result).toBe('Test Document Title');
+  });
+
+  it('should return empty string when objectMetaData.name is undefined in getDocumentTitle', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    
+    const mockEditorView = {
+      state: {
+        doc: {
+          attrs: {
+            objectMetaData: {}
+          }
+        }
+      }
+    };
+
+    const result = previewForm.getDocumentTitle(mockEditorView);
+
+    expect(result).toBe('');
+  });
+
+  it('should return empty string when objectMetaData is undefined in getDocumentTitle', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+    
+    const mockEditorView = {
+      state: {
+        doc: {
+          attrs: {}
+        }
+      }
+    };
+
+    const result = previewForm.getDocumentTitle(mockEditorView);
+
+    expect(result).toBe('');
+  });
+
+  it('should return empty string when editorView is null in getDocumentTitle', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+
+    const result = previewForm.getDocumentTitle(null);
+
+    expect(result).toBe('');
+  });
+
+  it('should return empty string when editorView is undefined in getDocumentTitle', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: onCloseMock,
+    };
+
+    const previewForm = new PreviewForm(props);
+
+    const result = previewForm.getDocumentTitle(undefined);
+
+    expect(result).toBe('');
+  });
   it('should call handleConfirm', () => {
     const props = {
       editorState: {} as unknown as EditorState,
@@ -482,6 +840,124 @@ describe('PreviewForm component', () => {
     Previewform.replaceTableWidth(tableElement);
 
     expect(setStyleSpy).not.toHaveBeenCalled();
+  });
+
+  it('should call rotateWideTable when pdf-width > 624', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: jest.fn(),
+    };
+
+    const previewForm = new PreviewForm(props);
+    const rotateSpy = jest
+      .spyOn(previewForm as any, 'rotateWideTable')
+      .mockImplementation(() => { });
+
+    const table = document.createElement('table');
+    table.setAttribute('pdf-width', '700');
+
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    row.appendChild(cell);
+    table.appendChild(row);
+
+    previewForm.replaceTableWidth(table);
+
+    expect(table.style.maxWidth).toBe('600px');
+    expect(rotateSpy).toHaveBeenCalledWith(table, 700);
+  });
+  
+  it('should rotate table and apply styles in rotateWideTable', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: jest.fn(),
+    };
+
+    const previewForm = new PreviewForm(props);
+
+    const figure = document.createElement('div');
+    figure.className = 'enhanced-table-figure';
+
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'enhanced-table-figure-content';
+
+    const tableWrapper = document.createElement('div');
+    tableWrapper.className = 'tableWrapper';
+
+    const table = document.createElement('table');
+    table.setAttribute('pdf-height', '400');
+
+    Object.defineProperty(table, 'offsetHeight', {
+      value: 500,
+    });
+
+    tableWrapper.appendChild(table);
+    contentDiv.appendChild(tableWrapper);
+    figure.appendChild(contentDiv);
+
+    const notesDiv = document.createElement('div');
+    notesDiv.className = 'enhanced-table-figure-notes';
+
+    const capcoDiv = document.createElement('div');
+    capcoDiv.className = 'enhanced-table-figure-capco';
+
+    contentDiv.appendChild(notesDiv);
+    contentDiv.appendChild(capcoDiv);
+
+    const tableTitle = document.createElement('div');
+    tableTitle.setAttribute('stylename', 'attTableTitle');
+
+    document.body.appendChild(tableTitle);
+    document.body.appendChild(figure);
+    tableTitle.insertAdjacentElement('afterend', figure);
+
+    previewForm.rotateWideTable(table, 700);
+
+    expect(contentDiv.style.transform).toBe('rotate(-90deg)');
+    expect(contentDiv.style.transformOrigin).toBe('center center');
+    expect(contentDiv.style.display).toBe('flex');
+    expect(figure.style.width).toBeDefined();
+    expect(figure.style.maxWidth).toBe('675px');
+    expect(table.style.height).toBe('555px');
+    expect(tableWrapper.style.overflow).toBe('hidden');
+  });
+
+  it('should return early in rotateWideTable when tableWrapper is missing', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: jest.fn(),
+    };
+
+    const previewForm = new PreviewForm(props);
+    const table = document.createElement('table');
+
+    previewForm.rotateWideTable(table, 700);
+
+    expect(table.style.height).toBe('');
+  });
+
+  it('should return early in rotateWideTable when contentDiv is missing', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: jest.fn(),
+    };
+
+    const previewForm = new PreviewForm(props);
+
+    const tableWrapper = document.createElement('div');
+    tableWrapper.className = 'tableWrapper';
+
+    const table = document.createElement('table');
+    tableWrapper.appendChild(table);
+    document.body.appendChild(tableWrapper);
+
+    previewForm.rotateWideTable(table, 700);
+
+    expect(table.style.height).toBe('');
   });
 });
 
@@ -1593,5 +2069,438 @@ describe('PreviewForm.insertSectionHeaders', () => {
       expect(data.querySelector('.totHead')).toBeTruthy();
       expect(data.querySelector(':scope > .ProseMirror')).toBeTruthy();
     });
+  });
+});
+
+// Add these test cases to the existing describe('PreviewForm component', () => { ... }) block
+
+describe('rotateWideTable', () => {
+  let previewForm: PreviewForm;
+  let props: any;
+
+  beforeEach(() => {
+    props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: jest.fn(),
+    };
+    previewForm = new PreviewForm(props);
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('should return early if tableWrapper is not found', () => {
+    const table = document.createElement('table');
+    document.body.appendChild(table);
+
+    const spy = jest.spyOn(table.style, 'setProperty');
+    previewForm.rotateWideTable(table, 700);
+
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('should return early if contentDiv is not found', () => {
+    const table = document.createElement('table');
+    const tableWrapper = document.createElement('div');
+    tableWrapper.classList.add('tableWrapper');
+    tableWrapper.appendChild(table);
+    document.body.appendChild(tableWrapper);
+
+    const spy = jest.spyOn(table.style, 'setProperty');
+    previewForm.rotateWideTable(table, 700);
+
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('should return early if contentDiv is not an HTMLElement', () => {
+    const table = document.createElement('table');
+    const tableWrapper = document.createElement('div');
+    tableWrapper.classList.add('tableWrapper');
+    tableWrapper.appendChild(table);
+
+    const mockContentDiv = document.createTextNode('text');
+    const mockClosest = jest.fn()
+      .mockReturnValueOnce(tableWrapper)
+      .mockReturnValueOnce(mockContentDiv);
+    
+    table.closest = mockClosest;
+
+    const spy = jest.spyOn(table.style, 'setProperty');
+    previewForm.rotateWideTable(table, 700);
+
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('should apply rotation styles without figure when figure is not found', () => {
+    const table = document.createElement('table');
+    const tableWrapper = document.createElement('div');
+    tableWrapper.classList.add('tableWrapper');
+    tableWrapper.appendChild(table);
+
+    const contentDiv = document.createElement('div');
+    contentDiv.classList.add('enhanced-table-figure-content');
+    contentDiv.appendChild(tableWrapper);
+
+    document.body.appendChild(contentDiv);
+
+    Object.defineProperty(table, 'offsetHeight', { value: 500, configurable: true });
+
+    previewForm.rotateWideTable(table, 700);
+
+    expect(contentDiv.style.transform).toBe('rotate(-90deg)');
+    expect(contentDiv.style.transformOrigin).toBe('center center');
+    expect(contentDiv.style.width).toBe('500px');
+    expect(contentDiv.style.height).toBe('700px');
+    expect(table.style.maxWidth).toBe('none');
+    expect(table.style.height).toBe('555px');
+  });
+
+  it('should set figure dimensions when figure exists', () => {
+    const table = document.createElement('table');
+    const tableWrapper = document.createElement('div');
+    tableWrapper.classList.add('tableWrapper');
+    tableWrapper.appendChild(table);
+
+    const contentDiv = document.createElement('div');
+    contentDiv.classList.add('enhanced-table-figure-content');
+    contentDiv.appendChild(tableWrapper);
+
+    const figure = document.createElement('div');
+    figure.classList.add('enhanced-table-figure');
+    figure.appendChild(contentDiv);
+
+    document.body.appendChild(figure);
+    Object.defineProperty(table, 'offsetHeight', { value: 500, configurable: true });
+
+    previewForm.rotateWideTable(table, 700);
+
+    expect(figure.style.maxWidth).toBe('675px');
+    expect(figure.style.width).toBe('675px');
+  });
+
+  it('should move attTableTitle into contentDiv when found', () => {
+    const table = document.createElement('table');
+    const tableWrapper = document.createElement('div');
+    tableWrapper.classList.add('tableWrapper');
+    tableWrapper.appendChild(table);
+
+    const contentDiv = document.createElement('div');
+    contentDiv.classList.add('enhanced-table-figure-content');
+    contentDiv.appendChild(tableWrapper);
+
+    const figure = document.createElement('div');
+    figure.classList.add('enhanced-table-figure');
+    figure.appendChild(contentDiv);
+
+    const tableTitle = document.createElement('div');
+    tableTitle.setAttribute('stylename', 'attTableTitle');
+    tableTitle.textContent = 'Table Title';
+
+    document.body.appendChild(tableTitle);
+    document.body.appendChild(figure);
+    tableTitle.insertAdjacentElement('afterend', figure);
+
+    Object.defineProperty(table, 'offsetHeight', { value: 500, configurable: true });
+
+    previewForm.rotateWideTable(table, 700);
+
+    expect(contentDiv.firstChild).toBe(tableTitle);
+    expect(tableTitle.style.textAlign).toBe('left');
+    expect(tableTitle.style.alignSelf).toBe('flex-start');
+  });
+
+  it('should move chTableTitle into contentDiv when found', () => {
+    const table = document.createElement('table');
+    const tableWrapper = document.createElement('div');
+    tableWrapper.classList.add('tableWrapper');
+    tableWrapper.appendChild(table);
+
+    const contentDiv = document.createElement('div');
+    contentDiv.classList.add('enhanced-table-figure-content');
+    contentDiv.appendChild(tableWrapper);
+
+    const figure = document.createElement('div');
+    figure.classList.add('enhanced-table-figure');
+    figure.appendChild(contentDiv);
+
+    const tableTitle = document.createElement('div');
+    tableTitle.setAttribute('stylename', 'chTableTitle');
+    tableTitle.textContent = 'Chapter Table Title';
+
+    document.body.appendChild(tableTitle);
+    document.body.appendChild(figure);
+    tableTitle.insertAdjacentElement('afterend', figure);
+
+    Object.defineProperty(table, 'offsetHeight', { value: 500, configurable: true });
+
+    previewForm.rotateWideTable(table, 700);
+
+    expect(contentDiv.firstChild).toBe(tableTitle);
+    expect(tableTitle.style.textAlign).toBe('left');
+    expect(tableTitle.style.alignSelf).toBe('flex-start');
+  });
+
+  it('should skip non-title elements when searching for title', () => {
+    const table = document.createElement('table');
+    const tableWrapper = document.createElement('div');
+    tableWrapper.classList.add('tableWrapper');
+    tableWrapper.appendChild(table);
+
+    const contentDiv = document.createElement('div');
+    contentDiv.classList.add('enhanced-table-figure-content');
+    contentDiv.appendChild(tableWrapper);
+
+    const figure = document.createElement('div');
+    figure.classList.add('enhanced-table-figure');
+    figure.appendChild(contentDiv);
+
+    const otherElement1 = document.createElement('div');
+    otherElement1.setAttribute('stylename', 'otherStyle');
+    
+    const otherElement2 = document.createElement('div');
+    otherElement2.setAttribute('stylename', 'anotherStyle');
+
+    const tableTitle = document.createElement('div');
+    tableTitle.setAttribute('stylename', 'attTableTitle');
+
+    document.body.appendChild(tableTitle);
+    document.body.appendChild(otherElement1);
+    document.body.appendChild(otherElement2);
+    document.body.appendChild(figure);
+
+    Object.defineProperty(table, 'offsetHeight', { value: 500, configurable: true });
+
+    previewForm.rotateWideTable(table, 700);
+
+    expect(contentDiv.firstChild).toBe(tableTitle);
+  });
+
+  it('should use totalWidth as height when offsetHeight is 0', () => {
+    const table = document.createElement('table');
+    const tableWrapper = document.createElement('div');
+    tableWrapper.classList.add('tableWrapper');
+    tableWrapper.appendChild(table);
+
+    const contentDiv = document.createElement('div');
+    contentDiv.classList.add('enhanced-table-figure-content');
+    contentDiv.appendChild(tableWrapper);
+
+    document.body.appendChild(contentDiv);
+
+    Object.defineProperty(table, 'offsetHeight', { value: 0, configurable: true });
+
+    previewForm.rotateWideTable(table, 700);
+
+    expect(contentDiv.style.width).toBe('700px');
+  });
+
+  it('should set width on notesDiv when found', () => {
+    const table = document.createElement('table');
+    const tableWrapper = document.createElement('div');
+    tableWrapper.classList.add('tableWrapper');
+    tableWrapper.appendChild(table);
+
+    const notesDiv = document.createElement('div');
+    notesDiv.classList.add('enhanced-table-figure-notes');
+
+    const contentDiv = document.createElement('div');
+    contentDiv.classList.add('enhanced-table-figure-content');
+    contentDiv.appendChild(notesDiv);
+    contentDiv.appendChild(tableWrapper);
+
+    document.body.appendChild(contentDiv);
+
+    Object.defineProperty(table, 'offsetHeight', { value: 500, configurable: true });
+
+    previewForm.rotateWideTable(table, 700);
+
+    expect(notesDiv.style.width).toBe('700px');
+  });
+
+  it('should set width on capcoDiv when found', () => {
+    const table = document.createElement('table');
+    const tableWrapper = document.createElement('div');
+    tableWrapper.classList.add('tableWrapper');
+    tableWrapper.appendChild(table);
+
+    const capcoDiv = document.createElement('div');
+    capcoDiv.classList.add('enhanced-table-figure-capco');
+
+    const contentDiv = document.createElement('div');
+    contentDiv.classList.add('enhanced-table-figure-content');
+    contentDiv.appendChild(capcoDiv);
+    contentDiv.appendChild(tableWrapper);
+
+    document.body.appendChild(contentDiv);
+
+    Object.defineProperty(table, 'offsetHeight', { value: 500, configurable: true });
+
+    previewForm.rotateWideTable(table, 700);
+
+    expect(capcoDiv.style.width).toBe('700px');
+  });
+
+  it('should set width on both notesDiv and capcoDiv when both exist', () => {
+    const table = document.createElement('table');
+    const tableWrapper = document.createElement('div');
+    tableWrapper.classList.add('tableWrapper');
+    tableWrapper.appendChild(table);
+
+    const notesDiv = document.createElement('div');
+    notesDiv.classList.add('enhanced-table-figure-notes');
+
+    const capcoDiv = document.createElement('div');
+    capcoDiv.classList.add('enhanced-table-figure-capco');
+
+    const contentDiv = document.createElement('div');
+    contentDiv.classList.add('enhanced-table-figure-content');
+    contentDiv.appendChild(notesDiv);
+    contentDiv.appendChild(capcoDiv);
+    contentDiv.appendChild(tableWrapper);
+
+    document.body.appendChild(contentDiv);
+
+    Object.defineProperty(table, 'offsetHeight', { value: 500, configurable: true });
+
+    previewForm.rotateWideTable(table, 700);
+
+    expect(notesDiv.style.width).toBe('700px');
+    expect(capcoDiv.style.width).toBe('700px');
+  });
+
+  it('should hide overflow on all parent elements with target classes', () => {
+    const table = document.createElement('table');
+    
+    const tableWrapper = document.createElement('div');
+    tableWrapper.classList.add('tableWrapper');
+    tableWrapper.appendChild(table);
+
+    const contentDiv = document.createElement('div');
+    contentDiv.classList.add('enhanced-table-figure-content');
+    contentDiv.appendChild(tableWrapper);
+
+    const figure = document.createElement('div');
+    figure.classList.add('enhanced-table-figure');
+    figure.appendChild(contentDiv);
+
+    const container = document.createElement('div');
+    container.classList.add('container');
+    container.appendChild(figure);
+
+    document.body.appendChild(container);
+
+    Object.defineProperty(table, 'offsetHeight', { value: 500, configurable: true });
+
+    previewForm.rotateWideTable(table, 700);
+
+    expect(tableWrapper.style.overflow).toBe('hidden');
+    expect(contentDiv.style.overflow).toBe('hidden');
+    expect(figure.style.overflow).toBe('hidden');
+    expect(container.style.overflow).not.toBe('hidden');
+  });
+
+  it('should apply all contentDiv styles correctly', () => {
+    const table = document.createElement('table');
+    const tableWrapper = document.createElement('div');
+    tableWrapper.classList.add('tableWrapper');
+    tableWrapper.appendChild(table);
+
+    const contentDiv = document.createElement('div');
+    contentDiv.classList.add('enhanced-table-figure-content');
+    contentDiv.appendChild(tableWrapper);
+
+    document.body.appendChild(contentDiv);
+
+    Object.defineProperty(table, 'offsetHeight', { value: 500, configurable: true });
+
+    previewForm.rotateWideTable(table, 700);
+
+    expect(contentDiv.style.transform).toBe('rotate(-90deg)');
+    expect(contentDiv.style.transformOrigin).toBe('center center');
+    expect(contentDiv.style.width).toBe('500px');
+    expect(contentDiv.style.height).toBe('700px');
+    expect(contentDiv.style.display).toBe('flex');
+    expect(contentDiv.style.flexDirection).toBe('column');
+    expect(contentDiv.style.alignItems).toBe('center');
+  });
+
+  it('should apply all table styles correctly', () => {
+    const table = document.createElement('table');
+    const tableWrapper = document.createElement('div');
+    tableWrapper.classList.add('tableWrapper');
+    tableWrapper.appendChild(table);
+
+    const contentDiv = document.createElement('div');
+    contentDiv.classList.add('enhanced-table-figure-content');
+    contentDiv.appendChild(tableWrapper);
+
+    document.body.appendChild(contentDiv);
+
+    Object.defineProperty(table, 'offsetHeight', { value: 500, configurable: true });
+
+    previewForm.rotateWideTable(table, 700);
+
+    expect(table.style.maxWidth).toBe('none');
+    expect(table.style.height).toBe('555px');
+  });
+
+  it('should not move title if no previousElementSibling exists', () => {
+    const table = document.createElement('table');
+    const tableWrapper = document.createElement('div');
+    tableWrapper.classList.add('tableWrapper');
+    tableWrapper.appendChild(table);
+
+    const contentDiv = document.createElement('div');
+    contentDiv.classList.add('enhanced-table-figure-content');
+    contentDiv.appendChild(tableWrapper);
+
+    const figure = document.createElement('div');
+    figure.classList.add('enhanced-table-figure');
+    figure.appendChild(contentDiv);
+
+    document.body.appendChild(figure);
+
+    Object.defineProperty(table, 'offsetHeight', { value: 500, configurable: true });
+
+    const originalFirstChild = contentDiv.firstChild;
+    previewForm.rotateWideTable(table, 700);
+
+    expect(contentDiv.firstChild).toBe(originalFirstChild);
+  });
+
+  it('should handle complex parent hierarchy correctly', () => {
+    const table = document.createElement('table');
+    
+    const innerWrapper = document.createElement('div');
+    innerWrapper.appendChild(table);
+    
+    const tableWrapper = document.createElement('div');
+    tableWrapper.classList.add('tableWrapper');
+    tableWrapper.appendChild(innerWrapper);
+
+    const contentDiv = document.createElement('div');
+    contentDiv.classList.add('enhanced-table-figure-content');
+    contentDiv.appendChild(tableWrapper);
+
+    const figure = document.createElement('div');
+    figure.classList.add('enhanced-table-figure');
+    figure.appendChild(contentDiv);
+
+    const outerContainer = document.createElement('div');
+    outerContainer.appendChild(figure);
+
+    document.body.appendChild(outerContainer);
+
+    Object.defineProperty(table, 'offsetHeight', { value: 500, configurable: true });
+
+    previewForm.rotateWideTable(table, 700);
+
+    expect(innerWrapper.style.overflow).not.toBe('hidden');
+    expect(tableWrapper.style.overflow).toBe('hidden');
+    expect(contentDiv.style.overflow).toBe('hidden');
+    expect(figure.style.overflow).toBe('hidden');
+    expect(outerContainer.style.overflow).not.toBe('hidden');
   });
 });

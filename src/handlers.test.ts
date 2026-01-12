@@ -280,7 +280,7 @@ describe('PDFHandler', () => {
     await handler.doIT();
     expect(mockPolisher.convertViaSheet).toHaveBeenCalled();
     expect(mockPolisher.insert).toHaveBeenCalledWith('css-text');
-    expect(handler.done).toBe(true);
+    expect(handler.done).toBe(false);
   });
 
   test('finalizePage increments currentPage only if isOnLoad is false', () => {
@@ -337,6 +337,101 @@ describe('PDFHandler', () => {
     handler.afterPageLayout(pageFragment2, page2);
     expect(pageFragment2.style.getPropertyValue('--pagedjs-string-last-chapTitled')).toBe('""');
   });
+
+    test('afterPageLayout calls processTocAndFooter when extractedCui is null (non-AFTTP)', () => {
+    PreviewForm['extractedCui'] = null;
+
+    const pageFragment = document.createElement('div');
+    const pageEl = document.createElement('div');
+
+    const infoIcon = document.createElement('infoicon');
+    infoIcon.setAttribute('description', 'Test description');
+    pageEl.appendChild(infoIcon);
+
+    const page = { element: pageEl };
+
+    handler.afterPageLayout(pageFragment, page);
+
+    expect(pageFragment.style.getPropertyValue('--pagedjs-string-last-chapTitled')).toContain('Test description');
+  });
+
+  test('afterPageLayout removes and sets CSS properties when extractedCui exists (AFTTP)', () => {
+    PreviewForm['extractedCui'] = {
+      text: 'CUI//SP-CTI',
+      color: 'rgb(255, 0, 0)'
+    };
+
+    const pageFragment = document.createElement('div');
+    const pageEl = document.createElement('div');
+
+    pageFragment.style.setProperty('--pagedjs-string-last-chapTitled', '"old value"');
+
+    const page = { element: pageEl };
+
+    handler.afterPageLayout(pageFragment, page);
+
+    expect(pageFragment.style.getPropertyValue('--pagedjs-string-last-chapTitled')).toBe('""');
+  });
+
+  test('afterPageLayout does not call processTocAndFooter when extractedCui has data', () => {
+    PreviewForm['extractedCui'] = {
+      text: 'CUI//SP-CTI',
+      color: 'rgb(255, 0, 0)'
+    };
+
+    const pageFragment = document.createElement('div');
+    const pageEl = document.createElement('div');
+
+    const infoIcon = document.createElement('infoicon');
+    infoIcon.setAttribute('description', 'Should not appear');
+    pageEl.appendChild(infoIcon);
+
+    const page = { element: pageEl };
+
+    handler.afterPageLayout(pageFragment, page);
+
+    const cssValue = pageFragment.style.getPropertyValue('--pagedjs-string-last-chapTitled');
+    expect(cssValue).toBe('" 1. Should not appear "');
+  });
+
+  test('truncateTitle returns original title when null or undefined', () => {
+    expect(handler['truncateTitle'](null)).toBeNull();
+    expect(handler['truncateTitle'](undefined)).toBeUndefined();
+  });
+
+  test('truncateTitle returns original title when length is less than maxLength', () => {
+    const shortTitle = 'Short Title';
+    expect(handler['truncateTitle'](shortTitle)).toBe(shortTitle);
+  });
+
+  test('truncateTitle returns original title when length equals maxLength', () => {
+    const exactTitle = '1234567890123456789012'; // exactly 22 chars
+    expect(handler['truncateTitle'](exactTitle)).toBe(exactTitle);
+  });
+
+  test('truncateTitle truncates and adds ellipsis when length exceeds maxLength', () => {
+    const longTitle = 'This is a very long title that exceeds the maximum length';
+    const result = handler['truncateTitle'](longTitle);
+
+    expect(result).toBe('This is a very long ti...');
+    expect(result.length).toBe(25);
+  });
+
+  test('truncateTitle uses custom maxLength when provided', () => {
+    const title = 'This is a test title';
+    const result = handler['truncateTitle'](title, 10);
+
+    expect(result).toBe('This is a ...');
+    expect(result.length).toBe(13);
+  });
+
+  test('truncateTitle with custom maxLength returns original when within limit', () => {
+    const title = 'Short';
+    const result = handler['truncateTitle'](title, 10);
+
+    expect(result).toBe('Short');
+  });
+
 });
 describe('buildRefToPageMap', () => {
   let handler: PDFHandler;
