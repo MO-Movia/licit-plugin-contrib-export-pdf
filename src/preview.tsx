@@ -273,7 +273,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       contentDiv.closest<HTMLElement>('.enhanced-table-figure') ?? null;
 
     let tableContHeight =
-      Number(tableElement.getAttribute('pdf-height')) || 0;
+      Number(tableElement.getAttribute('pdf-height')) || undefined;
 
     const tableHeight = tableElement.offsetHeight || totalWidth;
 
