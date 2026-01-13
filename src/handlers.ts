@@ -190,10 +190,10 @@ export class PDFHandler extends Handler {
     pageFragment: HTMLElement,
     processTocAndFooter: () => void
   ): void {
-    const cuiData = PreviewForm['extractedCui'];
-    const isAfttp = !!cuiData;
+    const markingData  = PreviewForm['pageBanner'];
+    const hasBannerMarking  = !!markingData ;
 
-    if (isAfttp) {
+    if (hasBannerMarking ) {
       pageFragment.style.removeProperty(
         '--pagedjs-string-last-chapTitled'
       );
@@ -729,8 +729,8 @@ private formatLongDate(dateStr: string): string {
   }
 
 public async doIT(): Promise<void> {
-  const cuiData = PreviewForm['extractedCui'];
-  const isAfttp = !!cuiData;
+  const markingData  = PreviewForm['pageBanner'];
+  const hasBannerMarking  = !!markingData ;
   const rawTitle = PreviewForm['documentTitle'] ?? '';
   const truncatedTitle = this.truncateTitle(rawTitle);
 
@@ -753,7 +753,7 @@ public async doIT(): Promise<void> {
   document.documentElement.style.removeProperty('--pagedjs-footer-height');
 
   // Remove previously injected styles to avoid conflicts
-const currentMode = cuiData ? 'afttp' : 'non-afttp';
+const currentMode = markingData  ? 'afttp' : 'non-afttp';
 
 if (PDFHandler.lastMode !== currentMode) {
   const existingStyles = document.querySelectorAll(
@@ -765,7 +765,7 @@ if (PDFHandler.lastMode !== currentMode) {
   PDFHandler.lastMode = currentMode;
 }
 
-  if (!isAfttp) {
+  if (!hasBannerMarking ) {
     pageOverride = `
       @page {
         margin-bottom: var(--pagedjs-footer-height, 40px);
@@ -782,7 +782,7 @@ if (PDFHandler.lastMode !== currentMode) {
     `;
   }
 
-  if (isAfttp && cuiData) {
+  if (hasBannerMarking  && markingData ) {
       if (titleData) {
     headerTitleContent = `
       @top-left {
@@ -799,19 +799,20 @@ if (PDFHandler.lastMode !== currentMode) {
     }
     opt = `
       @top-center {
-        content: "${cuiData.text}";
+        content: "${markingData .text}";
         font-family: "Times New Roman", Times, serif;
         font-size: 14pt;
         text-align: center;
-        color: ${cuiData.color};
+        color: ${markingData .color};
+        padding-left: 0.9in;
       }
 
       @bottom-center {
-        content: "${cuiData.text}";
+        content: "${markingData .text}";
         font-family: "Times New Roman", Times, serif;
         font-size: 14pt;
         text-align: center;
-        color: ${cuiData.color};
+        color: ${markingData .color};
         padding-top: 72px;
         padding-right: 88px;
       }

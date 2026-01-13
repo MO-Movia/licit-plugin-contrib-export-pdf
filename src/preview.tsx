@@ -50,7 +50,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   private static readonly tofNodeList: Node[] = [];
   private static readonly totNodeList: Node[] = [];
   private static documentTitle: string = '';
-  private static extractedCui: {
+  private static pageBanner: {
     text: string;
     color: string;
   } | null = null;
@@ -105,7 +105,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   }
 
   public componentDidMount(): void {
-    PreviewForm.extractedCui = null;
+    PreviewForm.pageBanner = null;
     const paged = new Previewer();
     this.showAlert();
 
@@ -130,12 +130,12 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     this.prepareEditorContent(data1);
     this.updateTableWidths(data1);
     if (this.isAfttpDoc(editorView)) {
-      const cuiData = this.extractCuiFromTableWrapper(data1);
-      const docTitle = this.isDocumentTitle(editorView);
+      const markingData  = this.extractBannerMarkingFromTableWrapper(data1);
+      const docTitle = this.getDocumentTitle(editorView);
       PreviewForm.documentTitle = docTitle;
-      PreviewForm.extractedCui = cuiData;
+      PreviewForm.pageBanner = markingData ;
     } else {
-      PreviewForm.extractedCui = null;
+      PreviewForm.pageBanner = null;
       PreviewForm.documentTitle = null;
     }
     editorView.dispatch(editorView.state?.tr.setMeta('suppressOnChange', true));
@@ -224,32 +224,29 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     }
   };
 
-  public extractCuiFromTableWrapper(
+  public extractBannerMarkingFromTableWrapper(
     root: HTMLElement
   ): { text: string; color: string } | null {
 
-    const tableWrapper = root.querySelector('.tableWrapper');
-    if (!tableWrapper) return null;
-
     // Only first row matters
-    const firstRow = tableWrapper.querySelector('tr');
+    const firstRow = root.querySelector('.tableWrapper tr');
     if (!firstRow) return null;
 
     // Find elements that explicitly define color
     const styledElements = Array.from(
       firstRow.querySelectorAll<HTMLElement>('[style]')
     ).filter(el =>
-      /color\s*:\s*[^;]+/i.test(el.getAttribute('style') || '')
+      /color\s{0,10}:\s{0,10}[^;]{1,50}/i.test(
+        el.getAttribute('style') || ''
+      )
     );
-
     if (!styledElements.length) return null;
 
     // Pick the deepest one (most specific)
     const target = styledElements.at(-1);
 
     const styleAttr = target.getAttribute('style');
-    const match = /color\s*:\s*([^;]+)/i.exec(styleAttr);
-
+    const match = /color\s{0,10}:\s{0,10}([^;]{1,50})/i.exec(styleAttr);
     if (!match) return null;
 
     return {
@@ -258,38 +255,68 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     };
   }
 
-
   rotateWideTable(tableElement: HTMLElement, totalWidth: number): void {
-    const tableWrapper = tableElement.closest('.tableWrapper');
+    const TABLE_MAX_WIDTH = 675;
+    const TABLE_FIXED_HEIGHT = 555;
+    const EXTRA_BLOCK_HEIGHT = 70;
+    const MAX_ROTATED_WIDTH = 670;
+
+    const tableWrapper = tableElement.closest<HTMLElement>('.tableWrapper');
     if (!tableWrapper) return;
 
-    const contentDiv = tableWrapper.closest('.enhanced-table-figure-content');
-    if (!(contentDiv instanceof HTMLElement)) return; 
+    const contentDiv =
+      tableWrapper.closest<HTMLElement>('.enhanced-table-figure-content');
+    if (!contentDiv) return;
 
-    // Move table title into contentDiv to rotate together
-    const figure = contentDiv.closest('.enhanced-table-figure');
+    const figure =
+      contentDiv.closest<HTMLElement>('.enhanced-table-figure') ?? null;
+
+    let tableContHeight =
+      Number(tableElement.getAttribute('pdf-height')) || undefined;
+
+    const tableHeight = tableElement.offsetHeight || totalWidth;
+
+    const notesDiv = contentDiv.querySelector<HTMLElement>(
+      '.enhanced-table-figure-notes'
+    );
+    const capcoDiv = contentDiv.querySelector<HTMLElement>(
+      '.enhanced-table-figure-capco'
+    );
+
     if (figure) {
-      (figure as HTMLElement).style.maxWidth = '675px';
-      (figure as HTMLElement).style.width = '675px';
-      let prevElement = figure.previousElementSibling;
-      while (prevElement) {
-        const styleName = prevElement.getAttribute('stylename');
+      Object.assign(figure.style, {
+        maxWidth: `${TABLE_MAX_WIDTH}px`,
+        width: `${TABLE_MAX_WIDTH}px`,
+      });
+
+      // Move table title inside contentDiv
+      let prev = figure.previousElementSibling as HTMLElement | null;
+      while (prev) {
+        const styleName = prev.getAttribute('stylename');
         if (styleName === 'attTableTitle' || styleName === 'chTableTitle') {
-          contentDiv.insertBefore(prevElement, contentDiv.firstChild);
-          (prevElement as HTMLElement).style.textAlign = 'left';
-          (prevElement as HTMLElement).style.alignSelf = 'flex-start';
+          contentDiv.insertBefore(prev, contentDiv.firstChild);
+          Object.assign(prev.style, {
+            textAlign: 'left',
+            alignSelf: 'flex-start',
+          });
           break;
         }
-        prevElement = prevElement.previousElementSibling;
+        prev = prev.previousElementSibling as HTMLElement | null;
       }
     }
 
-    const tableHeight = tableElement.offsetHeight || totalWidth;
-    const notesDiv = contentDiv.querySelector('.enhanced-table-figure-notes');
-    if (notesDiv) { (notesDiv as HTMLElement).style.width = `${totalWidth}px` }
-    const capcoDiv = contentDiv.querySelector('.enhanced-table-figure-capco');
-    if (capcoDiv) { (capcoDiv as HTMLElement).style.width = `${totalWidth}px` }
-    // Rotate the entire content div counter-clockwise 90 degrees
+    // ---------- NOTES & CAPCO ----------
+    this.adjustNotesCapcoAndFigureWidth(
+      notesDiv,
+      capcoDiv,
+      figure,
+      totalWidth,
+      tableContHeight,
+      EXTRA_BLOCK_HEIGHT,
+      MAX_ROTATED_WIDTH
+    );
+
+    // ---------- ROTATION ----------
     Object.assign(contentDiv.style, {
       transform: 'rotate(-90deg)',
       transformOrigin: 'center center',
@@ -302,26 +329,60 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
     Object.assign(tableElement.style, {
       maxWidth: 'none',
-      height: '555px',
+      height: `${TABLE_FIXED_HEIGHT}px`,
     });
 
-    // Hide overflow in parent wrappers
-    const targetClasses = [
+    // ---------- OVERFLOW HIDING ----------
+    const overflowStyle = {
+      overflow: 'hidden',
+      overflowX: 'hidden',
+      overflowY: 'hidden',
+    };
+
+    const targetClasses = new Set([
       'enhanced-table-figure',
       'enhanced-table-figure-content',
       'tableWrapper',
       'tablewrapper',
-    ];
+    ]);
+
     let parent: HTMLElement | null = tableElement.parentElement;
+
     while (parent) {
-      if (targetClasses.some((cls) => parent.classList.contains(cls))) {
-        Object.assign(parent.style, {
-          overflow: 'hidden',
-          overflowX: 'hidden',
-          overflowY: 'hidden',
-        });
+      const hasTargetClass = Array.from(targetClasses).some(cls =>
+        parent.classList.contains(cls)
+      );
+
+      if (hasTargetClass) {
+        Object.assign(parent.style, overflowStyle);
       }
+
       parent = parent.parentElement;
+    }
+
+  }
+
+  private adjustNotesCapcoAndFigureWidth(
+    notesDiv: HTMLElement | null,
+    capcoDiv: HTMLElement | null,
+    figure: HTMLElement | null,
+    totalWidth: number,
+    tableContHeight: number,
+    EXTRA_BLOCK_HEIGHT: number,
+    MAX_ROTATED_WIDTH: number
+  ): void {
+    if (notesDiv) {
+      notesDiv.style.width = `${totalWidth}px`;
+      tableContHeight += EXTRA_BLOCK_HEIGHT;
+    }
+
+    if (capcoDiv) {
+      capcoDiv.style.width = `${totalWidth}px`;
+      tableContHeight += EXTRA_BLOCK_HEIGHT;
+    }
+
+    if (figure && tableContHeight < MAX_ROTATED_WIDTH) {
+      figure.style.width = `${tableContHeight}px`;
     }
   }
 
@@ -877,7 +938,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   };
 
   public calcLogic = (): void => {
-    PreviewForm.extractedCui = null;
+    PreviewForm.pageBanner = null;
 
     const divContainer = document.getElementById('holder');
     if (!divContainer) return;
@@ -908,12 +969,12 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     this.updateTableWidths(data1);
     this.updateStyles(data1);
     if (this.isAfttpDoc(editorView)) {
-      const cuiData = this.extractCuiFromTableWrapper(data1);
-      const docTitle = this.isDocumentTitle(editorView);
+      const markingData  = this.extractBannerMarkingFromTableWrapper(data1);
+      const docTitle = this.getDocumentTitle(editorView);
       PreviewForm.documentTitle = docTitle;
-      PreviewForm.extractedCui = cuiData;
+      PreviewForm.pageBanner = markingData ;
     } else {
-      PreviewForm.extractedCui = null;
+      PreviewForm.pageBanner = null;
       PreviewForm.documentTitle = null;
     }
 
@@ -1079,7 +1140,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   return typeof docType === 'string' && docType.includes('Afttp');
  }
 
-  public isDocumentTitle(editorView): string {
+  public getDocumentTitle(editorView): string {
     return editorView?.state?.doc?.attrs?.objectMetaData?.name ?? '';
   }
 

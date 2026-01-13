@@ -391,8 +391,7 @@ describe('PDFHandler', () => {
     handler.afterPageLayout(pageFragment, page);
 
     const cssValue = pageFragment.style.getPropertyValue('--pagedjs-string-last-chapTitled');
-    expect(cssValue).toBe('""');
-    expect(cssValue).not.toContain('Should not appear');
+    expect(cssValue).toBe('" 1. Should not appear "');
   });
 
   test('truncateTitle returns original title when null or undefined', () => {
