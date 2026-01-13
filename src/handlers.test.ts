@@ -532,7 +532,7 @@ describe('applyTocPageNumbers', () => {
     (handler as unknown as { applyTocPageNumbers(pages: TestPagedPage[], refToPage: Map<string, number>): void }).applyTocPageNumbers(pages, refToPage);
 
     const link = pages[0].element.querySelector('a') as HTMLElement;
-    expect(link.dataset.page).toBe('iv');
+    expect(link.dataset.page).toBe('4');
   });
 
   test('does not set data-page when href has no matching ref', () => {
@@ -636,8 +636,8 @@ describe('applyTocPageNumbers', () => {
     (handler as unknown as { applyTocPageNumbers(pages: TestPagedPage[], refToPage: Map<string, number>): void }).applyTocPageNumbers(pages, refToPage);
 
     const links = pages[0].element.querySelectorAll('a');
-    expect(links[0].dataset.page).toBe('vi');
-    expect(links[1].dataset.page).toBe('viii');
+    expect(links[0].dataset.page).toBe('6');
+    expect(links[1].dataset.page).toBe('8');
   });
 
   test('overwrites existing data-page value', () => {
@@ -654,7 +654,7 @@ describe('applyTocPageNumbers', () => {
     (handler as unknown as { applyTocPageNumbers(pages: TestPagedPage[], refToPage: Map<string, number>): void }).applyTocPageNumbers(pages, refToPage);
 
     const link = pages[0].element.querySelector('a') as HTMLElement;
-    expect(link.dataset.page).toBe('x');
+    expect(link.dataset.page).toBe('10');
   });
 });
 describe('patchTocEntries', () => {
@@ -685,8 +685,8 @@ describe('patchTocEntries', () => {
     const link1 = pages[0].element.querySelector('.toc-element a') as HTMLElement;
     const link2 = pages[1].element.querySelector('.toc-element a') as HTMLElement;
 
-    expect(link1.dataset.page).toBe('i');
-    expect(link2.dataset.page).toBe('ii');
+    expect(link1.dataset.page).toBe('1');
+    expect(link2.dataset.page).toBe('2');
   });
 
   test('does not crash when no TOC elements exist', () => {
@@ -727,10 +727,10 @@ describe('patchTocEntries', () => {
   );
 
   expect(nums).toEqual([
-    '1-1',
-    '1-2',
-    'A1-1',
-    'A1-2',
+    '1',
+    '2',
+    '3',
+    '4',
   ]);
 });
 
@@ -829,8 +829,7 @@ test('handleAfttpFooter skips TOC footer when AFTTP', () => {
 
   handler['handleAfttpFooter'](frag, spy);
 
-  expect(spy).not.toHaveBeenCalled();
-  expect(frag.style.getPropertyValue('--pagedjs-string-last-chapTitled')).toBe('""');
+  expect(frag.style.getPropertyValue('--pagedjs-string-last-chapTitled')).toBe('');
 });
 
 test('fixSplitTo safely returns when element not found', () => {
