@@ -310,7 +310,7 @@ private fixIndent(
   }
 
 private applyPageNumbers(pages: PagedPage[]): void {
-  const isAfttp = !!PreviewForm['extractedCui'];
+  const isAfttp = !!PreviewForm['pageBanner'];
 
   let normalCounter = 0;
   let activeAttachmentIndex = 0;
@@ -561,7 +561,7 @@ private applyTocPageNumbers(
   pages: PagedPage[],
   refToPage: Map<string, number>
 ): void {
-  const isAfttp = !!PreviewForm['extractedCui'];
+  const isAfttp = !!PreviewForm['pageBanner'];
 
   const attachments = isAfttp
     ? this.buildAttachmentRanges(pages)
@@ -804,7 +804,6 @@ if (PDFHandler.lastMode !== currentMode) {
         font-size: 14pt;
         text-align: center;
         color: ${markingData .color};
-        padding-left: 0.9in;
       }
 
       @bottom-center {
