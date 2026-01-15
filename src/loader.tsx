@@ -2,7 +2,7 @@ import * as React from 'react';
 import { PDFHandler } from './handlers';
 
 export class Loader extends React.PureComponent {
-  private interval: number;
+  private interval: ReturnType<typeof setInterval>;
   componentDidMount() {
     // trigger update of static values
     this.interval = setInterval(() => this.setState({ time: Date.now() }), 1000);
