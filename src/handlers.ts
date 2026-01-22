@@ -115,7 +115,6 @@ export class PDFHandler extends Handler {
     const processTocAndFooter = () => {
       const tocElements = page?.element?.querySelectorAll('infoicon');
       let concatenatedValues = '';
-      this.prepagesCount = 0;
 
       if (tocElements) {
         for (const [, element] of tocElements.entries()) {
