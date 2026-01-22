@@ -167,10 +167,20 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     const originalWidth = Number.parseInt(imageElement.getAttribute('width'), 10);
     const originalHeight = Number.parseInt(imageElement.getAttribute('height'), 10);
 
-    if (originalWidth <= 620) return;
+    if (originalWidth < 620) return;
     const contentDiv = imageElement.closest('.enhanced-table-figure-content');
 
     if (contentDiv) {
+      const orientation = contentDiv.getAttribute('data-orientation');
+      if (orientation === 'landscape') {
+        contentDiv.style.width = `${544}px`;
+        contentDiv.style.height = `${854}px`;
+        (contentDiv.getElementsByClassName('molm-czi-image-view-body-img-clip')[0]?.firstElementChild as HTMLElement).style.width = '854px';
+        (contentDiv.getElementsByClassName('molm-czi-image-view-body-img-clip')[0]?.firstElementChild as HTMLElement).style.height = '544px';
+        (contentDiv.getElementsByClassName('molm-czi-image-view-body-img')[0] as HTMLElement).style.width = '854px';
+        contentDiv.getElementsByTagName('img')[0].setAttribute('height', '544');
+        contentDiv.getElementsByTagName('img')[0].setAttribute('width', '854');
+      }
       const figure = contentDiv.closest('.enhanced-table-figure');
       if (figure) {
         let prevElement = figure.previousElementSibling;
@@ -190,8 +200,6 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       // Rotate the entire content div counter-clockwise 90 degrees
       contentDiv.style.transform = 'rotate(-90deg)';
       contentDiv.style.transformOrigin = 'center center';
-      contentDiv.style.width = `${originalHeight}px`;
-      contentDiv.style.height = `${originalWidth}px`;
       contentDiv.style.display = 'flex';
       contentDiv.style.flexDirection = 'column';
       contentDiv.style.justifyContent = 'center';

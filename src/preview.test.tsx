@@ -692,8 +692,8 @@ describe('PreviewForm component', () => {
 
     expect(contentDiv.style.transform).toBe('rotate(-90deg)');
     expect(contentDiv.style.transformOrigin).toBe('center center');
-    expect(contentDiv.style.width).toBe('400px');
-    expect(contentDiv.style.height).toBe('700px');
+    expect(contentDiv.style.width).toBe('');
+    expect(contentDiv.style.height).toBe('');
     expect(contentDiv.style.display).toBe('flex');
     expect(figure.style.overflow).toBe('hidden');
     expect(figure.style.paddingLeft).toBe('43px');
