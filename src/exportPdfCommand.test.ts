@@ -370,7 +370,7 @@ describe('Export PDF Command', () => {
 
   it('should be active', () => {
     const command = new ExportPDFCommand();
-    expect(command.isActive()).toBeTruthy();
+    expect(command.isActive()).toBeFalsy();
   });
 
   it('should not executeWithUserInput', () => {

@@ -59,7 +59,7 @@ export class ExportPDFCommand extends UICommand {
   }
 
   public isActive(): boolean {
-    return true;
+    return false;
   }
 
   public executeCustom(_state: EditorState, tr: Transform): Transform {
