@@ -1033,46 +1033,6 @@ describe('addLinkEventListeners && handleLinkClick', () => {
       jest.clearAllMocks();
     });
 
-    it('should handle lastUpdatedActive and lastUpdatedDeactive', () => {
-      const props = {
-        editorView: {} as unknown as EditorView,
-        onClose: onCloseMock,
-      };
-
-      const previewForm = new PreviewForm(props);
-      const calcLogicSpy = jest
-        .spyOn(previewForm, 'calcLogic')
-        .mockImplementation(() => { });
-
-      previewForm.lastUpdatedActive();
-      expect(PreviewForm['lastUpdated']).toBe(true);
-      expect(calcLogicSpy).toBeDefined();
-
-    });
-
-    it('should handle handleLastUpdated correctly', () => {
-      const props = {
-        editorView: {} as unknown as EditorView,
-        onClose: onCloseMock,
-      };
-
-      const previewForm = new PreviewForm(props);
-      const lastUpdatedActiveSpy = jest
-        .spyOn(previewForm, 'lastUpdatedActive')
-        .mockImplementation(() => { });
-      const lastUpdatedDeactiveSpy = jest
-        .spyOn(previewForm, 'lastUpdatedDeactive')
-        .mockImplementation(() => { });
-
-      previewForm.handleLastUpdated({ target: { checked: true } });
-      expect(lastUpdatedActiveSpy).toHaveBeenCalledTimes(1);
-      expect(lastUpdatedDeactiveSpy).not.toHaveBeenCalled();
-
-      previewForm.handleLastUpdated({ target: { checked: false } });
-      expect(lastUpdatedDeactiveSpy).toHaveBeenCalledTimes(1);
-      expect(lastUpdatedActiveSpy).toHaveBeenCalledTimes(1);
-    });
-
     it('should correctly clone and modify nodes', () => {
       const props = {
         editorView: {} as unknown as EditorView,
@@ -1277,17 +1237,6 @@ describe('YourClassName', () => {
     PreviewForm.isTitle = true;
     instance.documentTitleDeactive();
     expect(PreviewForm.isTitle).toBe(false);
-  });
-
-  test('lastUpdatedActive should set lastUpdated to true', () => {
-    instance.lastUpdatedActive();
-    expect(PreviewForm.lastUpdated).toBe(true);
-  });
-
-  test('lastUpdatedDeactive should set lastUpdated to false', () => {
-    PreviewForm.lastUpdated = true;
-    instance.lastUpdatedDeactive();
-    expect(PreviewForm.lastUpdated).toBe(false);
   });
 });
 

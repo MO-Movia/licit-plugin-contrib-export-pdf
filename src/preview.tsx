@@ -43,7 +43,6 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   private static isTot: boolean = true;
   private static isCitation: boolean = false;
   private static isTitle: boolean = true;
-  private static lastUpdated: boolean = false;
   private static readonly tocHeader: string[] = [];
   private static readonly tofHeader: string[] = [];
   private static readonly totHeader: string[] = [];
@@ -665,33 +664,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
                     Citation
                   </label>
                 </div>
-
-                <div
-                  style={{
-                    marginTop: '8px',
-                    display: 'flex',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                  }}
-                >
-                  <div>
-                    <input
-                      type="checkbox"
-                      name="infoicon"
-                      id="licit-pdf-export-last-updated-option"
-                      onClick={this.handleLastUpdated}
-                    />{' '}
-                  </div>
-
-                  <label
-                    htmlFor="licit-pdf-export-citation-option"
-                    style={{ marginLeft: '5px' }}
-                  >
-                    Last updated
-                  </label>
-                </div>
                 
-
                 <h6 style={{ marginRight: 'auto', marginTop: '30px' }}>
                   Document Sections:
                 </h6>
@@ -782,14 +755,6 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     }
   };
 
-  public handleLastUpdated = (event): void => {
-    if (event.target.checked) {
-      this.lastUpdatedActive();
-    } else {
-      this.lastUpdatedDeactive();
-    }
-  };
-
   public handelCitation = (e: { target: { checked: boolean } }): void => {
     if (e.target.checked) {
       this.citationActive();
@@ -829,15 +794,6 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   public documentTitleDeactive = (): void => {
     PreviewForm.isTitle = false;
   };
-
-  public lastUpdatedActive = (): void => {
-    PreviewForm.lastUpdated = true;
-  }
-
-  public lastUpdatedDeactive = (): void => {
-    PreviewForm.lastUpdated = false;
-  }
-
 
   public citationActive = (): void => {
     PreviewForm.isCitation = true;
@@ -1005,11 +961,8 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     if (PreviewForm.isCitation) {
       this.replaceCitations(data1);
     }
-
-    if (PreviewForm.lastUpdated) {
-      this.setLastUpdated(editorView);
-    }
-
+    
+    this.setLastUpdated(editorView);
     this.insertSectionHeaders(data1, editorView);
     this.replaceInfoIcons(data1);
     this.updateImageWidths(data1);

@@ -9,6 +9,12 @@ export class PDFHandler extends Handler {
   // static field needs to be readonly for sonar
   private readonly processedChapterRefs = new Set<string>();
   private static lastMode: 'afttp' | 'non-afttp' | null = null;
+  private firstChapterPageIndex: number | null = null;
+  private totalMainPages = 0;
+  private attachmentStartPageIndex: number | null = null;
+  private lastPrePageIndex: number | null = null;
+  private currentAttachmentIndex = 0;
+  private readonly attachmentPageCounters = new Map<number, number>();
   public static readonly state = {
     currentPage: 0,
     isOnLoad: false,
@@ -47,8 +53,8 @@ export class PDFHandler extends Handler {
     PDFHandler.state.currentPage = 0;
     this.done = false;
     document.documentElement.style.removeProperty(
-    '--pagedjs-string-last-chapTitled'
-  );
+      '--pagedjs-string-last-chapTitled'
+    );
 
     if (PreviewForm.showToc() || PreviewForm.showTof() || PreviewForm.showTot()) {
       createTable({
@@ -115,7 +121,6 @@ export class PDFHandler extends Handler {
     const processTocAndFooter = () => {
       const tocElements = page?.element?.querySelectorAll('infoicon');
       let concatenatedValues = '';
-      this.prepagesCount = 0;
 
       if (tocElements) {
         for (const [, element] of tocElements.entries()) {
@@ -184,10 +189,10 @@ export class PDFHandler extends Handler {
     pageFragment: HTMLElement,
     processTocAndFooter: () => void
   ): void {
-    const markingData  = PreviewForm['pageBanner'];
-    const hasBannerMarking  = !!markingData ;
+    const markingData = PreviewForm['pageBanner'];
+    const hasBannerMarking = !!markingData;
 
-    if (hasBannerMarking ) {
+    if (hasBannerMarking) {
       pageFragment.style.removeProperty(
         '--pagedjs-string-last-chapTitled'
       );
@@ -202,39 +207,289 @@ export class PDFHandler extends Handler {
   }
 
 
-  public afterRendered(pages) {
+  public afterRendered(pages: PagedPage[]): void {
+    this.resetLastPrePageIndex(pages);
+    this.resolveFirstChapterPageIndex(pages);
+
+    this.detectAttachments(pages);
+    this.computeTotalMainPages(pages);
+
+    this.applyPageNumbers(pages);
     this.patchTocEntries(pages);
-    const getMarginLeft = (el) => globalThis.getComputedStyle(el).marginLeft || '0pt';
 
-    for (const pageObj of pages) {
-      const page = pageObj.element;
+    this.fixSplitAndIndentStyles(pages);
+  }
 
-      const splitToItems = page.querySelectorAll('p[data-split-to]');
-      if (splitToItems.length > 0) {
-        const el = splitToItems[0];
-        const mLeft = getMarginLeft(el);
-        el.style.setProperty('margin-top', '1pt', 'important');
-        el.style.setProperty('margin-left', '0pt', 'important');
-        el.style.setProperty('padding-left', mLeft, 'important');
-      }
+  private resetLastPrePageIndex(pages: PagedPage[]): void {
+    this.lastPrePageIndex = null;
 
-      const splitFromItems = page.querySelectorAll('p[data-split-from]');
-      if (splitFromItems.length > 0) {
-        const el = splitFromItems[0];
-        const mLeft = getMarginLeft(el);
-        el.style.setProperty('margin-left', '0pt', 'important');
-        el.style.setProperty('padding-left', mLeft, 'important');
-      }
-
-      const indentItems = page.querySelectorAll('p[data-indent]');
-      for (const el of indentItems) {
-        const mLeft = getMarginLeft(el);
-        el.style.setProperty('margin-left', '0pt', 'important');
-        el.style.setProperty('padding-left', mLeft, 'important');
+    for (let i = 0; i < pages.length; i++) {
+      if (pages[i].element.querySelector('.totHead')) {
+        this.lastPrePageIndex = i;
       }
     }
   }
 
+  private resolveFirstChapterPageIndex(pages: PagedPage[]): void {
+    if (this.firstChapterPageIndex !== null) return;
+
+    for (let i = 0; i < pages.length; i++) {
+      if (pages[i].element.querySelector('[stylename="chapterTitle"]')) {
+        this.firstChapterPageIndex = i; // zero-based
+        return;
+      }
+    }
+  }
+
+  private fixSplitAndIndentStyles(pages: PagedPage[]): void {
+    const getMarginLeft = (el: HTMLElement): string =>
+      globalThis.getComputedStyle(el).marginLeft || '0pt';
+
+    for (const { element: page } of pages) {
+      this.fixSplitTo(page, getMarginLeft);
+      this.fixSplitFrom(page, getMarginLeft);
+      this.fixIndent(page, getMarginLeft);
+    }
+  }
+
+  private fixSplitTo(
+    page: HTMLElement,
+    getMarginLeft: (el: HTMLElement) => string
+  ): void {
+    const el = page.querySelector<HTMLElement>('p[data-split-to]');
+    if (!el) return;
+
+    const mLeft = getMarginLeft(el);
+    el.style.setProperty('margin-top', '1pt', 'important');
+    el.style.setProperty('margin-left', '0pt', 'important');
+    el.style.setProperty('padding-left', mLeft, 'important');
+  }
+
+  private fixSplitFrom(
+    page: HTMLElement,
+    getMarginLeft: (el: HTMLElement) => string
+  ): void {
+    const el = page.querySelector<HTMLElement>('p[data-split-from]');
+    if (!el) return;
+
+    const mLeft = getMarginLeft(el);
+    el.style.setProperty('margin-left', '0pt', 'important');
+    el.style.setProperty('padding-left', mLeft, 'important');
+  }
+
+  private fixIndent(
+    page: HTMLElement,
+    getMarginLeft: (el: HTMLElement) => string
+  ): void {
+    const items = page.querySelectorAll('p[data-indent]');
+
+    for (const el of items) {
+      const htmlEl = el as HTMLElement;
+      const mLeft = getMarginLeft(htmlEl);
+      htmlEl.style.setProperty('margin-left', '0pt', 'important');
+      htmlEl.style.setProperty('padding-left', mLeft, 'important');
+    }
+  }
+
+
+  private toRoman(num: number): string {
+    if (num > 3999) {
+      return String(num);
+    }
+    const map: [number, string][] = [
+      [1000, 'm'], [900, 'cm'], [500, 'd'], [400, 'cd'],
+      [100, 'c'], [90, 'xc'], [50, 'l'], [40, 'xl'],
+      [10, 'x'], [9, 'ix'], [5, 'v'], [4, 'iv'], [1, 'i']
+    ];
+    let result = '';
+    for (const [value, numeral] of map) {
+      while (num >= value) {
+        result += numeral;
+        num -= value;
+      }
+    }
+    return result;
+  }
+
+  private applyPageNumbers(pages: PagedPage[]): void {
+    const isAfttp = !!PreviewForm['pageBanner'];
+
+    let normalCounter = 0;
+    let activeAttachmentIndex = 0;
+    let attachmentPage = 0;
+
+    const chapters = isAfttp ? this.buildChapterRanges(pages) : [];
+
+    let pageIndex = 0;
+    for (const pageObj of pages) {
+      const pageEl = pageObj.element;
+
+      const pageNumberEl =
+        pageEl.querySelector<HTMLElement>(
+          '.pagedjs_margin-top-right .pagedjs_margin-content'
+        );
+
+      if (!pageNumberEl) {
+        pageIndex++;
+        continue;
+      }
+
+      /* ---------- NON-AFTTP ---------- */
+      if (!isAfttp) {
+        pageNumberEl.textContent =
+          this.resolveNonAfttpPageNumber(
+            pageIndex,
+            () => ++normalCounter
+          );
+        pageIndex++;
+        continue;
+      }
+
+      /* ---------- AFTTP ---------- */
+      pageNumberEl.textContent =
+        this.resolveAfttpPageNumber(
+          pageEl,
+          pageIndex,
+          chapters,
+          () => {
+            activeAttachmentIndex++;
+            attachmentPage = 1;
+            return `A${activeAttachmentIndex}-${attachmentPage}`;
+          },
+          () => {
+            if (activeAttachmentIndex > 0) {
+              attachmentPage++;
+              return `A${activeAttachmentIndex}-${attachmentPage}`;
+            }
+            return '';
+          }
+        );
+
+      pageIndex++;
+    }
+  }
+
+  private resolveNonAfttpPageNumber(
+    pageIndex: number,
+    nextNormal: () => number
+  ): string {
+    const isPrePage =
+      this.lastPrePageIndex !== null &&
+      pageIndex <= this.lastPrePageIndex;
+
+    if (isPrePage) {
+      return this.toRoman(pageIndex + 1);
+    }
+
+    return String(nextNormal());
+  }
+
+  private resolveAfttpPageNumber(
+    pageEl: HTMLElement,
+    pageIndex: number,
+    chapters: Array<{ start: number; end: number; chapterIndex: number }>,
+    onAttachmentStart: () => string,
+    onAttachmentContinue: () => string
+  ): string {
+    if (pageEl.querySelector('[stylename="attachmentTitle"]')) {
+      return onAttachmentStart();
+    }
+
+    if (onAttachmentContinue) {
+      const continued = onAttachmentContinue();
+      if (continued) {
+        return continued;
+      }
+    }
+
+    const chapter = chapters.find(
+      c => pageIndex >= c.start && pageIndex < c.end
+    );
+
+    if (chapter) {
+      const pageInChapter = pageIndex - chapter.start + 1;
+      return `${chapter.chapterIndex}-${pageInChapter}`;
+    }
+
+    return this.toRoman(pageIndex + 1);
+  }
+
+  private buildChapterRanges(pages: PagedPage[]) {
+    const chapters: Array<{
+      start: number;
+      end: number;
+      chapterIndex: number;
+    }> = [];
+
+    let chapterIndex = 0;
+
+    for (let i = 0; i < pages.length; i++) {
+      if (pages[i].element.querySelector('[stylename="chapterTitle"]')) {
+        const lastChapter = chapters.at(-1);
+        if (lastChapter) {
+          lastChapter.end = i;
+        }
+
+        chapterIndex++;
+
+        chapters.push({
+          start: i,
+          end: pages.length,
+          chapterIndex,
+        });
+      }
+    }
+
+    const lastChapter = chapters.at(-1);
+    if (lastChapter) {
+      lastChapter.end = pages.length;
+    }
+
+    return chapters;
+  }
+
+  private detectAttachments(pages: PagedPage[]): void {
+    this.currentAttachmentIndex = 0;
+    this.attachmentPageCounters.clear();
+
+    for (let i = 0; i < pages.length; i++) {
+      const pageEl = pages[i].element;
+
+      const attachmentTitle = pageEl.querySelector(
+        '[stylename="attachmentTitle"]'
+      );
+
+      if (attachmentTitle) {
+        this.currentAttachmentIndex++;
+        this.attachmentStartPageIndex = i;
+        this.attachmentPageCounters.set(this.currentAttachmentIndex, 0);
+      }
+
+      if (this.currentAttachmentIndex > 0) {
+        const count = this.attachmentPageCounters.get(this.currentAttachmentIndex) ?? 0;
+        this.attachmentPageCounters.set(this.currentAttachmentIndex, count + 1);
+      }
+    }
+  }
+
+  private computeTotalMainPages(pages: PagedPage[]): void {
+    if (this.firstChapterPageIndex === null) return;
+
+    let endIndex = pages.length - 1;
+
+    // STOP at first attachment
+    for (let i = 0; i < pages.length; i++) {
+      if (pages[i].element.querySelector('[stylename="attachmentTitle"]')) {
+        endIndex = i - 1;
+        break;
+      }
+    }
+
+    this.totalMainPages =
+      endIndex >= this.firstChapterPageIndex
+        ? endIndex - this.firstChapterPageIndex + 1
+        : 0;
+  }
 
   private resetCounters(level: number, isReset: boolean): void {
     for (let i = level + 1; i <= 10; i++) this.counters[i] = 0;
@@ -292,12 +547,11 @@ export class PDFHandler extends Handler {
 
     for (let pageIndex = 0; pageIndex < pages.length; pageIndex++) {
       const pageEl = pages[pageIndex].element;
-
       const targets = pageEl.querySelectorAll<HTMLElement>('[data-ref]');
       for (const el of targets) {
         const ref = el.dataset.ref;
         if (ref && !refToPage.has(ref)) {
-          refToPage.set(ref, pageIndex + 1); // pages are 1-based
+          refToPage.set(ref, pageIndex);
         }
       }
     }
@@ -309,25 +563,163 @@ export class PDFHandler extends Handler {
     pages: PagedPage[],
     refToPage: Map<string, number>
   ): void {
+    const isAfttp = !!PreviewForm['pageBanner'];
+
+    const attachments = isAfttp
+      ? this.buildAttachmentRanges(pages)
+      : [];
+
+    const chapters = isAfttp
+      ? this.buildChapterRanges(pages)
+      : [];
+
     for (const pageObj of pages) {
-      const pageEl = pageObj.element;
+      const links = pageObj.element.querySelectorAll(
+        '.toc-element a, .tof-element a, .tot-element a'
+      );
 
-      const tocLinks = pageEl.querySelectorAll('.toc-element a');
-
-      for (const link of tocLinks) {
-        if (!(link instanceof HTMLElement)) continue;
-
-        const id = link.getAttribute('href')?.slice(1);
-        const pageNum = id ? refToPage.get(id) : undefined;
-
-        if (pageNum !== undefined) {
-          link.dataset.page = String(pageNum);
-        }
+      for (const link of links) {
+        this.applySingleTocLink(
+          link,
+          refToPage,
+          isAfttp,
+          attachments,
+          chapters
+        );
       }
     }
   }
 
-    private truncateTitle(title: string, maxLength = 22): string {
+  private applySingleTocLink(
+    link: Element,
+    refToPage: Map<string, number>,
+    isAfttp: boolean,
+    attachments: Array<{ start: number; end: number; index: number }>,
+    chapters: Array<{ start: number; end: number; chapterIndex: number }>
+  ): void {
+    if (!(link instanceof HTMLElement)) return;
+
+    const id = link.getAttribute('href')?.slice(1);
+    if (!id) return;
+
+    const pageIndex = refToPage.get(id);
+    if (pageIndex === undefined) return;
+
+    if (!isAfttp) {
+      link.dataset.page = this.getNonAfttpPageNumber(pageIndex);
+      return;
+    }
+
+    const afttpPage = this.getAfttpPageNumber(
+      pageIndex,
+      attachments,
+      chapters
+    );
+
+    link.dataset.page = afttpPage;
+  }
+
+  private getNonAfttpPageNumber(pageIndex: number): string {
+    if (
+      this.lastPrePageIndex !== null &&
+      pageIndex <= this.lastPrePageIndex
+    ) {
+      return this.toRoman(pageIndex + 1);
+    }
+
+    const pageNumber =
+      this.lastPrePageIndex === null
+        ? pageIndex + 1
+        : pageIndex - this.lastPrePageIndex;
+
+    return String(pageNumber);
+  }
+
+  private getAfttpPageNumber(
+    pageIndex: number,
+    attachments: Array<{ start: number; end: number; index: number }>,
+    chapters: Array<{ start: number; end: number; chapterIndex: number }>
+  ): string {
+    const attachment = attachments.find(
+      a => pageIndex >= a.start && pageIndex < a.end
+    );
+
+    if (attachment) {
+      const pageInAttachment = pageIndex - attachment.start + 1;
+      return `A${attachment.index}-${pageInAttachment}`;
+    }
+
+    const chapter = chapters.find(
+      c => pageIndex >= c.start && pageIndex < c.end
+    );
+
+    if (chapter) {
+      const pageInChapter = pageIndex - chapter.start + 1;
+      return `${chapter.chapterIndex}-${pageInChapter}`;
+    }
+
+    return this.toRoman(pageIndex + 1);
+  }
+
+
+  private buildAttachmentRanges(
+    pages: PagedPage[]
+  ): Array<{ start: number; end: number; index: number }> {
+    const attachments: Array<{ start: number; end: number; index: number }> = [];
+
+    let currentStart: number | null = null;
+    let attachmentIndex = 0;
+
+    for (let i = 0; i < pages.length; i++) {
+      if (!pages[i].element.querySelector('[stylename="attachmentTitle"]')) {
+        continue;
+      }
+
+      if (currentStart !== null) {
+        const lastAttachment = attachments.at(-1);
+        if (lastAttachment) {
+          lastAttachment.end = i;
+        }
+      }
+      attachmentIndex++;
+      currentStart = i;
+
+      attachments.push({
+        start: i,
+        end: pages.length,
+        index: attachmentIndex,
+      });
+    }
+
+    if (currentStart !== null) {
+      const lastAttachment = attachments.at(-1);
+      if (lastAttachment) {
+        lastAttachment.end = pages.length;
+      }
+    }
+
+    return attachments;
+  }
+
+
+
+  private formatLongDate(dateStr: string): string {
+    const date = new Date(dateStr);
+
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+
+    return date.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  }
+
+
+
+  private truncateTitle(title: string, maxLength = 22): string {
     if (!title || title.length <= maxLength) {
       return title;
     }
@@ -338,37 +730,45 @@ export class PDFHandler extends Handler {
     this.doIT();
   }
 
-public async doIT(): Promise<void> {
-  const markingData  = PreviewForm['pageBanner'];
-  const hasBannerMarking  = !!markingData ;
-  const rawTitle = PreviewForm['documentTitle'];
-  const titleData = this.truncateTitle(rawTitle);
+  public async doIT(): Promise<void> {
+    const markingData = PreviewForm['pageBanner'];
+    const hasBannerMarking = !!markingData;
+    const rawTitle = PreviewForm['documentTitle'] ?? '';
+    const truncatedTitle = this.truncateTitle(rawTitle);
 
-  let nonAfttpFooterColor = '';
-  let opt = '';
-  let opt2 = '';
-  let pageOverride = '';
-  let headerTitleContent = '';
+    const formattedDate = PreviewForm['formattedDate']
+      ? this.formatLongDate(PreviewForm['formattedDate'])
+      : '';
 
-  // 🔥 CLEAR ALL FOOTER-RELATED STYLES WHEN SWITCHING MODES
-  document.documentElement.style.removeProperty('--pagedjs-string-last-chapTitled');
-  document.documentElement.style.removeProperty('--pagedjs-footer-height');
+    const titleData = formattedDate
+      ? `${truncatedTitle}, ${formattedDate}`
+      : truncatedTitle;
 
-  // Remove previously injected styles to avoid conflicts
-const currentMode = markingData  ? 'afttp' : 'non-afttp';
+    let nonAfttpFooterColor = '';
+    let opt = '';
+    let opt2 = '';
+    let pageOverride = '';
+    let headerTitleContent = '';
 
-if (PDFHandler.lastMode !== currentMode) {
-  const existingStyles = document.querySelectorAll(
-    'style[data-licit-pdf-handler]'
-  );
-  for (const style of existingStyles) {
-    style.remove();
-  }
-  PDFHandler.lastMode = currentMode;
-}
+    // 🔥 CLEAR ALL FOOTER-RELATED STYLES WHEN SWITCHING MODES
+    document.documentElement.style.removeProperty('--pagedjs-string-last-chapTitled');
+    document.documentElement.style.removeProperty('--pagedjs-footer-height');
 
-  if (!hasBannerMarking ) {
-    pageOverride = `
+    // Remove previously injected styles to avoid conflicts
+    const currentMode = markingData ? 'afttp' : 'non-afttp';
+
+    if (PDFHandler.lastMode !== currentMode) {
+      const existingStyles = document.querySelectorAll(
+        'style[data-licit-pdf-handler]'
+      );
+      for (const style of existingStyles) {
+        style.remove();
+      }
+      PDFHandler.lastMode = currentMode;
+    }
+
+    if (!hasBannerMarking) {
+      pageOverride = `
       @page {
         margin-bottom: var(--pagedjs-footer-height, 40px);
         @bottom-center {
@@ -376,92 +776,91 @@ if (PDFHandler.lastMode !== currentMode) {
         }
       }`;
 
-    nonAfttpFooterColor = `
+      nonAfttpFooterColor = `
       .pagedjs_page 
       .pagedjs_margin-bottom-center > .pagedjs_margin-content::after {
         color: #2A6EBB;
       }
     `;
-  }
+    }
 
-  if (hasBannerMarking  && markingData ) {
+    if (hasBannerMarking && markingData) {
       if (titleData) {
-    headerTitleContent = `
+        headerTitleContent = `
       @top-left {
         content: "${titleData}";
         font-family: "Times New Roman", Times, serif;
         font-size: 12pt;
         text-align: left;
-        color: #333333;
         padding-top: 60px;
+        color: #000000;
+        font-weight: bold;
+        letter-spacing: 0.2px;
       }
     `;
-    }
-    opt = `
+      }
+      opt = `
       @top-center {
-        content: "${markingData .text}";
+        content: "${markingData.text}";
         font-family: "Times New Roman", Times, serif;
         font-size: 14pt;
         text-align: center;
-        color: ${markingData .color};
-        padding-left: 0.9in;
+        color: ${markingData.color};
       }
 
       @bottom-center {
-        content: "${markingData .text}";
+        content: "${markingData.text}";
         font-family: "Times New Roman", Times, serif;
         font-size: 14pt;
         text-align: center;
-        color: ${markingData .color};
+        color: ${markingData.color};
         padding-top: 72px;
+        padding-right: 88px;
       }
 
-      @bottom-left {
-        content: "Page " counter(page) " of " counter(pages);
-        color: #333333;
+      @top-right {
+        content: "";
+        padding-top: 60px;
+        font-family: "Times New Roman", Times, serif;
+        font-size: 12pt;
+        color: #000000;
+        font-weight: bold;
+        letter-spacing: 0.2px;
       }
     `;
-    opt2 = `
+      opt2 = `
     .ProseMirror infoicon {
       string-set: none !important;
     }
   `;
-  } else {
-    opt2 = `
+    } else {
+      opt2 = `
       .ProseMirror infoicon {
         string-set: chapTitled content(text);
       }
     `;
 
-    opt = `
+      opt = `
       @bottom-center {
         content: string(chapTitled, last);
         text-align: right;
       }
 
-      @bottom-left {
-        content: "Page " counter(page) " of " counter(pages);
-        color: #333333;
+      @top-right {
+        content: "";
+        padding-top: 60px;
+        font-family: "Times New Roman", Times, serif;
+        font-size: 12pt;
+        color: #000000;
+        font-weight: normal;
+        letter-spacing: 0.2px;
       }
     `;
-  }
+    }
 
-  let lastUpdatedStyle = '';
-  if (PreviewForm['lastUpdated']) {
-    lastUpdatedStyle = `@top-right {
-      content: "${'Last Updated On: ' + PreviewForm['formattedDate']}";
-      text-align: right;
-      font-size: 11px;
-      color: #333333;
-      padding-top: 63px;
-      font-style: italic;
-    }`;
-  }
-
-  // Always regenerate styles to ensure correct mode
-  const text = await this['polisher'].convertViaSheet(`@media print {@page {
+    // Always regenerate styles to ensure correct mode
+    const text = await this['polisher'].convertViaSheet(`@media print {@page {
 ${opt}
-${lastUpdatedStyle}
 ${headerTitleContent}
 }
 ${pageOverride}
@@ -549,8 +948,8 @@ break-inside: avoid;
 }
 
 #list-tof-generated .tof-element a::after {
-content: target-counter(attr(href), page);
-float: right;
+  content: attr(data-page);
+  float: right;
 }
 
 #list-tof-generated .tof-element-level-1 {
@@ -618,8 +1017,8 @@ break-inside: avoid;
 }
 
 #list-tot-generated .tot-element a::after {
-content: target-counter(attr(href), page);
-float: right;
+  content: attr(data-page);
+  float: right;
 }
 
 #list-tot-generated .tot-element-level-1 {
@@ -738,15 +1137,15 @@ color: #2A6EBB;
  }
 }`);
 
-  // Mark the inserted style for easy removal on next call
-  const insertedStyle = this['polisher'].insert(text);
-  if (insertedStyle) {
-    insertedStyle.dataset.licitPdfHandler = 'true';
-  }
+    // Mark the inserted style for easy removal on next call
+    const insertedStyle = this['polisher'].insert(text);
+    if (insertedStyle) {
+      insertedStyle.dataset.licitPdfHandler = 'true';
+    }
 
-  // Reset the done flag to allow regeneration
-  this.done = false;
-}
+    // Reset the done flag to allow regeneration
+    this.done = false;
+  }
 
   finalizePage() {
     if (!PDFHandler.state.isOnLoad) PDFHandler.state.currentPage++;
