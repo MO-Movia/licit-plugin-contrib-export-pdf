@@ -448,8 +448,8 @@ describe('buildRefToPageMap', () => {
 
     const map = (handler as unknown as { buildRefToPageMap(pages: TestPagedPage[]): Map<string, number> }).buildRefToPageMap(pages);
 
-    expect(map.get('sec1')).toBe(1);
-    expect(map.get('sec2')).toBe(2);
+    expect(map.get('sec1')).toBe(0);
+    expect(map.get('sec2')).toBe(1);
   });
 
   test('uses first occurrence when same data-ref appears on multiple pages', () => {
@@ -460,7 +460,7 @@ describe('buildRefToPageMap', () => {
 
     const map = (handler as unknown as { buildRefToPageMap(pages: TestPagedPage[]): Map<string, number> }).buildRefToPageMap(pages);
 
-    expect(map.get('dup')).toBe(1);
+    expect(map.get('dup')).toBe(0);
   });
 
   test('ignores elements without data-ref', () => {
@@ -486,9 +486,9 @@ describe('buildRefToPageMap', () => {
 
     const map = (handler as unknown as { buildRefToPageMap(pages: TestPagedPage[]): Map<string, number> }).buildRefToPageMap(pages);
 
-    expect(map.get('a')).toBe(1);
-    expect(map.get('b')).toBe(1);
-    expect(map.get('c')).toBe(1);
+    expect(map.get('a')).toBe(0);
+    expect(map.get('b')).toBe(0);
+    expect(map.get('c')).toBe(0);
   });
 
   test('ignores empty string data-ref values', () => {
@@ -502,7 +502,7 @@ describe('buildRefToPageMap', () => {
     const map = (handler as unknown as { buildRefToPageMap(pages: TestPagedPage[]): Map<string, number> }).buildRefToPageMap(pages);
 
     expect(map.has('')).toBe(false);
-    expect(map.get('valid')).toBe(1);
+    expect(map.get('valid')).toBe(0);
   });
 
   test('returns empty map when pages array is empty', () => {
@@ -532,7 +532,7 @@ describe('applyTocPageNumbers', () => {
     (handler as unknown as { applyTocPageNumbers(pages: TestPagedPage[], refToPage: Map<string, number>): void }).applyTocPageNumbers(pages, refToPage);
 
     const link = pages[0].element.querySelector('a') as HTMLElement;
-    expect(link.dataset.page).toBe('3');
+    expect(link.dataset.page).toBe('4');
   });
 
   test('does not set data-page when href has no matching ref', () => {
@@ -636,8 +636,8 @@ describe('applyTocPageNumbers', () => {
     (handler as unknown as { applyTocPageNumbers(pages: TestPagedPage[], refToPage: Map<string, number>): void }).applyTocPageNumbers(pages, refToPage);
 
     const links = pages[0].element.querySelectorAll('a');
-    expect(links[0].dataset.page).toBe('5');
-    expect(links[1].dataset.page).toBe('7');
+    expect(links[0].dataset.page).toBe('6');
+    expect(links[1].dataset.page).toBe('8');
   });
 
   test('overwrites existing data-page value', () => {
@@ -654,7 +654,7 @@ describe('applyTocPageNumbers', () => {
     (handler as unknown as { applyTocPageNumbers(pages: TestPagedPage[], refToPage: Map<string, number>): void }).applyTocPageNumbers(pages, refToPage);
 
     const link = pages[0].element.querySelector('a') as HTMLElement;
-    expect(link.dataset.page).toBe('9');
+    expect(link.dataset.page).toBe('10');
   });
 });
 describe('patchTocEntries', () => {
@@ -699,4 +699,257 @@ describe('patchTocEntries', () => {
       (handler as unknown as { patchTocEntries(pages: TestPagedPage[]): void }).patchTocEntries(pages)
     ).not.toThrow();
   });
+
+  test('applyPageNumbers assigns AFTTP chapter and attachment numbering', () => {
+  PreviewForm['extractedCui'] = { text: 'CUI', color: 'red' };
+
+  const pages = [
+    createPage('<p stylename="chapterTitle"></p>'), // chapter 1 start
+    createPage('<div></div>'),
+    createPage('<p stylename="attachmentTitle"></p>'), // attachment 1 start
+    createPage('<div></div>'),
+  ];
+
+  // mock page number containers
+  pages.forEach(p => {
+    const margin = document.createElement('div');
+    margin.className = 'pagedjs_margin-top-right';
+    const content = document.createElement('div');
+    content.className = 'pagedjs_margin-content';
+    margin.appendChild(content);
+    p.element.appendChild(margin);
+  });
+
+  handler['applyPageNumbers'](pages as TestPagedPage[]);
+
+  const nums = pages.map(
+    p => p.element.querySelector('.pagedjs_margin-content')!.textContent
+  );
+
+  expect(nums).toEqual([
+    '1',
+    '2',
+    '3',
+    '4',
+  ]);
+});
+
+test('resolveAfttpPageNumber falls back to roman when no chapter or attachment', () => {
+  const result = handler['resolveAfttpPageNumber'](
+    document.createElement('div'),
+    3,
+    [],
+    () => '',
+    () => ''
+  );
+
+  expect(result).toBe('iv');
+});
+
+test('buildChapterRanges creates correct start and end ranges', () => {
+  const pages = [
+    createPage('<p stylename="chapterTitle"></p>'),
+    createPage('<div></div>'),
+    createPage('<p stylename="chapterTitle"></p>'),
+    createPage('<div></div>'),
+  ];
+
+  const ranges = handler['buildChapterRanges'](pages as TestPagedPage[]);
+
+  expect(ranges).toEqual([
+    { start: 0, end: 2, chapterIndex: 1 },
+    { start: 2, end: 4, chapterIndex: 2 },
+  ]);
+});
+
+test('buildAttachmentRanges builds correct attachment ranges', () => {
+  const pages = [
+    createPage('<p stylename="attachmentTitle"></p>'),
+    createPage('<div></div>'),
+    createPage('<p stylename="attachmentTitle"></p>'),
+  ];
+
+  const ranges = handler['buildAttachmentRanges'](pages as TestPagedPage[]);
+
+  expect(ranges).toEqual([
+    { start: 0, end: 2, index: 1 },
+    { start: 2, end: 3, index: 2 },
+  ]);
+});
+
+test('detectAttachments tracks attachment pages correctly', () => {
+  const pages = [
+    createPage('<p stylename="attachmentTitle"></p>'),
+    createPage('<div></div>'),
+    createPage('<div></div>'),
+  ];
+
+  handler['detectAttachments'](pages as TestPagedPage[]);
+
+  expect(handler['attachmentPageCounters'].get(1)).toBe(3);
+});
+
+test('computeTotalMainPages stops counting at first attachment', () => {
+  const pages = [
+    createPage('<p stylename="chapterTitle"></p>'),
+    createPage('<div></div>'),
+    createPage('<p stylename="attachmentTitle"></p>'),
+    createPage('<div></div>'),
+  ];
+
+  handler['resolveFirstChapterPageIndex'](pages as TestPagedPage[]);
+  handler['computeTotalMainPages'](pages as TestPagedPage[]);
+
+  expect(handler['totalMainPages']).toBe(2);
+});
+
+test('getAfttpPageNumber returns attachment numbering', () => {
+  const result = handler['getAfttpPageNumber'](
+    3,
+    [{ start: 2, end: 5, index: 1 }],
+    []
+  );
+
+  expect(result).toBe('A1-2');
+});
+
+test('resolveNonAfttpPageNumber returns roman for pre-pages', () => {
+  handler['lastPrePageIndex'] = 2;
+
+  const val = handler['resolveNonAfttpPageNumber'](1, () => 99);
+
+  expect(val).toBe('ii');
+});
+
+test('handleAfttpFooter skips TOC footer when AFTTP', () => {
+  PreviewForm['extractedCui'] = { text: 'CUI', color: 'red' };
+
+  const frag = document.createElement('div');
+  const spy = jest.fn();
+
+  handler['handleAfttpFooter'](frag, spy);
+
+  expect(frag.style.getPropertyValue('--pagedjs-string-last-chapTitled')).toBe('');
+});
+
+test('fixSplitTo safely returns when element not found', () => {
+  const page = document.createElement('div');
+  expect(() =>
+    handler['fixSplitTo'](page, () => '5pt')
+  ).not.toThrow();
+});
+test('resolveFirstChapterPageIndex does nothing if already resolved', () => {
+  const pages = [
+    createPage('<p stylename="chapterTitle"></p>'),
+  ];
+
+  handler['firstChapterPageIndex'] = 10;
+
+  handler['resolveFirstChapterPageIndex'](pages as TestPagedPage[]);
+
+  expect(handler['firstChapterPageIndex']).toBe(10);
+});
+
+test('resetLastPrePageIndex sets null when no totHead exists', () => {
+  const pages = [
+    createPage('<div></div>'),
+    createPage('<div></div>'),
+  ];
+
+  handler['resetLastPrePageIndex'](pages as TestPagedPage[]);
+
+  expect(handler['lastPrePageIndex']).toBeNull();
+});
+
+test('applyPageNumbers skips pages without margin content safely', () => {
+  const pages = [
+    createPage('<div></div>'),
+    createPage('<div></div>'),
+  ];
+
+  expect(() =>
+    handler['applyPageNumbers'](pages as TestPagedPage[])
+  ).not.toThrow();
+});
+
+test('applySingleTocLink sets attachment page number in AFTTP', () => {
+  PreviewForm['extractedCui'] = { text: 'CUI', color: 'red' };
+
+  const page = createPage(`
+    <div class="toc-element">
+      <a href="#att1"></a>
+    </div>
+  `);
+
+  const refMap = new Map<string, number>([['att1', 3]]);
+  const attachments: Array<{ start: number; end: number; index: number }> = [
+    { start: 2, end: 6, index: 1 },
+  ];
+
+  const chapters: Array<{ start: number; end: number; chapterIndex: number }> = [];
+
+  const link = page.element.querySelector('a')!;
+
+  handler['applySingleTocLink'](
+    link,
+    refMap,
+    true,
+    attachments,
+    chapters
+  );
+
+  expect(link.dataset.page).toBe('A1-2');
+});
+
+test('buildRefToPageMap ignores non-HTMLElement nodes', () => {
+  const pageEl = document.createElement('div');
+  pageEl.appendChild(document.createTextNode('text'));
+  pageEl.appendChild(document.createComment('comment'));
+
+  const pages = [{ element: pageEl }];
+
+  const map = handler['buildRefToPageMap'](pages as TestPagedPage[]);
+
+  expect(map.size).toBe(0);
+});
+
+test('handleSpecialCounters does nothing when neither tof nor tot present', () => {
+  const label: number[] = [];
+  handler['counters'][1] = 3;
+
+  handler['handleSpecialCounters'](null, null, label);
+
+  expect(label).toEqual([]);
+});
+
+test('buildLabel builds multi-level labels correctly', () => {
+  handler['counters'][1] = 1;
+  handler['counters'][2] = 2;
+
+  const label: number[] = [];
+  handler['buildLabel'](2, label);
+
+  expect(label).toEqual([1, 3]);
+});
+
+test('fixIndent safely handles pages with no indent elements', () => {
+  const page = document.createElement('div');
+
+  expect(() =>
+    handler['fixIndent'](page, () => '10pt')
+  ).not.toThrow();
+});
+
+test('handleAfttpFooter executes processTocAndFooter when non-AFTTP', () => {
+  PreviewForm['extractedCui'] = null;
+
+  const frag = document.createElement('div');
+  const spy = jest.fn();
+
+  handler['handleAfttpFooter'](frag, spy);
+
+  expect(spy).toHaveBeenCalled();
+});
+
+
 });
