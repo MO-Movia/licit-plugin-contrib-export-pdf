@@ -164,7 +164,7 @@ export class PDFHandler extends Handler {
         this.buildLabel(level, label);
       }
 
-      const counterVal = (prefix ? prefix : '') + label.join('.');
+      const counterVal = (prefix ?? '') + label.join('.');
       el.setAttribute('customcounter', counterVal + '.');
     };
 
