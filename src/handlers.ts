@@ -121,7 +121,6 @@ export class PDFHandler extends Handler {
     const processTocAndFooter = () => {
       const tocElements = page?.element?.querySelectorAll('infoicon');
       let concatenatedValues = '';
-      this.prepagesCount = 0;
 
       if (tocElements) {
         for (const [, element] of tocElements.entries()) {
@@ -165,7 +164,7 @@ export class PDFHandler extends Handler {
         this.buildLabel(level, label);
       }
 
-      const counterVal = (prefix ? prefix + ' ' : '') + label.join('.');
+      const counterVal = (prefix ?? '') + label.join('.');
       el.setAttribute('customcounter', counterVal + '.');
     };
 
