@@ -128,7 +128,7 @@ describe('PreviewForm component', () => {
     prosimer_cls_element.className = 'ProseMirror';
     parparentElement.appendChild(parentelement);
     parparentElement.appendChild(prosimer_cls_element);
-    
+
     const tableWrapper = document.createElement('div');
     tableWrapper.className = 'tableWrapper';
     const table = document.createElement('table');
@@ -149,7 +149,7 @@ describe('PreviewForm component', () => {
       editorState: { doc: { attrs: { gg: null } } } as unknown as EditorState,
       editorView: {
         dom: dommock,
-        state: { 
+        state: {
           doc: { attrs: { gg: null } },
           tr: { setMeta: jest.fn().mockReturnThis() }
         },
@@ -162,12 +162,12 @@ describe('PreviewForm component', () => {
     jest.spyOn(previewForm, 'isAfttpDoc').mockReturnValue(true);
     jest.spyOn(previewForm, 'getDocumentTitle').mockReturnValue('Test Document');
     jest.spyOn(previewForm, 'getToc').mockResolvedValue();
-    jest.spyOn(previewForm, 'showAlert').mockImplementation(() => {});
-    jest.spyOn(previewForm, 'insertSectionHeaders').mockImplementation(() => {});
-    jest.spyOn(previewForm, 'replaceInfoIcons').mockImplementation(() => {});
-    jest.spyOn(previewForm, 'updateImageWidths').mockImplementation(() => {});
-    jest.spyOn(previewForm, 'prepareEditorContent').mockImplementation(() => {});
-    jest.spyOn(previewForm, 'updateTableWidths').mockImplementation(() => {});
+    jest.spyOn(previewForm, 'showAlert').mockImplementation(() => { });
+    jest.spyOn(previewForm, 'insertSectionHeaders').mockImplementation(() => { });
+    jest.spyOn(previewForm, 'replaceInfoIcons').mockImplementation(() => { });
+    jest.spyOn(previewForm, 'updateImageWidths').mockImplementation(() => { });
+    jest.spyOn(previewForm, 'prepareEditorContent').mockImplementation(() => { });
+    jest.spyOn(previewForm, 'updateTableWidths').mockImplementation(() => { });
 
     previewForm.componentDidMount();
 
@@ -195,7 +195,7 @@ describe('PreviewForm component', () => {
       editorState: { doc: { attrs: { gg: null } } } as unknown as EditorState,
       editorView: {
         dom: dommock,
-        state: { 
+        state: {
           doc: { attrs: { gg: null } },
           tr: { setMeta: jest.fn().mockReturnThis() }
         },
@@ -207,12 +207,12 @@ describe('PreviewForm component', () => {
     const previewForm = new PreviewForm(props);
     jest.spyOn(previewForm, 'isAfttpDoc').mockReturnValue(false);
     jest.spyOn(previewForm, 'getToc').mockResolvedValue();
-    jest.spyOn(previewForm, 'showAlert').mockImplementation(() => {});
-    jest.spyOn(previewForm, 'insertSectionHeaders').mockImplementation(() => {});
-    jest.spyOn(previewForm, 'replaceInfoIcons').mockImplementation(() => {});
-    jest.spyOn(previewForm, 'updateImageWidths').mockImplementation(() => {});
-    jest.spyOn(previewForm, 'prepareEditorContent').mockImplementation(() => {});
-    jest.spyOn(previewForm, 'updateTableWidths').mockImplementation(() => {});
+    jest.spyOn(previewForm, 'showAlert').mockImplementation(() => { });
+    jest.spyOn(previewForm, 'insertSectionHeaders').mockImplementation(() => { });
+    jest.spyOn(previewForm, 'replaceInfoIcons').mockImplementation(() => { });
+    jest.spyOn(previewForm, 'updateImageWidths').mockImplementation(() => { });
+    jest.spyOn(previewForm, 'prepareEditorContent').mockImplementation(() => { });
+    jest.spyOn(previewForm, 'updateTableWidths').mockImplementation(() => { });
 
     previewForm.componentDidMount();
 
@@ -354,15 +354,15 @@ describe('PreviewForm component', () => {
     const table = document.createElement('table');
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    
+
     const outerSpan = document.createElement('span');
     outerSpan.setAttribute('style', 'color: blue;');
     outerSpan.textContent = 'Outer';
-    
+
     const innerSpan = document.createElement('span');
     innerSpan.setAttribute('style', 'color: red;');
     innerSpan.textContent = 'Inner CUI';
-    
+
     outerSpan.appendChild(innerSpan);
     cell.appendChild(outerSpan);
     row.appendChild(cell);
@@ -386,7 +386,7 @@ describe('PreviewForm component', () => {
     };
 
     const previewForm = new PreviewForm(props);
-    
+
     const mockEditorView = {
       state: {
         doc: {
@@ -412,7 +412,7 @@ describe('PreviewForm component', () => {
     };
 
     const previewForm = new PreviewForm(props);
-    
+
     const mockEditorView = {
       state: {
         doc: {
@@ -436,7 +436,7 @@ describe('PreviewForm component', () => {
     };
 
     const previewForm = new PreviewForm(props);
-    
+
     const mockEditorView = {
       state: {
         doc: {
@@ -657,7 +657,7 @@ describe('PreviewForm component', () => {
     imageElement.setAttribute('width', '700');
 
     Previewform.replaceImageWidth(imageElement);
-    expect(imageElement.getAttribute('data-original-width')).toBe(null);
+    expect(imageElement.dataset.originalWidth).toBeUndefined();
   });
 
   it('should rotate image and adjust styles in replaceImageWidth when width > 620 and figure/title exist', () => {
@@ -681,7 +681,7 @@ describe('PreviewForm component', () => {
     document.body.appendChild(figureTitle);
     document.body.appendChild(figure);
 
-    figureTitle.insertAdjacentElement('afterend', figure);
+    figureTitle.after(figure);
 
     const image = document.createElement('img');
     image.setAttribute('width', '700');
@@ -780,7 +780,7 @@ describe('PreviewForm component', () => {
 
     document.body.appendChild(tableTitle);
     document.body.appendChild(figure);
-    tableTitle.insertAdjacentElement('afterend', figure);
+    tableTitle.after(figure);
 
     Object.defineProperty(table, 'offsetHeight', { value: 500 });
 
@@ -788,6 +788,22 @@ describe('PreviewForm component', () => {
 
     expect(contentDiv.style.width).toBe('');
     expect(contentDiv.style.height).toBe('');
+  });
+  test('returns early when image width < 620', () => {
+    const props = {
+      editorState: {} as unknown as EditorState,
+      editorView: {} as unknown as EditorView,
+      onClose: jest.fn(),
+    };
+    const previewForm = new PreviewForm(props);
+    const img = document.createElement('img');
+    img.setAttribute('width', '600');
+    // should not throw
+    const image = document.createElement('img');
+    image.setAttribute('width', '600');
+    image.setAttribute('height', '400');
+    previewForm.replaceImageWidth(img);
+    expect(img.style.maxWidth).toBe('');
   });
 
   it('should not rotate image when width <= 620 in replaceImageWidth', () => {
@@ -867,7 +883,7 @@ describe('PreviewForm component', () => {
     expect(table.style.maxWidth).toBe('600px');
     expect(rotateSpy).toHaveBeenCalledWith(table, 700);
   });
-  
+
   it('should rotate table and apply styles in rotateWideTable', () => {
     const props = {
       editorState: {} as unknown as EditorState,
@@ -911,7 +927,7 @@ describe('PreviewForm component', () => {
 
     document.body.appendChild(tableTitle);
     document.body.appendChild(figure);
-    tableTitle.insertAdjacentElement('afterend', figure);
+    tableTitle.after(figure);
 
     previewForm.rotateWideTable(table, 700);
 
@@ -1042,13 +1058,13 @@ describe('addLinkEventListeners && handleLinkClick', () => {
       const previewForm = new PreviewForm(props);
       const testElement = document.createElement('div');
       testElement.innerHTML = '<span>Test Content</span>';
-      testElement.setAttribute('data-test', 'value');
+      testElement.dataset.test = 'value';
 
       const clonedElement = previewForm.cloneModifyNode(testElement);
 
       expect(clonedElement).not.toBe(testElement);
       expect(clonedElement.innerHTML).toBe(testElement.innerHTML);
-      expect(clonedElement.getAttribute('data-test')).toBe('value');
+      expect(clonedElement.dataset.test).toBe('value');
     });
 
     it('should handle calcLogic correctly when lastUpdated is true', () => {
@@ -1257,7 +1273,7 @@ describe('addLinkEventListeners && handleLinkClick', () => {
     const props = {
       editorState: {} as unknown as EditorState,
       editorView: {} as unknown as EditorView,
-      onClose: () => {},
+      onClose: () => { },
     };
     previewForm = new PreviewForm(props);
   });
@@ -1288,7 +1304,7 @@ describe('addLinkEventListeners && handleLinkClick', () => {
 
   it('should handle click on external link', () => {
     const link = document.querySelector('.external-link')!;
-    const openSpy = jest.spyOn(previewForm, 'openExternalLink').mockImplementation(() => {});
+    const openSpy = jest.spyOn(previewForm, 'openExternalLink').mockImplementation(() => { });
     const preventDefault = jest.fn();
 
     const event = new MouseEvent('click', { bubbles: true });
@@ -1302,7 +1318,7 @@ describe('addLinkEventListeners && handleLinkClick', () => {
 
   it('should handle click on internal link by href', () => {
     const link = document.querySelector('.internal-link')!;
-    const scrollSpy = jest.spyOn(previewForm, 'scrollToInternalTarget').mockImplementation(() => {});
+    const scrollSpy = jest.spyOn(previewForm, 'scrollToInternalTarget').mockImplementation(() => { });
     const preventDefault = jest.fn();
 
     const event = new MouseEvent('click', { bubbles: true });
@@ -1316,7 +1332,7 @@ describe('addLinkEventListeners && handleLinkClick', () => {
 
   it('should handle click on internal link by selectionId', () => {
     const link = document.querySelector('.selection-link')!;
-    const scrollSpy = jest.spyOn(previewForm, 'scrollToInternalTarget').mockImplementation(() => {});
+    const scrollSpy = jest.spyOn(previewForm, 'scrollToInternalTarget').mockImplementation(() => { });
     const preventDefault = jest.fn();
 
     const event = new MouseEvent('click', { bubbles: true });
@@ -1334,14 +1350,14 @@ describe('PreviewForm.updateStyles', () => {
   const props = {
     editorState: {} as unknown as EditorState,
     editorView: {} as unknown as EditorView,
-    onClose: () => {},
+    onClose: () => { },
   };
 
   beforeEach(() => {
     previewForm = new PreviewForm(props);
   });
 
-    const callUpdateStyles = (instance: PreviewForm, container: HTMLElement) => {
+  const callUpdateStyles = (instance: PreviewForm, container: HTMLElement) => {
     (instance as unknown as { updateStyles(data: HTMLElement): void }).updateStyles(container);
   };
 
@@ -1387,7 +1403,7 @@ describe('PreviewForm.updateStyles', () => {
 
     expect(plain.style.getPropertyValue('--reset-flag')).toBe('');
   });
-   test('sets existing CSS vars for reset, prefix, tof and tot', () => {
+  test('sets existing CSS vars for reset, prefix, tof and tot', () => {
     const container = document.createElement('div');
 
     const elReset = document.createElement('div');
@@ -1610,7 +1626,7 @@ describe('PreviewForm.insertSectionHeaders', () => {
     test('should extract nodes before first chapterTitle', () => {
       const prose = document.createElement('div');
       prose.classList.add('ProseMirror');
-      
+
       const preNode1 = document.createElement('p');
       preNode1.textContent = 'Pre content 1';
       const preNode2 = document.createElement('p');
@@ -1620,7 +1636,7 @@ describe('PreviewForm.insertSectionHeaders', () => {
       chapterTitle.textContent = 'Chapter 1';
       const postNode = document.createElement('p');
       postNode.textContent = 'Chapter content';
-      
+
       prose.appendChild(preNode1);
       prose.appendChild(preNode2);
       prose.appendChild(chapterTitle);
@@ -1647,11 +1663,11 @@ describe('PreviewForm.insertSectionHeaders', () => {
     test('should return empty array when chapterTitle is first element', () => {
       const prose = document.createElement('div');
       prose.classList.add('ProseMirror');
-      
+
       const chapterTitle = document.createElement('p');
       chapterTitle.setAttribute('stylename', 'chapterTitle');
       const postNode = document.createElement('p');
-      
+
       prose.appendChild(chapterTitle);
       prose.appendChild(postNode);
 
@@ -1663,13 +1679,13 @@ describe('PreviewForm.insertSectionHeaders', () => {
     test('should handle nested chapterTitle within wrapper element', () => {
       const prose = document.createElement('div');
       prose.classList.add('ProseMirror');
-      
+
       const preNode = document.createElement('p');
       const wrapper = document.createElement('div');
       const chapterTitle = document.createElement('p');
       chapterTitle.setAttribute('stylename', 'chapterTitle');
       wrapper.appendChild(chapterTitle);
-      
+
       prose.appendChild(preNode);
       prose.appendChild(wrapper);
 
@@ -1691,7 +1707,7 @@ describe('PreviewForm.insertSectionHeaders', () => {
       const titleDiv = data.querySelector('.titleHead');
       expect(titleDiv).toBeTruthy();
       expect(titleDiv?.classList.contains('prepages')).toBe(true);
-      
+
       const header = titleDiv?.querySelector('h4') as HTMLElement;
       expect(header?.textContent).toBe('My Test Document');
       expect(header?.style.color).toBe('rgb(42, 110, 187)');
@@ -1743,7 +1759,7 @@ describe('PreviewForm.insertSectionHeaders', () => {
 
       const prepages = data.querySelector('.prepages');
       expect(prepages).toBeTruthy();
-      
+
       const proseWrapper = prepages?.querySelector('.ProseMirror');
       expect(proseWrapper).toBeTruthy();
       expect(proseWrapper?.getAttribute('contenteditable')).toBe('false');
@@ -1757,7 +1773,7 @@ describe('PreviewForm.insertSectionHeaders', () => {
 
       const prepages = data.querySelector('.prepages');
       expect(prepages).toBeTruthy();
-      
+
       const proseWrapper = prepages?.querySelector('.ProseMirror');
       expect(proseWrapper?.children.length).toBe(0);
     });
@@ -1871,13 +1887,13 @@ describe('PreviewForm.insertSectionHeaders', () => {
       const data = document.createElement('div');
       const proseMirror = document.createElement('div');
       proseMirror.classList.add('ProseMirror');
-      
+
       const preNode = document.createElement('p');
       preNode.textContent = 'Pre content';
       const chapterTitle = document.createElement('p');
       chapterTitle.setAttribute('stylename', 'chapterTitle');
       chapterTitle.textContent = 'Chapter 1';
-      
+
       proseMirror.appendChild(preNode);
       proseMirror.appendChild(chapterTitle);
       data.appendChild(proseMirror);
@@ -1902,7 +1918,7 @@ describe('PreviewForm.insertSectionHeaders', () => {
       originalChild.textContent = 'Original content';
       originalChild.id = 'original';
       data.appendChild(originalChild);
-      
+
       const editorView = createMockEditorView('Afttp-Document');
       PreviewForm['isTitle'] = false;
       PreviewForm['isToc'] = false;
@@ -1991,12 +2007,12 @@ describe('PreviewForm.insertSectionHeaders', () => {
       const data = document.createElement('div');
       const proseMirror = document.createElement('div');
       proseMirror.classList.add('ProseMirror');
-      
+
       const preNode = document.createElement('p');
       preNode.textContent = 'Pre content';
       const chapterTitle = document.createElement('p');
       chapterTitle.setAttribute('stylename', 'chapterTitle');
-      
+
       proseMirror.appendChild(preNode);
       proseMirror.appendChild(chapterTitle);
       data.appendChild(proseMirror);
@@ -2020,7 +2036,110 @@ describe('PreviewForm.insertSectionHeaders', () => {
     });
   });
 });
+describe('replaceImageWidth', () => {
+  const makeInstance = () =>
+    new (PreviewForm as any)({ editorView: (null as any), onClose: () => { } });
 
+  beforeEach(() => {
+    // ensure clean DOM
+    document.body.innerHTML = '';
+  });
+
+  test('returns early when image width < 620', () => {
+    const inst = makeInstance();
+    const img = document.createElement('img');
+    img.setAttribute('width', '600');
+    // should not throw
+    inst.replaceImageWidth(img);
+    expect(img.style.maxWidth).toBe('');
+  });
+
+  test('no contentDiv does not throw', () => {
+    const inst = makeInstance();
+    const img = document.createElement('img');
+    img.setAttribute('width', '700');
+    // not appended to any enhanced-table-figure-content
+    expect(() => inst.replaceImageWidth(img)).not.toThrow();
+  });
+
+  it('landscape orientation applies sizes and rotates', () => {
+    const inst = makeInstance();
+    // build structure:
+    // <div class="enhanced-table-figure">
+    //   <div class="enhanced-table-figure-content" data-orientation="landscape">
+    //     <div class="molm-czi-image-view-body-img-clip"><span><img .../></span></div>
+    //     <div class="enhanced-table-figure-notes"></div>
+    //   </div>
+    // </div>
+    const figure = document.createElement('div');
+    figure.className = 'enhanced-table-figure';
+
+    const content = document.createElement('div');
+    content.className = 'enhanced-table-figure-content';
+    content.dataset.orientation = 'landscape';
+
+    const clip = document.createElement('div');
+    clip.className = 'molm-czi-image-view-body-img-clip';
+    const span = document.createElement('span');
+    clip.appendChild(span);
+
+    const img = document.createElement('img');
+    img.setAttribute('width', '800');
+    span.appendChild(img);
+
+    const imgBody = document.createElement('div');
+    imgBody.className = 'molm-czi-image-view-body-img';
+
+    const notes = document.createElement('div');
+    notes.className = 'enhanced-table-figure-notes';
+
+    content.appendChild(clip);
+    content.appendChild(imgBody);
+    content.appendChild(notes);
+    figure.appendChild(content);
+    document.body.appendChild(figure);
+
+    inst.replaceImageWidth(img);
+
+    // landscape branch applied
+    expect(content.style.width).toBe('544px');
+    expect(content.style.height).toBe('854px');
+    // rotated
+    expect(content.style.transform).toContain('rotate(-90deg)');
+    // img attributes updated
+    expect(img.getAttribute('width')).toBe('854');
+    expect(img.getAttribute('height')).toBe('544');
+  });
+
+  test('moves figure title into contentDiv when previous sibling has stylename', () => {
+    const inst = makeInstance();
+
+    const figure = document.createElement('div');
+    figure.className = 'enhanced-table-figure';
+
+    const title = document.createElement('div');
+    title.setAttribute('stylename', 'attFigureTitle');
+    title.textContent = 'My Title';
+
+    // insert title as previous sibling
+    figure.parentElement?.removeChild?.(figure);
+    document.body.appendChild(title);
+    document.body.appendChild(figure);
+
+    const content = document.createElement('div');
+    content.className = 'enhanced-table-figure-content';
+    const img = document.createElement('img');
+    img.setAttribute('width', '700');
+    content.appendChild(img);
+    figure.appendChild(content);
+
+    // call - width >= 620 so function proceeds; orientation not set but move should still be performed
+    inst.replaceImageWidth(img);
+
+    // when title was previous sibling, after call it should be inside content as firstChild
+    expect(content.firstChild).toBe(title);
+  });
+});
 // Add these test cases to the existing describe('PreviewForm component', () => { ... }) block
 
 describe('rotateWideTable', () => {
@@ -2073,7 +2192,7 @@ describe('rotateWideTable', () => {
     const mockClosest = jest.fn()
       .mockReturnValueOnce(tableWrapper)
       .mockReturnValueOnce(mockContentDiv);
-    
+
     table.closest = mockClosest;
 
     const spy = jest.spyOn(table.style, 'setProperty');
@@ -2149,7 +2268,7 @@ describe('rotateWideTable', () => {
 
     document.body.appendChild(tableTitle);
     document.body.appendChild(figure);
-    tableTitle.insertAdjacentElement('afterend', figure);
+    tableTitle.after(figure);
 
     Object.defineProperty(table, 'offsetHeight', { value: 500, configurable: true });
 
@@ -2180,7 +2299,7 @@ describe('rotateWideTable', () => {
 
     document.body.appendChild(tableTitle);
     document.body.appendChild(figure);
-    tableTitle.insertAdjacentElement('afterend', figure);
+    tableTitle.after(figure);
 
     Object.defineProperty(table, 'offsetHeight', { value: 500, configurable: true });
 
@@ -2207,7 +2326,7 @@ describe('rotateWideTable', () => {
 
     const otherElement1 = document.createElement('div');
     otherElement1.setAttribute('stylename', 'otherStyle');
-    
+
     const otherElement2 = document.createElement('div');
     otherElement2.setAttribute('stylename', 'anotherStyle');
 
@@ -2321,7 +2440,7 @@ describe('rotateWideTable', () => {
 
   it('should hide overflow on all parent elements with target classes', () => {
     const table = document.createElement('table');
-    
+
     const tableWrapper = document.createElement('div');
     tableWrapper.classList.add('tableWrapper');
     tableWrapper.appendChild(table);
@@ -2421,10 +2540,10 @@ describe('rotateWideTable', () => {
 
   it('should handle complex parent hierarchy correctly', () => {
     const table = document.createElement('table');
-    
+
     const innerWrapper = document.createElement('div');
     innerWrapper.appendChild(table);
-    
+
     const tableWrapper = document.createElement('div');
     tableWrapper.classList.add('tableWrapper');
     tableWrapper.appendChild(innerWrapper);
