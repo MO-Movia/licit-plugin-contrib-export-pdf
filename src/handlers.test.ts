@@ -242,15 +242,16 @@ describe('PDFHandler', () => {
     expect(handler['counters'][1]).toBe(1);
   });
 
-  test('handleSpecialCounters increments counters', () => {
+  test('handleSpecialCounters increments TOF counter', () => {
     const label: number[] = [];
     handler['counters'][1] = 1;
-    handler['handleSpecialCounters']('tof', null, label);
-    expect(label).toEqual([1, 1]);
 
-    const label2: number[] = [];
-    handler['handleSpecialCounters'](null, 'tot', label2);
-    expect(label2).toEqual([1, 1]);
+    const el = document.createElement('p');
+    el.setAttribute('stylename', 'tofStyle');
+
+    handler['handleSpecialCounters'](el, 'true', null, label);
+
+    expect(label).toEqual([1, 1]);
   });
 
   test('buildLabel resets TOF and TOT at level 1', () => {
@@ -917,10 +918,52 @@ test('handleSpecialCounters does nothing when neither tof nor tot present', () =
   const label: number[] = [];
   handler['counters'][1] = 3;
 
-  handler['handleSpecialCounters'](null, null, label);
+  const el = document.createElement('p');
+
+  handler['handleSpecialCounters'](el, null, null, label);
 
   expect(label).toEqual([]);
 });
+
+
+  test('pushes nothing if TOF counter is zero (defensive)', () => {
+    const el = document.createElement('p');
+    el.setAttribute('stylename', 'tofStyle');
+
+    const label: number[] = [];
+
+    // counters[11] starts at 0, but function increments before push
+    handler['handleSpecialCounters'](el, 'true', null, label);
+
+    expect(label.length).toBe(2); // [chapter, 1]
+  });
+
+  test('does nothing when neither tof nor tot is present', () => {
+    const el = document.createElement('p');
+    el.setAttribute('stylename', 'normalStyle');
+
+    const label: number[] = [];
+
+    handler['handleSpecialCounters'](el, null, null, label);
+
+    expect(handler['counters'][11]).toBe(0);
+    expect(handler['counters'][12]).toBe(0);
+    expect(label).toEqual([]);
+  });
+
+  test('uses current chapter counter (counters[1]) in label', () => {
+    handler['counters'][1] = 5; // simulate chapter 5
+
+    const el = document.createElement('p');
+    el.setAttribute('stylename', 'totStyle');
+
+    const label: number[] = [];
+
+    handler['handleSpecialCounters'](el, null, 'true', label);
+
+    expect(handler['counters'][12]).toBe(1);
+    expect(label).toEqual([5, 1]); // [chapter, totIndex]
+  });
 
 test('buildLabel builds multi-level labels correctly', () => {
   handler['counters'][1] = 1;

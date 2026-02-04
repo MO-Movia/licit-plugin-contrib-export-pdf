@@ -158,7 +158,7 @@ export class PDFHandler extends Handler {
       const label: number[] = [];
 
       if (tof || tot) {
-        this.handleSpecialCounters(tof, tot, label);
+        this.handleSpecialCounters(el, tof, tot, label);
       } else {
         this.resetCounters(level, isReset);
         this.buildLabel(level, label);
@@ -501,15 +501,33 @@ export class PDFHandler extends Handler {
     }
   }
 
-  private handleSpecialCounters(tof: string | null, tot: string | null, label: number[]): void {
-    if (tof) {
-      this.counters[11]++;
-      if (this.counters[11]) label.push(this.counters[1], this.counters[11]);
-    } else if (tot) {
+private handleSpecialCounters(
+  el: HTMLElement,
+  tof: string | null,
+  tot: string | null,
+  label: number[]
+): void {
+  const isTotContinuation =
+    !!tot && el.getAttribute('stylename')?.endsWith('Cont');
+
+  if (tof) {
+    this.counters[11]++;
+    if (this.counters[11]) {
+      label.push(this.counters[1], this.counters[11]);
+    }
+    return;
+  }
+
+  if (tot) {
+    if (!isTotContinuation) {
       this.counters[12]++;
-      if (this.counters[12]) label.push(this.counters[1], this.counters[12]);
+    }
+
+    if (this.counters[12]) {
+      label.push(this.counters[1], this.counters[12]);
     }
   }
+}
 
   private buildLabel(level: number, label: number[]): void {
     if (level === 1 && this.counters[1] > 0) {
