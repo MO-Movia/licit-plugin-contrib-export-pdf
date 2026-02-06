@@ -54,11 +54,11 @@ describe('PDFHandler', () => {
     PreviewForm.getHeadersTOC.mockReturnValue(['h1']);
     PreviewForm.getHeadersTOF.mockReturnValue([]);
     PreviewForm.getHeadersTOT.mockReturnValue([]);
-
-    handler.beforeParsed('content');
+    const content = document.createElement('div');
+    handler.beforeParsed(content);
 
     expect(createTable).toHaveBeenCalledWith(expect.objectContaining({
-      content: 'content',
+      content: content,
       tocElement: '.tocHead',
       tofElement: '.tofHead',
       totElement: '.totHead',
@@ -431,7 +431,75 @@ describe('PDFHandler', () => {
 
     expect(result).toBe('Short');
   });
+});
 
+describe('wrapTablesAndFiguresWithTitles', () => {
+  let handler: PDFHandler;
+
+  beforeEach(() => {
+    handler = new PDFHandler(mockChunker, mockPolisher, mockCaller);
+  });
+
+  test('applies page-break-avoid styles to title and table/figure', () => {
+    const content = document.createElement('div');
+    const title = document.createElement('p');
+    title.setAttribute('stylename', 'chTableTitle');
+    const table = document.createElement('table');
+
+    content.appendChild(title);
+    content.appendChild(table);
+
+    (handler as unknown as { wrapTablesAndFiguresWithTitles(content: HTMLElement): void })
+      .wrapTablesAndFiguresWithTitles(content);
+
+    expect(title.style.pageBreakAfter).toBe('');
+    expect(table.style.pageBreakBefore).toBe('');
+    expect(table.style.pageBreakInside).toBe('');
+  });
+
+  test('handles all title types (table and figure)', () => {
+    const content = document.createElement('div');
+
+    const tableTitle = document.createElement('div');
+    tableTitle.setAttribute('stylename', 'attTableTitle');
+    const table = document.createElement('table');
+
+    const figureTitle = document.createElement('div');
+    figureTitle.setAttribute('stylename', 'chFigureTitle');
+    const figure = document.createElement('figure');
+
+    content.appendChild(tableTitle);
+    content.appendChild(table);
+    content.appendChild(figureTitle);
+    content.appendChild(figure);
+
+    (handler as unknown as { wrapTablesAndFiguresWithTitles(content: HTMLElement): void })
+      .wrapTablesAndFiguresWithTitles(content);
+
+    expect(tableTitle.style.pageBreakAfter).toBe('');
+    expect(table.style.pageBreakBefore).toBe('');
+    expect(figureTitle.style.pageBreakAfter).toBe('');
+    expect(figure.style.pageBreakBefore).toBe('');
+  });
+
+  test('does not crash when title has no next sibling or non-table/figure sibling', () => {
+    const content = document.createElement('div');
+    const title1 = document.createElement('div');
+    title1.setAttribute('stylename', 'chTableTitle');
+
+    const title2 = document.createElement('div');
+    title2.setAttribute('stylename', 'attFigureTitle');
+    const paragraph = document.createElement('p');
+
+    content.appendChild(title1); // no sibling
+    content.appendChild(title2);
+    content.appendChild(paragraph); // not a table/figure
+
+    expect(() => {
+      (handler as unknown as { wrapTablesAndFiguresWithTitles(content: HTMLElement): void })
+        .wrapTablesAndFiguresWithTitles(content);
+    }).not.toThrow();
+  });
 });
 describe('buildRefToPageMap', () => {
   let handler: PDFHandler;
