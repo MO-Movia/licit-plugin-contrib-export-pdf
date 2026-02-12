@@ -37,7 +37,7 @@ export function buildSectionStructure(nodeList: Node[], styles: StoredStyle[]): 
       children: []
     };
     nodes[level] = value.children;
-    nodes[level - 1].push(value);
+    nodes[level - 1]?.push(value);
     return nodes;
   }, [[]]).shift();
 
@@ -60,9 +60,7 @@ export function flattenStructure(structure: SectionNodeStructure[]): FlatSection
       for (const child of section.children) {
         flattenedSection.childrenIds.push(child.id);
       }
-
-      flattenedStructure.push(flattenedSection);
-      flattenedStructure.push(...flattenStructure(section.children));
+      flattenedStructure.push(flattenedSection, ...flattenStructure(section.children));
     } else {
       delete section.children;
       flattenedStructure.push(flattenedSection);
@@ -106,8 +104,7 @@ function getCheckedChildSection(section: FlatSectionNodeStructure, flatStructure
     const childSection = flatStructure.find(section => section.id === id);
 
     if (childSection?.isChecked) {
-      checkedChildSection.push(childSection.id);
-      checkedChildSection.push(...getCheckedChildSection(childSection, flatStructure));
+      checkedChildSection.push(childSection.id, ...getCheckedChildSection(childSection, flatStructure));
     }
   }
 
@@ -138,7 +135,12 @@ export function filterDocumentSections(
   const proseMirrorContainer = renderedDoc.getElementsByClassName('ProseMirror')[0] ?? null;
 
   if (proseMirrorContainer) {
-    const tempTocNodeList = JSON.parse(JSON.stringify(nodes));
+    const tempTocNodeList = nodes.map(n => ({
+      attrs: {
+        objectId: n.attrs?.objectId,
+        styleName: n.attrs?.styleName
+      }
+    }));
 
     for (const id of excludedNodes) {
       const node = nodes.find(node => node.attrs.objectId === id);
