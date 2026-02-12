@@ -62,6 +62,8 @@ module.exports = {
     global: false,
     CSS: false,
     globalThis: false,
+    HTMLTableElement: false,
+    Document: false
   },
   overrides: [
     {

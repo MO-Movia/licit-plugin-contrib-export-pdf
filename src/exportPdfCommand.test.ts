@@ -1,8 +1,8 @@
-import {ExportPDFCommand} from './exportPdfCommand';
-import {EditorState} from 'prosemirror-state';
-import {Transform} from 'prosemirror-transform';
-import {EditorView} from 'prosemirror-view';
-import {ExportPDF} from './exportPdf';
+import { ExportPDFCommand } from './exportPdfCommand';
+import { EditorState } from 'prosemirror-state';
+import { Transform } from 'prosemirror-transform';
+import { EditorView } from 'prosemirror-view';
+import { ExportPDF } from './exportPdf';
 
 describe('Export PDF Command', () => {
   it('isEnabled returns true', () => {
@@ -20,7 +20,7 @@ describe('Export PDF Command', () => {
     const mockEditorView = {} as EditorView;
     const docJSON = {
       type: 'doc',
-      attrs: {layout: null, padding: null, width: null},
+      attrs: { layout: null, padding: null, width: null },
       content: [
         {
           type: 'paragraph',
@@ -36,7 +36,7 @@ describe('Export PDF Command', () => {
           content: [
             {
               type: 'text',
-              marks: [{type: 'mark-font-type', attrs: {name: 'Arial Black'}}],
+              marks: [{ type: 'mark-font-type', attrs: { name: 'Arial Black' } }],
               text: 'First line Arial black',
             },
           ],
@@ -55,7 +55,7 @@ describe('Export PDF Command', () => {
           content: [
             {
               type: 'list_item',
-              attrs: {align: null},
+              attrs: { align: null },
               content: [
                 {
                   type: 'paragraph',
@@ -68,7 +68,7 @@ describe('Export PDF Command', () => {
                     paddingBottom: null,
                     paddingTop: null,
                   },
-                  content: [{type: 'text', text: 'List 1'}],
+                  content: [{ type: 'text', text: 'List 1' }],
                 },
               ],
             },
@@ -88,7 +88,7 @@ describe('Export PDF Command', () => {
           content: [
             {
               type: 'list_item',
-              attrs: {align: null},
+              attrs: { align: null },
               content: [
                 {
                   type: 'paragraph',
@@ -101,7 +101,7 @@ describe('Export PDF Command', () => {
                     paddingBottom: null,
                     paddingTop: null,
                   },
-                  content: [{type: 'text', text: 'Child'}],
+                  content: [{ type: 'text', text: 'Child' }],
                 },
               ],
             },
@@ -121,7 +121,7 @@ describe('Export PDF Command', () => {
           content: [
             {
               type: 'list_item',
-              attrs: {align: null},
+              attrs: { align: null },
               content: [
                 {
                   type: 'paragraph',
@@ -134,7 +134,7 @@ describe('Export PDF Command', () => {
                     paddingBottom: null,
                     paddingTop: null,
                   },
-                  content: [{type: 'text', text: 'List 2'}],
+                  content: [{ type: 'text', text: 'List 2' }],
                 },
               ],
             },
@@ -151,7 +151,7 @@ describe('Export PDF Command', () => {
             paddingBottom: null,
             paddingTop: null,
           },
-          content: [{type: 'text', text: 'Align'}],
+          content: [{ type: 'text', text: 'Align' }],
         },
         {
           type: 'paragraph',
@@ -167,21 +167,18 @@ describe('Export PDF Command', () => {
           content: [
             {
               type: 'text',
-              marks: [{type: 'mark-text-color', attrs: {color: '#f20d96'}}],
+              marks: [{ type: 'mark-text-color', attrs: { color: '#f20d96' } }],
               text: 'Font',
             },
-            {type: 'text', text: ' '},
+            { type: 'text', text: ' ' },
             {
               type: 'text',
               marks: [
-                {
-                  type: 'mark-text-highlight',
-                  attrs: {highlightColor: '#e5e5e5'},
-                },
+                { type: 'mark-text-highlight', attrs: { highlightColor: '#e5e5e5' } },
               ],
               text: 'Color ',
             },
-            {type: 'text', marks: [{type: 'strong'}], text: 'align '},
+            { type: 'text', marks: [{ type: 'strong' }], text: 'align ' },
             {
               type: 'text',
               marks: [
@@ -194,23 +191,20 @@ describe('Export PDF Command', () => {
                     title: null,
                   },
                 },
-                {type: 'em'},
+                { type: 'em' },
               ],
               text: 'Link to google',
             },
-            {type: 'text', marks: [{type: 'em'}], text: ' '},
-            {type: 'text', marks: [{type: 'underline'}], text: 'underline '},
+            { type: 'text', marks: [{ type: 'em' }], text: ' ' },
+            { type: 'text', marks: [{ type: 'underline' }], text: 'underline ' },
             {
               type: 'text',
               marks: [
-                {type: 'em'},
-                {type: 'strong'},
-                {type: 'mark-text-color', attrs: {color: '#e5e5e5'}},
-                {
-                  type: 'mark-text-highlight',
-                  attrs: {highlightColor: '#979797'},
-                },
-                {type: 'underline'},
+                { type: 'em' },
+                { type: 'strong' },
+                { type: 'mark-text-color', attrs: { color: '#e5e5e5' } },
+                { type: 'mark-text-highlight', attrs: { highlightColor: '#979797' } },
+                { type: 'underline' },
               ],
               text: 'combined',
             },
@@ -228,7 +222,7 @@ describe('Export PDF Command', () => {
             paddingTop: null,
             level: 1,
           },
-          content: [{type: 'text', text: 'Header 1'}],
+          content: [{ type: 'text', text: 'Header 1' }],
         },
         {
           type: 'paragraph',
@@ -244,7 +238,7 @@ describe('Export PDF Command', () => {
         },
         {
           type: 'table',
-          attrs: {marginLeft: null},
+          attrs: { marginLeft: null },
           content: [
             {
               type: 'table_row',
@@ -271,11 +265,7 @@ describe('Export PDF Command', () => {
                         paddingTop: null,
                       },
                       content: [
-                        {
-                          type: 'text',
-                          marks: [{type: 'strong'}],
-                          text: 'Cell 1',
-                        },
+                        { type: 'text', marks: [{ type: 'strong' }], text: 'Cell 1' },
                       ],
                     },
                   ],
@@ -301,7 +291,7 @@ describe('Export PDF Command', () => {
                         paddingBottom: null,
                         paddingTop: null,
                       },
-                      content: [{type: 'text', text: 'Cell 2'}],
+                      content: [{ type: 'text', text: 'Cell 2' }],
                     },
                   ],
                 },
@@ -333,8 +323,8 @@ describe('Export PDF Command', () => {
             paddingTop: null,
           },
           content: [
-            {type: 'text', text: 'Subscript '},
-            {type: 'text', marks: [{type: 'super'}], text: '2 '},
+            { type: 'text', text: 'Subscript ' },
+            { type: 'text', marks: [{ type: 'super' }], text: '2 ' },
           ],
         },
       ],
@@ -344,10 +334,9 @@ describe('Export PDF Command', () => {
       () => {
         return null;
       },
-      mockEditorView,
-      docJSON
+      mockEditorView, docJSON
     );
-    expect(mockExportPDF.exportPdf).toHaveBeenCalledWith(mockEditorView, null);
+    expect(mockExportPDF.exportPdf).toHaveBeenCalledWith(mockEditorView, docJSON);
     expect(result).toBe(true);
   });
 
@@ -389,23 +378,9 @@ describe('Export PDF Command', () => {
       )
     ).toBeNull();
   });
-  it('should handle execute', () => {
-    const command = new ExportPDFCommand();
-    expect(
-      command.execute(
-        {} as unknown as EditorState,
-        () => {},
-        {} as unknown as EditorView,
-        {}
-      )
-    ).toBeFalsy();
-    expect(
-      command.execute(
-        {} as unknown as EditorState,
-        () => {},
-        {} as unknown as EditorView,
-        {}
-      )
-    ).toBeFalsy();
+  it('should handle execute',()=>{
+       const command = new ExportPDFCommand();
+       expect(command.execute({} as unknown as EditorState,()=>{},{} as unknown as EditorView,{})).toBeFalsy();
+         expect(command.execute({} as unknown as EditorState,()=>{},{} as unknown as EditorView,{})).toBeFalsy();
   });
 });

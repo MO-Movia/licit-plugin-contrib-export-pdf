@@ -51,7 +51,7 @@ export class ExportPDFCommand extends UICommand {
       return false;
     }
     ExportPDFCommand.isPreviewFormOpen = true;
-    return this.exportPdf.exportPdf(view, null);
+    return this.exportPdf.exportPdf(view, _doc);
   };
 
   public renderLabel() {

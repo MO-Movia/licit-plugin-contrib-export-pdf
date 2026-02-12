@@ -1,7 +1,7 @@
-import {EditorView} from 'prosemirror-view';
-import {EditorState} from 'prosemirror-state';
-import {createPopUp} from '@modusoperandi/licit-ui-commands';
-import {PreviewForm} from './preview';
+import { EditorView } from 'prosemirror-view';
+import { createPopUp } from '@modusoperandi/licit-ui-commands';
+import { PreviewForm } from './preview';
+import { processDocumentTables } from './table-image-helper';
 
 // [FS] IRAD-1893 2022-07-25
 // Export to PDF file.
@@ -10,25 +10,35 @@ export class ExportPDF {
   /**
    * Export content to pdf and save locally.
    * @param  {EditorView} view
+   * @param  {unknown} doc
    * @returns boolean
    */
   public exportPdf(view: EditorView, doc: unknown): boolean {
     const originalState = view.state;
     let newDoc;
-    if (doc) {
+    if (doc && doc['type'] === 'doc') {
            newDoc = view.state?.schema?.nodeFromJSON(doc);
         }
         else{
              newDoc = view.state.doc;
         }
 
-    const fullDocState = EditorState.create({
-      doc: newDoc,
-      schema: originalState.schema,
-      plugins: originalState.plugins,
-    });
+    // Create new state while preserving plugin states
+    const fullDocState = originalState.apply(
+      originalState.tr.replaceWith(
+        0,
+        originalState.doc.content.size,
+        newDoc.content
+      )
+    );
+
     document.body.classList.add('export-pdf-mode');
     view.updateState(fullDocState);
+
+    const data1 = view.dom?.parentElement?.parentElement;
+    for (const element of data1.children) {
+      processDocumentTables(element as HTMLElement);
+    }
 
     const viewPops = {
       editorState: fullDocState,
@@ -101,9 +111,10 @@ export function createTable(config): void {
 }
 
 function escapeCSSId(id: string): string {
-  return CSS?.escape
-    ? CSS.escape(id)
-    : id.replace(/^\d/, '_$&').replace(/[^a-zA-Z0-9\-_:.]/g, '_');
+  if (CSS?.escape) return CSS.escape(id);
+  return id
+    .replaceAll(/^\d/, '_$&')
+    .replaceAll(/[^a-zA-Z0-9\-_:.]/g, '_');
 }
 
 function generateList({
@@ -126,26 +137,32 @@ function generateList({
   container.classList.add('prepages');
   let elementCount = 0;
 
-  titleElements.forEach((styleName, i) => {
+  for (const [i, styleName] of titleElements.entries()) {
     const titleHierarchy = i + 1;
     const elements = content.querySelectorAll(
       `p[stylename="${styleName}"], h4[stylename="${styleName}"]`
     );
 
-    elements.forEach((el) => {
+    for (const [, el] of elements.entries()) {
+      // Remove old class if it exists to avoid duplicates
+      el.classList.remove(cssClass);
+
       el.classList.add(cssClass);
       el.setAttribute(dataAttr, titleHierarchy.toString());
 
-      if (!el.id) {
-        elementCount++;
-        el.id = `${idPrefix}-${elementCount}`;
-      }
-    });
-  });
+      // This ensures that after filterDocumentSections, the IDs are correct
+      elementCount++;
+      const newId = `${idPrefix}-${elementCount}`;
+      el.id = newId;
+
+      // Also set data-ref for internal linking
+      el.dataset.ref = String(newId);
+    }
+  }
 
   const allElements = content.querySelectorAll(`.${cssClass}`);
 
-  allElements.forEach((el, index) => {
+  for (const [index, el] of allElements.entries()) {
     const safeId = escapeCSSId(el.id);
 
     let text = el.textContent.trim();
@@ -166,5 +183,5 @@ function generateList({
     linkPara.classList.add(elementClass);
     linkPara.innerHTML = `<a href="#${safeId}">${text}</a>`;
     listDiv.appendChild(linkPara);
-  });
+  }
 }
