@@ -208,7 +208,6 @@ export class PDFHandler extends Handler {
       if (nextElement) {
         // Create a wrapper div
         const wrapper = document.createElement('div');
-        wrapper.style.breakInside  = 'avoid';
         wrapper.style.breakInside = 'avoid';
         wrapper.className = 'table-figure-wrapper';
 
