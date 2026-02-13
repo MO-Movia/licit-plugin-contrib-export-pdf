@@ -704,7 +704,9 @@ export class PDFHandler extends Handler {
 
 
   private formatLongDate(dateStr: string): string {
-    const date = new Date(dateStr);
+    const [day, month, year] = dateStr.split('/');
+    const isoDate = `${year}-${month}-${day}`;
+    const date = new Date(isoDate);
 
     if (Number.isNaN(date.getTime())) {
       return '';
@@ -717,15 +719,6 @@ export class PDFHandler extends Handler {
     });
   }
 
-
-
-  private truncateTitle(title: string, maxLength = 22): string {
-    if (!title || title.length <= maxLength) {
-      return title;
-    }
-    return title.slice(0, maxLength) + '...';
-  }
-
   public beforePageLayout(): void {
     this.doIT();
   }
@@ -734,15 +727,14 @@ export class PDFHandler extends Handler {
     const markingData = PreviewForm['pageBanner'];
     const hasBannerMarking = !!markingData;
     const rawTitle = PreviewForm['documentTitle'] ?? '';
-    const truncatedTitle = this.truncateTitle(rawTitle);
 
     const formattedDate = PreviewForm['formattedDate']
       ? this.formatLongDate(PreviewForm['formattedDate'])
       : '';
 
     const titleData = formattedDate
-      ? `${truncatedTitle}, ${formattedDate}`
-      : truncatedTitle;
+      ? `${rawTitle}, ${formattedDate}`
+      : rawTitle;
 
     let nonAfttpFooterColor = '';
     let opt = '';
@@ -787,15 +779,22 @@ export class PDFHandler extends Handler {
     if (hasBannerMarking && markingData) {
       if (titleData) {
         headerTitleContent = `
-      @top-left {
+      @top-left-corner {
         content: "${titleData}";
         font-family: "Times New Roman", Times, serif;
         font-size: 12pt;
         text-align: left;
         padding-top: 60px;
+        padding-left: 95px;
         color: #000000;
-        font-weight: bold;
+        font-weight: normal;
         letter-spacing: 0.2px;
+        white-space: nowrap;
+        width: auto;
+      }
+      
+      @top-left {
+        content: "";
       }
     `;
       }
