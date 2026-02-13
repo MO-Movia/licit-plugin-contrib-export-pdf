@@ -165,46 +165,71 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   public replaceImageWidth = (imageElement): void => {
     // Get the original width of the image.
     const originalWidth = Number.parseInt(imageElement.getAttribute('width'), 10);
-    const originalHeight = Number.parseInt(imageElement.getAttribute('height'), 10);
+    if (originalWidth < 620) return;
 
-    if (originalWidth <= 620) return;
-    const contentDiv = imageElement.closest('.enhanced-table-figure-content');
+    const contentDiv = imageElement.closest('.enhanced-table-figure-content') as HTMLElement | null;
+    if (!contentDiv) return;
 
-    if (contentDiv) {
-      const figure = contentDiv.closest('.enhanced-table-figure');
-      if (figure) {
-        let prevElement = figure.previousElementSibling;
-        while (prevElement) {
-          const styleName = prevElement.getAttribute('stylename');
-          if (styleName === 'attFigureTitle' || styleName === 'chFigureTitle') {
-            contentDiv.insertBefore(prevElement, contentDiv.firstChild);
-            (prevElement as HTMLElement).style.textAlign = 'left';
-            (prevElement as HTMLElement).style.alignSelf = 'flex-start';
-            (prevElement as HTMLElement).style.marginLeft = '-132px'
-            break;
-          }
-          prevElement = prevElement.previousElementSibling;
-        }
+    if (contentDiv.dataset?.orientation === 'landscape') {
+      contentDiv.style.width = '544px';
+      contentDiv.style.height = '854px';
+
+      const clip = contentDiv.getElementsByClassName('molm-czi-image-view-body-img-clip')[0] as HTMLElement | undefined;
+      if (clip?.firstElementChild) {
+        (clip.firstElementChild as HTMLElement).style.width = '854px';
+        (clip.firstElementChild as HTMLElement).style.height = '544px';
       }
 
-      // Rotate the entire content div counter-clockwise 90 degrees
-      contentDiv.style.transform = 'rotate(-90deg)';
-      contentDiv.style.transformOrigin = 'center center';
-      contentDiv.style.width = `${originalHeight}px`;
-      contentDiv.style.height = `${originalWidth}px`;
-      contentDiv.style.display = 'flex';
-      contentDiv.style.flexDirection = 'column';
-      contentDiv.style.justifyContent = 'center';
-      contentDiv.style.alignItems = 'center';
-      imageElement.style.maxWidth = 'none';
-      const notesDiv = contentDiv.querySelector('.enhanced-table-figure-notes');
-      if (notesDiv) { (notesDiv as HTMLElement).style.width = `${originalWidth}px` }
-      if (figure) {
-        figure.style.overflow = 'hidden';
-        figure.style.paddingLeft = '43px';
+      const imgBody = contentDiv.getElementsByClassName('molm-czi-image-view-body-img')[0] as HTMLElement | undefined;
+      if (imgBody) imgBody.style.width = '854px';
+
+      const img = contentDiv.getElementsByTagName('img')[0];
+      if (img) {
+        img.setAttribute('height', '544');
+        img.setAttribute('width', '854');
       }
     }
+
+    const figure = contentDiv.closest('.enhanced-table-figure');
+    if (figure) {
+      this.pullFigureTitleIntoContent(figure as HTMLElement, contentDiv);
+    }
+
+    // Rotate the entire content div counter-clockwise 90 degrees
+    Object.assign(contentDiv.style, {
+      transform: 'rotate(-90deg)',
+      transformOrigin: 'center center',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center',
+    });
+
+    imageElement.style.maxWidth = 'none';
+
+    const notesDiv = contentDiv.closest('.enhanced-table-figure-notes');
+    if (notesDiv) (notesDiv as HTMLElement).style.width = `${originalWidth}px`;
+
+    if (figure) {
+      (figure  as HTMLElement).style.overflow = 'hidden';
+      (figure as HTMLElement) .style.paddingLeft = '43px';
+    }
   };
+
+  private pullFigureTitleIntoContent(figure: HTMLElement, contentDiv: HTMLElement): void {
+    let prevElement = figure.previousElementSibling;
+    while (prevElement) {
+      const styleName = prevElement.getAttribute('stylename');
+      if (styleName === 'attFigureTitle' || styleName === 'chFigureTitle') {
+        contentDiv.insertBefore(prevElement, contentDiv.firstChild);
+        (prevElement as HTMLElement).style.textAlign = 'left';
+        (prevElement as HTMLElement).style.alignSelf = 'flex-start';
+        (prevElement as HTMLElement).style.marginLeft = '-132px';
+        break;
+      }
+      prevElement = prevElement.previousElementSibling;
+    }
+  }
 
   public replaceTableWidth = (tableElement: HTMLElement): void => {
 
