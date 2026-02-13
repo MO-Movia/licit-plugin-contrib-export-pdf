@@ -52,9 +52,12 @@ export class PDFHandler extends Handler {
     this.prepagesCount = 0;
     PDFHandler.state.currentPage = 0;
     this.done = false;
+    this.processedChapterRefs.clear();
     document.documentElement.style.removeProperty(
-      '--pagedjs-string-last-chapTitled'
-    );
+    '--pagedjs-string-last-chapTitled'
+  );
+
+  this.wrapTablesAndFiguresWithTitles(content);
 
     if (PreviewForm.showToc() || PreviewForm.showTof() || PreviewForm.showTot()) {
       createTable({
@@ -185,6 +188,39 @@ export class PDFHandler extends Handler {
     processCounters();
   }
 
+  private wrapTablesAndFiguresWithTitles(content: HTMLElement): void {
+  const titleSelectors = [
+    'attTableTitle',
+    'chTableTitle',
+    'attFigureTitle',
+    'chFigureTitle',
+  ];
+
+  for (const titleStyle of titleSelectors) {
+    const titles = content.querySelectorAll(`[stylename="${titleStyle}"]`);
+
+    for (const title of titles) {
+      if (!(title instanceof HTMLElement)) continue;
+
+      // Get the next sibling (the actual table/figure)
+      const nextElement = title.nextElementSibling;
+
+      if (nextElement) {
+        // Create a wrapper div
+        const wrapper = document.createElement('div');
+        wrapper.style.breakInside = 'avoid';
+        wrapper.className = 'table-figure-wrapper';
+
+        // Insert wrapper before title
+        title.parentNode?.insertBefore(wrapper, title);
+
+        // Move title and next element into wrapper
+        wrapper.appendChild(title);
+        wrapper.appendChild(nextElement);
+      }
+    }
+  }
+}
   private handleAfttpFooter(
     pageFragment: HTMLElement,
     processTocAndFooter: () => void
@@ -870,6 +906,12 @@ ${nonAfttpFooterColor}
 list-style: none;
 }
 
+.table-figure-wrapper {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+  display: block;
+}
+  
 .forcePageSpacer {
   break-after: page;
   page-break-after: always; 
