@@ -507,9 +507,6 @@ private handleSpecialCounters(
   tot: string | null,
   label: number[]
 ): void {
-  const isTotContinuation =
-    !!tot && el.getAttribute('stylename')?.endsWith('Cont');
-
   if (tof) {
     this.counters[11]++;
     if (this.counters[11]) {
@@ -519,6 +516,8 @@ private handleSpecialCounters(
   }
 
   if (tot) {
+    const isTotContinuation =
+      !!tot && el.getAttribute('stylename')?.endsWith('Cont');
     if (!isTotContinuation) {
       this.counters[12]++;
     }
