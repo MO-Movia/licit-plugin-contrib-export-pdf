@@ -43,13 +43,17 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   private static isTot: boolean = true;
   private static isCitation: boolean = false;
   private static isTitle: boolean = true;
-  private static lastUpdated: boolean = false;
   private static readonly tocHeader: string[] = [];
   private static readonly tofHeader: string[] = [];
   private static readonly totHeader: string[] = [];
   private static readonly tocNodeList: Node[] = [];
   private static readonly tofNodeList: Node[] = [];
   private static readonly totNodeList: Node[] = [];
+  private static documentTitle: string = '';
+  private static pageBanner: {
+    text: string;
+    color: string;
+  } | null = null;
   public sectionListElements: React.ReactElement<any>[] = [];
   private _popUp = null;
 
@@ -101,6 +105,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   }
 
   public componentDidMount(): void {
+    PreviewForm.pageBanner = null;
     const paged = new Previewer();
     this.showAlert();
 
@@ -119,12 +124,20 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     if (!data || !divContainer) return;
 
     const data1 = data.cloneNode(true) as HTMLElement;
-
+    this.insertSectionHeaders(data1, editorView);
     this.replaceInfoIcons(data1);
     this.updateImageWidths(data1);
     this.prepareEditorContent(data1);
     this.updateTableWidths(data1);
-
+    if (this.isAfttpDoc(editorView)) {
+      const markingData  = this.extractBannerMarkingFromTableWrapper(data1);
+      const docTitle = this.getDocumentTitle(editorView);
+      PreviewForm.documentTitle = docTitle;
+      PreviewForm.pageBanner = markingData ;
+    } else {
+      PreviewForm.pageBanner = null;
+      PreviewForm.documentTitle = null;
+    }
     editorView.dispatch(editorView.state?.tr.setMeta('suppressOnChange', true));
     PDFHandler.state.isOnLoad = true;
     paged.preview(data1, [], divContainer).then(() => {
@@ -132,7 +145,6 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       this.calcLogic()
     });
   }
-
 
   public showAlert(): void {
     const anchor = null;
@@ -150,39 +162,48 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     });
   }
 
-  public replaceImageWidth = (imageElement, container: HTMLElement): void => {
+  public replaceImageWidth = (imageElement): void => {
     // Get the original width of the image.
     const originalWidth = Number.parseInt(imageElement.getAttribute('width'), 10);
+    const originalHeight = Number.parseInt(imageElement.getAttribute('height'), 10);
 
-    if (originalWidth <= 600) return;
+    if (originalWidth <= 620) return;
+    const contentDiv = imageElement.closest('.enhanced-table-figure-content');
 
-    imageElement.style.maxWidth = '600px';
-    const enhancedFigures = container.querySelectorAll('.enhanced-table-figure[data-type="enhanced-table-figure"]');
-
-    for (const figure of enhancedFigures) {
-      const contentDiv = figure.querySelector<HTMLElement>('.enhanced-table-figure-content');
-      if (!contentDiv) continue;
-
-      const hasEnhancedContent =
-        contentDiv.classList.contains('enhanced-table-figure-content') ||
-        contentDiv.querySelector('.enhanced-table-figure-content');
-
-      if (hasEnhancedContent && originalWidth > 624) {
-        // Rotate image if within enhanced figure
-        imageElement.style.transform = 'rotate(-90deg)';
-        imageElement.style.maxWidth = '575px';
-
-        // Hide overflow in parent wrapper
-        let parent = imageElement.parentElement as HTMLElement | null;
-        while (parent) {
-          if (parent.classList.contains('enhanced-table-figure')) {
-            parent.style.overflow = 'hidden';
+    if (contentDiv) {
+      const figure = contentDiv.closest('.enhanced-table-figure');
+      if (figure) {
+        let prevElement = figure.previousElementSibling;
+        while (prevElement) {
+          const styleName = prevElement.getAttribute('stylename');
+          if (styleName === 'attFigureTitle' || styleName === 'chFigureTitle') {
+            contentDiv.insertBefore(prevElement, contentDiv.firstChild);
+            (prevElement as HTMLElement).style.textAlign = 'left';
+            (prevElement as HTMLElement).style.alignSelf = 'flex-start';
+            (prevElement as HTMLElement).style.marginLeft = '-132px'
             break;
           }
-          parent = parent.parentElement;
-        };
-      };
-    };
+          prevElement = prevElement.previousElementSibling;
+        }
+      }
+
+      // Rotate the entire content div counter-clockwise 90 degrees
+      contentDiv.style.transform = 'rotate(-90deg)';
+      contentDiv.style.transformOrigin = 'center center';
+      contentDiv.style.width = `${originalHeight}px`;
+      contentDiv.style.height = `${originalWidth}px`;
+      contentDiv.style.display = 'flex';
+      contentDiv.style.flexDirection = 'column';
+      contentDiv.style.justifyContent = 'center';
+      contentDiv.style.alignItems = 'center';
+      imageElement.style.maxWidth = 'none';
+      const notesDiv = contentDiv.querySelector('.enhanced-table-figure-notes');
+      if (notesDiv) { (notesDiv as HTMLElement).style.width = `${originalWidth}px` }
+      if (figure) {
+        figure.style.overflow = 'hidden';
+        figure.style.paddingLeft = '43px';
+      }
+    }
   };
 
   public replaceTableWidth = (tableElement: HTMLElement): void => {
@@ -191,40 +212,179 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     const firstRow = tableElement.querySelector('tr');
     if (!firstRow) return;
 
-    let totalWidth = 0;
-    const cells = firstRow.querySelectorAll<HTMLElement>('td, th');
-    for (const cell of cells) {
-      const colWidthAttr = cell.dataset.colwidth;
-      if (colWidthAttr) {
-        totalWidth += Number(colWidthAttr);
-      }
-    }
+    let totalWidth = tableElement.getAttribute('pdf-width') ? Number(tableElement.getAttribute('pdf-width')) : 0;
 
     if (totalWidth > 600) {
       tableElement.style.maxWidth = '600px';
 
-      // Rotate table 
+      // Rotate table if width exceeds 624px
       if (totalWidth > 624) {
-        tableElement.style.transform = 'rotate(-90deg)';
-
-        // Hide overflow in parent wrapper
-        const targetClasses = ['enhanced-table-figure', 'enhanced-table-figure-content', 'tableWrapper', 'tablewrapper'];
-        let parent: HTMLElement | null = tableElement.parentElement;
-        while (parent) {
-          if (targetClasses.some((cls) => parent.classList.contains(cls))) {
-            parent.style.overflow = 'hidden';
-            parent.style.overflowX = 'hidden';
-            parent.style.overflowY = 'hidden';
-          };
-          parent = parent.parentElement;
-        };
-
-        // Set table height
-        const tableHeight = tableElement.offsetHeight || totalWidth;
-        tableElement.style.height = `${tableHeight}px`;
-      };
-    };
+        this.rotateWideTable(tableElement, totalWidth);
+      }
+    }
   };
+
+  public extractBannerMarkingFromTableWrapper(
+    root: HTMLElement
+  ): { text: string; color: string } | null {
+
+    // Only first row matters
+    const firstRow = root.querySelector('.tableWrapper tr');
+    if (!firstRow) return null;
+
+    // Find elements that explicitly define color
+    const styledElements = Array.from(
+      firstRow.querySelectorAll<HTMLElement>('[style]')
+    ).filter(el =>
+      /color\s{0,10}:\s{0,10}[^;]{1,50}/i.test(
+        el.getAttribute('style') || ''
+      )
+    );
+    if (!styledElements.length) return null;
+
+    // Pick the deepest one (most specific)
+    const target = styledElements.at(-1);
+
+    const styleAttr = target.getAttribute('style');
+    const match = /color\s{0,10}:\s{0,10}([^;]{1,50})/i.exec(styleAttr);
+    if (!match) return null;
+
+    return {
+      text: target.textContent?.trim() ?? '',
+      color: match[1].trim(),
+    };
+  }
+
+  rotateWideTable(tableElement: HTMLElement, totalWidth: number): void {
+    const TABLE_MAX_WIDTH = 675;
+    const TABLE_FIXED_HEIGHT = 555;
+    const EXTRA_BLOCK_HEIGHT = 70;
+    const MAX_ROTATED_WIDTH = 670;
+
+    const tableWrapper = tableElement.closest<HTMLElement>('.tableWrapper');
+    if (!tableWrapper) return;
+
+    const contentDiv =
+      tableWrapper.closest<HTMLElement>('.enhanced-table-figure-content');
+    if (!contentDiv) return;
+
+    const figure =
+      contentDiv.closest<HTMLElement>('.enhanced-table-figure') ?? null;
+
+    let tableContHeight =
+      Number(tableElement.getAttribute('pdf-height')) || undefined;
+
+    const tableHeight = tableElement.offsetHeight || totalWidth;
+
+    const notesDiv = contentDiv.querySelector<HTMLElement>(
+      '.enhanced-table-figure-notes'
+    );
+    const capcoDiv = contentDiv.querySelector<HTMLElement>(
+      '.enhanced-table-figure-capco'
+    );
+
+    if (figure) {
+      Object.assign(figure.style, {
+        maxWidth: `${TABLE_MAX_WIDTH}px`,
+        width: `${TABLE_MAX_WIDTH}px`,
+      });
+
+      // Move table title inside contentDiv
+      let prev = figure.previousElementSibling as HTMLElement | null;
+      while (prev) {
+        const styleName = prev.getAttribute('stylename');
+        if (styleName === 'attTableTitle' || styleName === 'chTableTitle') {
+          contentDiv.insertBefore(prev, contentDiv.firstChild);
+          Object.assign(prev.style, {
+            textAlign: 'left',
+            alignSelf: 'flex-start',
+          });
+          break;
+        }
+        prev = prev.previousElementSibling as HTMLElement | null;
+      }
+    }
+
+    // ---------- NOTES & CAPCO ----------
+    this.adjustNotesCapcoAndFigureWidth(
+      notesDiv,
+      capcoDiv,
+      figure,
+      totalWidth,
+      tableContHeight,
+      EXTRA_BLOCK_HEIGHT,
+      MAX_ROTATED_WIDTH
+    );
+
+    // ---------- ROTATION ----------
+    Object.assign(contentDiv.style, {
+      transform: 'rotate(-90deg)',
+      transformOrigin: 'center center',
+      width: `${tableHeight}px`,
+      height: `${totalWidth}px`,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+    });
+
+    Object.assign(tableElement.style, {
+      maxWidth: 'none',
+      height: `${TABLE_FIXED_HEIGHT}px`,
+    });
+
+    // ---------- OVERFLOW HIDING ----------
+    const overflowStyle = {
+      overflow: 'hidden',
+      overflowX: 'hidden',
+      overflowY: 'hidden',
+    };
+
+    const targetClasses = new Set([
+      'enhanced-table-figure',
+      'enhanced-table-figure-content',
+      'tableWrapper',
+      'tablewrapper',
+    ]);
+
+    let parent: HTMLElement | null = tableElement.parentElement;
+
+    while (parent) {
+      const hasTargetClass = Array.from(targetClasses).some(cls =>
+        parent.classList.contains(cls)
+      );
+
+      if (hasTargetClass) {
+        Object.assign(parent.style, overflowStyle);
+      }
+
+      parent = parent.parentElement;
+    }
+
+  }
+
+  private adjustNotesCapcoAndFigureWidth(
+    notesDiv: HTMLElement | null,
+    capcoDiv: HTMLElement | null,
+    figure: HTMLElement | null,
+    totalWidth: number,
+    tableContHeight: number,
+    EXTRA_BLOCK_HEIGHT: number,
+    MAX_ROTATED_WIDTH: number
+  ): void {
+    if (notesDiv) {
+      notesDiv.style.width = `${totalWidth}px`;
+      tableContHeight += EXTRA_BLOCK_HEIGHT;
+    }
+
+    if (capcoDiv) {
+      capcoDiv.style.width = `${totalWidth}px`;
+      tableContHeight += EXTRA_BLOCK_HEIGHT;
+    }
+
+    if (figure && tableContHeight < MAX_ROTATED_WIDTH) {
+      figure.style.width = `${tableContHeight}px`;
+    }
+  }
 
   public getToc = async (view): Promise<void> => {
       // Reset static lists
@@ -504,33 +664,7 @@ export class PreviewForm extends React.PureComponent<Props, State> {
                     Citation
                   </label>
                 </div>
-
-                <div
-                  style={{
-                    marginTop: '8px',
-                    display: 'flex',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                  }}
-                >
-                  <div>
-                    <input
-                      type="checkbox"
-                      name="infoicon"
-                      id="licit-pdf-export-last-updated-option"
-                      onClick={this.handleLastUpdated}
-                    />{' '}
-                  </div>
-
-                  <label
-                    htmlFor="licit-pdf-export-citation-option"
-                    style={{ marginLeft: '5px' }}
-                  >
-                    Last updated
-                  </label>
-                </div>
                 
-
                 <h6 style={{ marginRight: 'auto', marginTop: '30px' }}>
                   Document Sections:
                 </h6>
@@ -621,14 +755,6 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     }
   };
 
-  public handleLastUpdated = (event): void => {
-    if (event.target.checked) {
-      this.lastUpdatedActive();
-    } else {
-      this.lastUpdatedDeactive();
-    }
-  };
-
   public handelCitation = (e: { target: { checked: boolean } }): void => {
     if (e.target.checked) {
       this.citationActive();
@@ -669,22 +795,14 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     PreviewForm.isTitle = false;
   };
 
-  public lastUpdatedActive = (): void => {
-    PreviewForm.lastUpdated = true;
-  }
-
-  public lastUpdatedDeactive = (): void => {
-    PreviewForm.lastUpdated = false;
-  }
-
-
   public citationActive = (): void => {
     PreviewForm.isCitation = true;
   };
 
   public insertFooters = (CitationIcons, trialHtml): void => {
+    const icons: HTMLElement[] = Array.from(CitationIcons as Iterable<HTMLElement>); 
     const selector = trialHtml.querySelector('.ProseMirror');
-    if (CitationIcons.length > 0) {
+    if (icons.length > 0) {
       for (let i = 0; i < 7; i++) {
         if (i === 4) {
           const citation_header = document.createElement('h4');
@@ -708,64 +826,49 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       }
     }
 
-    CitationIcons.forEach((CitationIcon, index) => {
-      const description =
-        CitationIcon.getAttribute('overallcitationcapco') +
-        ' ' +
-        CitationIcon.getAttribute('author') +
-        ' ' +
-        CitationIcon.getAttribute('referenceId') +
-        ' ' +
-        'Date Published' +
-        ' ' +
-        CitationIcon.getAttribute('publisheddate') +
-        ' ' +
-        'ICOD Date' +
-        ' ' +
-        CitationIcon.getAttribute('icod') +
-        ' ' +
-        CitationIcon.getAttribute('documenttitlecapco') +
-        ' ' +
-        CitationIcon.getAttribute('documenttitle') +
-        ' ' +
-        'pp.' +
-        ' ' +
-        CitationIcon.getAttribute('pages') +
-        ' ' +
-        'Extracted information is' +
-        ' ' +
-        CitationIcon.getAttribute('extractedinfocapco') +
-        ' ' +
-        'Overall document classification is' +
-        ' ' +
-        CitationIcon.getAttribute('overalldocumentcapco') +
-        ' ' +
-        'Data Accessed' +
-        ' ' +
-        CitationIcon.getAttribute('dateaccessed') +
-        ' ' +
-        CitationIcon.getAttribute('hyperlink') +
-        ' ' +
-        'Declasify Date' +
-        ' ' +
-        CitationIcon.getAttribute('declassifydate');
-      const newDiv = document.createElement('div');
-      const indexSpan = document.createElement('span');
-      indexSpan.textContent = `[${index + 1}]`;
-      indexSpan.style.fontSize = '80%';
+  for (const [index, CitationIcon] of icons.entries()) {
+    const get = (attr: string) => CitationIcon.getAttribute(attr) ?? '';
 
-      const spaceTextNode = document.createTextNode('  ');
+    const description = [
+      get('overallcitationcapco'),
+      get('author'),
+      get('referenceId'),
+      'Date Published',
+      get('publisheddate'),
+      'ICOD Date',
+      get('icod'),
+      get('documenttitlecapco'),
+      get('documenttitle'),
+      'pp.',
+      get('pages'),
+      'Extracted information is',
+      get('extractedinfocapco'),
+      'Overall document classification is',
+      get('overalldocumentcapco'),
+      'Data Accessed',
+      get('dateaccessed'),
+      get('hyperlink'),
+      'Declasify Date',
+      get('declassifydate'),
+    ].filter(Boolean).join(' ');
 
-      const descriptionSpan = document.createElement('span');
-      descriptionSpan.textContent = description;
-      descriptionSpan.style.fontSize = '80%';
+    const newDiv = document.createElement('div');
 
-      // Append the span elements to the new div
-      newDiv.appendChild(indexSpan);
-      newDiv.appendChild(spaceTextNode);
-      newDiv.appendChild(descriptionSpan);
-      selector.appendChild(newDiv);
-    });
+    const indexSpan = document.createElement('span');
+    indexSpan.textContent = `[${index + 1}]`;
+    indexSpan.style.fontSize = '80%';
+
+    const spaceTextNode = document.createTextNode('  ');
+
+    const descriptionSpan = document.createElement('span');
+    descriptionSpan.textContent = description;
+    descriptionSpan.style.fontSize = '80%';
+
+    newDiv.appendChild(indexSpan);
+    newDiv.appendChild(spaceTextNode);
+    newDiv.appendChild(descriptionSpan);
+    selector.appendChild(newDiv);
+  }
   };
 
   public citationDeactive = (): void => {
@@ -778,9 +881,9 @@ export class PreviewForm extends React.PureComponent<Props, State> {
 
   public addLinkEventListeners = (): void => {
     const links = document.querySelectorAll('.exportpdf-preview-container a');
-    links.forEach((link) => {
+    for (const [_, link] of links.entries()) {
       link.addEventListener('click', this.handleLinkClick);
-    });
+    }
   };
 
   public handleLinkClick = (event: MouseEvent): void => {
@@ -835,6 +938,8 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   };
 
   public calcLogic = (): void => {
+    PreviewForm.pageBanner = null;
+
     const divContainer = document.getElementById('holder');
     if (!divContainer) return;
     divContainer.innerHTML = '';
@@ -856,15 +961,22 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     if (PreviewForm.isCitation) {
       this.replaceCitations(data1);
     }
-
-    if (PreviewForm.lastUpdated) {
-      this.setLastUpdated(editorView);
-    }
-
+    
+    this.setLastUpdated(editorView);
     this.insertSectionHeaders(data1, editorView);
     this.replaceInfoIcons(data1);
     this.updateImageWidths(data1);
     this.updateTableWidths(data1);
+    this.updateStyles(data1);
+    if (this.isAfttpDoc(editorView)) {
+      const markingData  = this.extractBannerMarkingFromTableWrapper(data1);
+      const docTitle = this.getDocumentTitle(editorView);
+      PreviewForm.documentTitle = docTitle;
+      PreviewForm.pageBanner = markingData ;
+    } else {
+      PreviewForm.pageBanner = null;
+      PreviewForm.documentTitle = null;
+    }
 
     const paged = new Previewer();
     this._popUp?.close();
@@ -887,19 +999,28 @@ export class PreviewForm extends React.PureComponent<Props, State> {
     if (proseMirror) {
       proseMirror.setAttribute('contenteditable', 'false');
       proseMirror.classList.remove('czi-prosemirror-editor');
-      proseMirror.querySelectorAll('.molm-czi-image-view-body-img-clip span').forEach(span => {
-        (span as HTMLElement).style.display = 'flex';
-      });
+      const spans = proseMirror.querySelectorAll<HTMLElement>(
+        '.molm-czi-image-view-body-img-clip span'
+      );
+      for (const span of spans) {
+        span.style.display = 'flex';
+      }
     }
   }
 
   private replaceCitations(data: HTMLElement): void {
-    const citations = data.querySelectorAll('.citationnote');
-    citations.forEach((el, idx) => {
+    const citations: HTMLElement[] = Array.from(
+      data.querySelectorAll<HTMLElement>('.citationnote')
+    );
+
+    for (const [idx, el] of citations.entries()) {
       const sup = document.createElement('sup');
       sup.textContent = `[${idx + 1}]`;
-      el.parentNode?.replaceChild(sup, el);
-    });
+
+      if (el.parentNode) {
+        el.parentNode.replaceChild(sup, el);
+      }
+    }
     this.insertFooters(citations, data);
   }
 
@@ -918,75 +1039,243 @@ export class PreviewForm extends React.PureComponent<Props, State> {
   }
 
   private insertSectionHeaders(data: HTMLElement, editorView): void {
-    data.querySelectorAll('.titleHead, .forcePageSpacer, .tocHead, .tofHead, .totHead')
-      .forEach(n => n.remove());
+    const isAfttp = this.isAfttpDoc(editorView);
 
-    let insertBeforeNode: ChildNode | null = data.firstChild;
+    if (!isAfttp) {
+      this.insertSectionHeadersLegacy(data, editorView);
+      return;
+    }
+
+    this.removeExistingHeaders(data);
+
+    const prose = data.querySelector<HTMLElement>('.ProseMirror');
+    const preNodes =
+      prose ? this.extractPreChapterNodes(prose) : [];
+
+    data.innerHTML = '';
 
     if (PreviewForm.isTitle) {
-      const titleDiv = document.createElement('div');
-      titleDiv.classList.add('titleHead', 'prepages');
-
-      const header = document.createElement('h4');
-      header.style.marginBottom = '40px';
-      header.style.color = '#2A6EBB';
-      header.style.textAlign = 'center';
-      header.style.fontWeight = 'bold';
-      header.textContent = editorView?.state?.doc?.attrs?.objectMetaData?.name ?? 'Untitled';
-
-      titleDiv.appendChild(header);
-      insertBeforeNode?.before(titleDiv);
-      insertBeforeNode = titleDiv.nextSibling;
-
-      const titleSpacer = document.createElement('div');
-      titleSpacer.classList.add('forcePageSpacer');
-      titleSpacer.innerHTML = '&nbsp;';
-      insertBeforeNode?.before(titleSpacer);
-      insertBeforeNode = titleSpacer.nextSibling;
+      this.insertTitleSection(data, editorView);
     }
 
+    if (preNodes.length > 0) {
+      this.insertPrePages(data, preNodes);
+    }
+
+    this.insertOptionalSections(data);
+
+    if (prose) {
+      data.appendChild(prose);
+    }
+  }
+
+
+  private insertSectionHeadersLegacy(data: HTMLElement, editorView): void {
+  const elements = data.querySelectorAll<HTMLElement>(
+    '.titleHead, .forcePageSpacer, .tocHead, .tofHead, .totHead'
+  );
+
+  for (const el of elements) el.remove();
+
+  let insertBeforeNode: ChildNode | null = data.firstChild;
+
+  if (PreviewForm.isTitle) {
+    const titleDiv = document.createElement('div');
+    titleDiv.classList.add('titleHead', 'prepages');
+
+    const header = document.createElement('h4');
+    header.style.marginBottom = '40px';
+    header.style.color = '#2A6EBB';
+    header.style.textAlign = 'center';
+    header.style.fontWeight = 'bold';
+    header.textContent =
+      editorView?.state?.doc?.attrs?.objectMetaData?.name ?? 'Untitled';
+
+    titleDiv.appendChild(header);
+    insertBeforeNode?.before(titleDiv);
+    insertBeforeNode = titleDiv.nextSibling;
+
+    const titleSpacer = document.createElement('div');
+    titleSpacer.classList.add('forcePageSpacer');
+    titleSpacer.innerHTML = '&nbsp;';
+    insertBeforeNode?.before(titleSpacer);
+    insertBeforeNode = titleSpacer.nextSibling;
+  }
+
+  const sections = [
+    { flag: PreviewForm.isToc, className: 'tocHead' },
+    { flag: PreviewForm.isTof, className: 'tofHead' },
+    { flag: PreviewForm.isTot, className: 'totHead' },
+  ];
+
+  for (const { flag, className } of sections) {
+    if (!flag) continue;
+
+    const sectionDiv = document.createElement('div');
+    sectionDiv.classList.add(className);
+    insertBeforeNode?.before(sectionDiv);
+    insertBeforeNode = sectionDiv.nextSibling;
+
+    const spacer = document.createElement('div');
+    spacer.classList.add('forcePageSpacer');
+    spacer.innerHTML = '&nbsp;';
+    insertBeforeNode?.before(spacer);
+    insertBeforeNode = spacer.nextSibling;
+  }
+}
+
+  private removeExistingHeaders(root: HTMLElement): void {
+    const nodes = root.querySelectorAll<HTMLElement>(
+      '.titleHead, .forcePageSpacer, .tocHead, .tofHead, .totHead, .prepages'
+    );
+
+    for (const el of nodes) {
+      el.remove();
+    }
+  }
+
+  private isAfttpDoc(editorView): boolean {
+  const docType =
+    editorView?.state?.doc?.attrs?.objectMetaData?.type ?? '';
+  return typeof docType === 'string' && docType.includes('Afttp');
+ }
+
+  public getDocumentTitle(editorView): string {
+    return editorView?.state?.doc?.attrs?.objectMetaData?.name ?? '';
+  }
+
+  private extractPreChapterNodes(prose: HTMLElement): ChildNode[] {
+    const proseChildren = Array.from(prose.childNodes);
+    const firstChapter = prose.querySelector<HTMLElement>(
+      'p[stylename="chapterTitle"]'
+    );
+
+    if (!firstChapter) return [];
+
+    let anchorIndex = -1;
+    for (let i = 0; i < proseChildren.length; i++) {
+      const n = proseChildren[i];
+      if (n === firstChapter || (n instanceof HTMLElement && n.contains(firstChapter))) {
+        anchorIndex = i;
+        break;
+      }
+    }
+
+    if (anchorIndex <= 0) return [];
+
+    const extracted: ChildNode[] = [];
+    for (let i = 0; i < anchorIndex; i++) {
+      const n = proseChildren[i] as unknown as ChildNode;
+      n.remove();
+      extracted.push(n);
+    }
+
+    return extracted;
+  }
+
+  private insertTitleSection(data: HTMLElement, editorView): void {
+    const titleDiv = document.createElement('div');
+    titleDiv.classList.add('titleHead', 'prepages');
+
+    const header = document.createElement('h4');
+    Object.assign(header.style, {
+      marginBottom: '40px',
+      color: '#2A6EBB',
+      textAlign: 'center',
+      fontWeight: 'bold',
+    });
+
+    header.textContent =
+      editorView?.state?.doc?.attrs?.objectMetaData?.name ?? 'Untitled';
+
+    titleDiv.appendChild(header);
+    data.appendChild(titleDiv);
+
+    const spacer = document.createElement('div');
+    spacer.classList.add('forcePageSpacer');
+    spacer.innerHTML = '&nbsp;';
+    spacer.style.breakAfter = 'page';
+
+    data.appendChild(spacer);
+ }
+
+  private insertPrePages(data: HTMLElement, nodes: ChildNode[]): void {
+    const container = document.createElement('div');
+    container.classList.add('prepages');
+
+    const proseWrapper = document.createElement('div');
+    proseWrapper.classList.add('ProseMirror');
+    proseWrapper.setAttribute('contenteditable', 'false');
+
+    for (const n of nodes) {
+      proseWrapper.appendChild(n);
+    }
+
+    container.appendChild(proseWrapper);
+    data.appendChild(container);
+  }
+ 
+  private insertOptionalSections(data: HTMLElement): void {
     const sections = [
-      { flag: PreviewForm.isToc, className: 'tocHead' },
-      { flag: PreviewForm.isTof, className: 'tofHead' },
-      { flag: PreviewForm.isTot, className: 'totHead' }
+      { flag: PreviewForm.isToc, className: 'tocHead', id: 'licit-toc-block' },
+      { flag: PreviewForm.isTof, className: 'tofHead', id: 'licit-tof-block' },
+      { flag: PreviewForm.isTot, className: 'totHead', id: 'licit-tot-block' },
     ];
 
-    sections.forEach(({ flag, className }) => {
-      if (!flag) return;
+    for (const { flag, className, id } of sections) {
+      if (!flag) continue;
 
-      const sectionDiv = document.createElement('div');
-      sectionDiv.classList.add(className);
-      insertBeforeNode?.before(sectionDiv);
-      insertBeforeNode = sectionDiv.nextSibling;
+      const div = document.createElement('div');
+      div.classList.add(className);
+      div.id = id;
 
-      const sectionSpacer = document.createElement('div');
-      sectionSpacer.classList.add('forcePageSpacer');
-      sectionSpacer.innerHTML = '&nbsp;';
-      insertBeforeNode?.before(sectionSpacer);
-      insertBeforeNode = sectionSpacer.nextSibling;
-    });
-  }
-
-
-
-  private replaceInfoIcons(data: HTMLElement): void {
-    const icons = data.querySelectorAll('.infoicon');
-    icons.forEach((icon, index) => {
-      const sup = document.createElement('sup');
-      sup.textContent = `${index + 1}`;
-      icon.textContent = '';
-      icon.appendChild(sup);
-    });
-  }
-
-  private updateImageWidths(data: HTMLElement): void {
-    for (const element of data.children) {
-      const images = element.querySelectorAll('img');
-      images.forEach((img) => {
-        this.replaceImageWidth(img, data);
+      Object.assign(div.style, {
+        position: 'static',
+        display: 'block',
+        breakBefore: 'page',
+        pageBreakBefore: 'always',
       });
+
+      data.appendChild(div);
     }
   }
+
+    private replaceInfoIcons(data: HTMLElement): void {
+      const icons = data.querySelectorAll<HTMLElement>('.infoicon');
+      for (const [index, icon] of icons.entries()) {
+        const sup = document.createElement('sup');
+        sup.textContent = `${index + 1}`;
+        icon.textContent = '';
+        icon.appendChild(sup);
+      }
+    }
+
+    private updateImageWidths(data: HTMLElement): void {
+      for (const element of Array.from(data.children)) {
+        const images = element.querySelectorAll<HTMLImageElement>('img');
+        for (const [_, img] of images.entries()) {
+          this.replaceImageWidth(img);
+        }
+      }
+    }
+
+    private updateStyles(data: HTMLElement): void {
+      const elements = data.querySelectorAll<HTMLElement>(
+        '[reset="true"], [prefix], [tof="true"], [tot="true"]'
+      );
+
+      for (const [_, el] of elements.entries()) {
+        const reset = el.getAttribute('reset');
+        const prefix = el.getAttribute('prefix');
+        const tof = el.getAttribute('tof');
+        const tot = el.getAttribute('tot');
+
+        if (reset === 'true') el.style.setProperty('--reset-flag', '1');
+        if (prefix) el.style.setProperty('--prefix', prefix);
+        if (tof === 'true') el.style.setProperty('--tof', tof);
+        if (tot === 'true') el.style.setProperty('--tot', tot);
+      }
+    }
 
   private updateTableWidths(data: HTMLElement): void {
     for (const element of data.children) {
@@ -1039,11 +1328,11 @@ export class PreviewForm extends React.PureComponent<Props, State> {
       printWindow.document.open();
       printWindow.document.writeln('<!DOCTYPE html><html><body></body></html>');
 
-      while (printWindow.document.documentElement.firstChild) {
-        printWindow.document.documentElement.removeChild(
-          printWindow.document.documentElement.firstChild
-        );
-      }
+    const docElement = printWindow.document.documentElement;
+      while (docElement.firstChild) {
+          docElement.firstChild.remove();
+      } 
+
       for (const childNode of divContainer.childNodes) {
         printWindow.document.documentElement.appendChild(
           childNode.cloneNode(true)

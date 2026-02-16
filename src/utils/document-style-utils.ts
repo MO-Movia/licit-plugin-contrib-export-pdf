@@ -6,5 +6,5 @@ export function getStyleLevel(styleName: string, styles: StoredStyle[]): number 
   if (!style?.level) return null;
 
   const level = Number(style.level);
-  return isNaN(level) ? 1 : level;
+  return Number.isNaN(level) ? 1 : level;
 }

@@ -59,11 +59,11 @@ export class ExportPDFPlugin extends Plugin {
    */
 
   // this helps to invoke even in readonly mode.
-  perform(view: EditorView): boolean {
-    return ExportPDFPlugin.export(view);
+  public perform(view: EditorView): boolean {
+    return ExportPDFPlugin.export(view, null);
   }
 
-  static export(view: EditorView): boolean {
-    return EXPORT_PDF.execute(undefined, undefined, view, null);
+  public static export(view: EditorView, doc: unknown): boolean {
+    return EXPORT_PDF.execute(undefined, undefined, view, doc);
   }
 }
