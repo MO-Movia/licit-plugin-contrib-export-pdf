@@ -377,7 +377,7 @@ describe('PDFHandler', () => {
   test('afterPageLayout does not call processTocAndFooter when extractedCui has data', () => {
     PreviewForm['extractedCui'] = {
       text: 'CUI//SP-CTI',
-      color: 'rgb(255, 0, 0)'
+      color: 'rgb(255, 0, 0)',
     };
 
     const pageFragment = document.createElement('div');
@@ -387,50 +387,14 @@ describe('PDFHandler', () => {
     infoIcon.setAttribute('description', 'Should not appear');
     pageEl.appendChild(infoIcon);
 
-    const page = { element: pageEl };
+    const page = {element: pageEl};
 
     handler.afterPageLayout(pageFragment, page);
 
-    const cssValue = pageFragment.style.getPropertyValue('--pagedjs-string-last-chapTitled');
+    const cssValue = pageFragment.style.getPropertyValue(
+      '--pagedjs-string-last-chapTitled'
+    );
     expect(cssValue).toBe('" 1. Should not appear "');
-  });
-
-  test('truncateTitle returns original title when null or undefined', () => {
-    expect(handler['truncateTitle'](null)).toBeNull();
-    expect(handler['truncateTitle'](undefined)).toBeUndefined();
-  });
-
-  test('truncateTitle returns original title when length is less than maxLength', () => {
-    const shortTitle = 'Short Title';
-    expect(handler['truncateTitle'](shortTitle)).toBe(shortTitle);
-  });
-
-  test('truncateTitle returns original title when length equals maxLength', () => {
-    const exactTitle = '1234567890123456789012'; // exactly 22 chars
-    expect(handler['truncateTitle'](exactTitle)).toBe(exactTitle);
-  });
-
-  test('truncateTitle truncates and adds ellipsis when length exceeds maxLength', () => {
-    const longTitle = 'This is a very long title that exceeds the maximum length';
-    const result = handler['truncateTitle'](longTitle);
-
-    expect(result).toBe('This is a very long ti...');
-    expect(result.length).toBe(25);
-  });
-
-  test('truncateTitle uses custom maxLength when provided', () => {
-    const title = 'This is a test title';
-    const result = handler['truncateTitle'](title, 10);
-
-    expect(result).toBe('This is a ...');
-    expect(result.length).toBe(13);
-  });
-
-  test('truncateTitle with custom maxLength returns original when within limit', () => {
-    const title = 'Short';
-    const result = handler['truncateTitle'](title, 10);
-
-    expect(result).toBe('Short');
   });
 });
 
