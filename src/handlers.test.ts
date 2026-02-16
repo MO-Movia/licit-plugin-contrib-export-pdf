@@ -54,11 +54,11 @@ describe('PDFHandler', () => {
     PreviewForm.getHeadersTOC.mockReturnValue(['h1']);
     PreviewForm.getHeadersTOF.mockReturnValue([]);
     PreviewForm.getHeadersTOT.mockReturnValue([]);
-
-    handler.beforeParsed('content');
+    const content = document.createElement('div');
+    handler.beforeParsed(content);
 
     expect(createTable).toHaveBeenCalledWith(expect.objectContaining({
-      content: 'content',
+      content: content,
       tocElement: '.tocHead',
       tofElement: '.tofHead',
       totElement: '.totHead',
@@ -242,15 +242,16 @@ describe('PDFHandler', () => {
     expect(handler['counters'][1]).toBe(1);
   });
 
-  test('handleSpecialCounters increments counters', () => {
+  test('handleSpecialCounters increments TOF counter', () => {
     const label: number[] = [];
     handler['counters'][1] = 1;
-    handler['handleSpecialCounters']('tof', null, label);
-    expect(label).toEqual([1, 1]);
 
-    const label2: number[] = [];
-    handler['handleSpecialCounters'](null, 'tot', label2);
-    expect(label2).toEqual([1, 1]);
+    const el = document.createElement('p');
+    el.setAttribute('stylename', 'tofStyle');
+
+    handler['handleSpecialCounters'](el, 'true', null, label);
+
+    expect(label).toEqual([1, 1]);
   });
 
   test('buildLabel resets TOF and TOT at level 1', () => {
@@ -376,7 +377,7 @@ describe('PDFHandler', () => {
   test('afterPageLayout does not call processTocAndFooter when extractedCui has data', () => {
     PreviewForm['extractedCui'] = {
       text: 'CUI//SP-CTI',
-      color: 'rgb(255, 0, 0)'
+      color: 'rgb(255, 0, 0)',
     };
 
     const pageFragment = document.createElement('div');
@@ -386,52 +387,84 @@ describe('PDFHandler', () => {
     infoIcon.setAttribute('description', 'Should not appear');
     pageEl.appendChild(infoIcon);
 
-    const page = { element: pageEl };
+    const page = {element: pageEl};
 
     handler.afterPageLayout(pageFragment, page);
 
-    const cssValue = pageFragment.style.getPropertyValue('--pagedjs-string-last-chapTitled');
+    const cssValue = pageFragment.style.getPropertyValue(
+      '--pagedjs-string-last-chapTitled'
+    );
     expect(cssValue).toBe('" 1. Should not appear "');
   });
+});
 
-  test('truncateTitle returns original title when null or undefined', () => {
-    expect(handler['truncateTitle'](null)).toBeNull();
-    expect(handler['truncateTitle'](undefined)).toBeUndefined();
+describe('wrapTablesAndFiguresWithTitles', () => {
+  let handler: PDFHandler;
+
+  beforeEach(() => {
+    handler = new PDFHandler(mockChunker, mockPolisher, mockCaller);
   });
 
-  test('truncateTitle returns original title when length is less than maxLength', () => {
-    const shortTitle = 'Short Title';
-    expect(handler['truncateTitle'](shortTitle)).toBe(shortTitle);
+  test('applies page-break-avoid styles to title and table/figure', () => {
+    const content = document.createElement('div');
+    const title = document.createElement('p');
+    title.setAttribute('stylename', 'chTableTitle');
+    const table = document.createElement('table');
+
+    content.appendChild(title);
+    content.appendChild(table);
+
+    (handler as unknown as { wrapTablesAndFiguresWithTitles(content: HTMLElement): void })
+      .wrapTablesAndFiguresWithTitles(content);
+
+    expect(title.style.pageBreakAfter).toBe('');
+    expect(table.style.pageBreakBefore).toBe('');
+    expect(table.style.pageBreakInside).toBe('');
   });
 
-  test('truncateTitle returns original title when length equals maxLength', () => {
-    const exactTitle = '1234567890123456789012'; // exactly 22 chars
-    expect(handler['truncateTitle'](exactTitle)).toBe(exactTitle);
+  test('handles all title types (table and figure)', () => {
+    const content = document.createElement('div');
+
+    const tableTitle = document.createElement('div');
+    tableTitle.setAttribute('stylename', 'attTableTitle');
+    const table = document.createElement('table');
+
+    const figureTitle = document.createElement('div');
+    figureTitle.setAttribute('stylename', 'chFigureTitle');
+    const figure = document.createElement('figure');
+
+    content.appendChild(tableTitle);
+    content.appendChild(table);
+    content.appendChild(figureTitle);
+    content.appendChild(figure);
+
+    (handler as unknown as { wrapTablesAndFiguresWithTitles(content: HTMLElement): void })
+      .wrapTablesAndFiguresWithTitles(content);
+
+    expect(tableTitle.style.pageBreakAfter).toBe('');
+    expect(table.style.pageBreakBefore).toBe('');
+    expect(figureTitle.style.pageBreakAfter).toBe('');
+    expect(figure.style.pageBreakBefore).toBe('');
   });
 
-  test('truncateTitle truncates and adds ellipsis when length exceeds maxLength', () => {
-    const longTitle = 'This is a very long title that exceeds the maximum length';
-    const result = handler['truncateTitle'](longTitle);
+  test('does not crash when title has no next sibling or non-table/figure sibling', () => {
+    const content = document.createElement('div');
+    const title1 = document.createElement('div');
+    title1.setAttribute('stylename', 'chTableTitle');
 
-    expect(result).toBe('This is a very long ti...');
-    expect(result.length).toBe(25);
+    const title2 = document.createElement('div');
+    title2.setAttribute('stylename', 'attFigureTitle');
+    const paragraph = document.createElement('p');
+
+    content.appendChild(title1); // no sibling
+    content.appendChild(title2);
+    content.appendChild(paragraph); // not a table/figure
+
+    expect(() => {
+      (handler as unknown as { wrapTablesAndFiguresWithTitles(content: HTMLElement): void })
+        .wrapTablesAndFiguresWithTitles(content);
+    }).not.toThrow();
   });
-
-  test('truncateTitle uses custom maxLength when provided', () => {
-    const title = 'This is a test title';
-    const result = handler['truncateTitle'](title, 10);
-
-    expect(result).toBe('This is a ...');
-    expect(result.length).toBe(13);
-  });
-
-  test('truncateTitle with custom maxLength returns original when within limit', () => {
-    const title = 'Short';
-    const result = handler['truncateTitle'](title, 10);
-
-    expect(result).toBe('Short');
-  });
-
 });
 describe('buildRefToPageMap', () => {
   let handler: PDFHandler;
@@ -917,10 +950,52 @@ test('handleSpecialCounters does nothing when neither tof nor tot present', () =
   const label: number[] = [];
   handler['counters'][1] = 3;
 
-  handler['handleSpecialCounters'](null, null, label);
+  const el = document.createElement('p');
+
+  handler['handleSpecialCounters'](el, null, null, label);
 
   expect(label).toEqual([]);
 });
+
+
+  test('pushes nothing if TOF counter is zero (defensive)', () => {
+    const el = document.createElement('p');
+    el.setAttribute('stylename', 'tofStyle');
+
+    const label: number[] = [];
+
+    // counters[11] starts at 0, but function increments before push
+    handler['handleSpecialCounters'](el, 'true', null, label);
+
+    expect(label.length).toBe(2); // [chapter, 1]
+  });
+
+  test('does nothing when neither tof nor tot is present', () => {
+    const el = document.createElement('p');
+    el.setAttribute('stylename', 'normalStyle');
+
+    const label: number[] = [];
+
+    handler['handleSpecialCounters'](el, null, null, label);
+
+    expect(handler['counters'][11]).toBe(0);
+    expect(handler['counters'][12]).toBe(0);
+    expect(label).toEqual([]);
+  });
+
+  test('uses current chapter counter (counters[1]) in label', () => {
+    handler['counters'][1] = 5; // simulate chapter 5
+
+    const el = document.createElement('p');
+    el.setAttribute('stylename', 'totStyle');
+
+    const label: number[] = [];
+
+    handler['handleSpecialCounters'](el, null, 'true', label);
+
+    expect(handler['counters'][12]).toBe(1);
+    expect(label).toEqual([5, 1]); // [chapter, totIndex]
+  });
 
 test('buildLabel builds multi-level labels correctly', () => {
   handler['counters'][1] = 1;

@@ -52,9 +52,12 @@ export class PDFHandler extends Handler {
     this.prepagesCount = 0;
     PDFHandler.state.currentPage = 0;
     this.done = false;
+    this.processedChapterRefs.clear();
     document.documentElement.style.removeProperty(
-      '--pagedjs-string-last-chapTitled'
-    );
+    '--pagedjs-string-last-chapTitled'
+  );
+
+  this.wrapTablesAndFiguresWithTitles(content);
 
     if (PreviewForm.showToc() || PreviewForm.showTof() || PreviewForm.showTot()) {
       createTable({
@@ -158,7 +161,7 @@ export class PDFHandler extends Handler {
       const label: number[] = [];
 
       if (tof || tot) {
-        this.handleSpecialCounters(tof, tot, label);
+        this.handleSpecialCounters(el, tof, tot, label);
       } else {
         this.resetCounters(level, isReset);
         this.buildLabel(level, label);
@@ -185,6 +188,39 @@ export class PDFHandler extends Handler {
     processCounters();
   }
 
+  private wrapTablesAndFiguresWithTitles(content: HTMLElement): void {
+  const titleSelectors = [
+    'attTableTitle',
+    'chTableTitle',
+    'attFigureTitle',
+    'chFigureTitle',
+  ];
+
+  for (const titleStyle of titleSelectors) {
+    const titles = content.querySelectorAll(`[stylename="${titleStyle}"]`);
+
+    for (const title of titles) {
+      if (!(title instanceof HTMLElement)) continue;
+
+      // Get the next sibling (the actual table/figure)
+      const nextElement = title.nextElementSibling;
+
+      if (nextElement) {
+        // Create a wrapper div
+        const wrapper = document.createElement('div');
+        wrapper.style.breakInside = 'avoid';
+        wrapper.className = 'table-figure-wrapper';
+
+        // Insert wrapper before title
+        title.parentNode?.insertBefore(wrapper, title);
+
+        // Move title and next element into wrapper
+        wrapper.appendChild(title);
+        wrapper.appendChild(nextElement);
+      }
+    }
+  }
+}
   private handleAfttpFooter(
     pageFragment: HTMLElement,
     processTocAndFooter: () => void
@@ -501,15 +537,32 @@ export class PDFHandler extends Handler {
     }
   }
 
-  private handleSpecialCounters(tof: string | null, tot: string | null, label: number[]): void {
-    if (tof) {
-      this.counters[11]++;
-      if (this.counters[11]) label.push(this.counters[1], this.counters[11]);
-    } else if (tot) {
+private handleSpecialCounters(
+  el: HTMLElement,
+  tof: string | null,
+  tot: string | null,
+  label: number[]
+): void {
+  if (tof) {
+    this.counters[11]++;
+    if (this.counters[11]) {
+      label.push(this.counters[1], this.counters[11]);
+    }
+    return;
+  }
+
+  if (tot) {
+    const isTotContinuation =
+      !!tot && el.getAttribute('stylename')?.endsWith('Cont');
+    if (!isTotContinuation) {
       this.counters[12]++;
-      if (this.counters[12]) label.push(this.counters[1], this.counters[12]);
+    }
+
+    if (this.counters[12]) {
+      label.push(this.counters[1], this.counters[12]);
     }
   }
+}
 
   private buildLabel(level: number, label: number[]): void {
     if (level === 1 && this.counters[1] > 0) {
@@ -704,7 +757,9 @@ export class PDFHandler extends Handler {
 
 
   private formatLongDate(dateStr: string): string {
-    const date = new Date(dateStr);
+    const [day, month, year] = dateStr.split('/');
+    const isoDate = `${year}-${month}-${day}`;
+    const date = new Date(isoDate);
 
     if (Number.isNaN(date.getTime())) {
       return '';
@@ -717,15 +772,6 @@ export class PDFHandler extends Handler {
     });
   }
 
-
-
-  private truncateTitle(title: string, maxLength = 22): string {
-    if (!title || title.length <= maxLength) {
-      return title;
-    }
-    return title.slice(0, maxLength) + '...';
-  }
-
   public beforePageLayout(): void {
     this.doIT();
   }
@@ -734,15 +780,14 @@ export class PDFHandler extends Handler {
     const markingData = PreviewForm['pageBanner'];
     const hasBannerMarking = !!markingData;
     const rawTitle = PreviewForm['documentTitle'] ?? '';
-    const truncatedTitle = this.truncateTitle(rawTitle);
 
     const formattedDate = PreviewForm['formattedDate']
       ? this.formatLongDate(PreviewForm['formattedDate'])
       : '';
 
     const titleData = formattedDate
-      ? `${truncatedTitle}, ${formattedDate}`
-      : truncatedTitle;
+      ? `${rawTitle}, ${formattedDate}`
+      : rawTitle;
 
     let nonAfttpFooterColor = '';
     let opt = '';
@@ -787,15 +832,22 @@ export class PDFHandler extends Handler {
     if (hasBannerMarking && markingData) {
       if (titleData) {
         headerTitleContent = `
-      @top-left {
+      @top-left-corner {
         content: "${titleData}";
         font-family: "Times New Roman", Times, serif;
         font-size: 12pt;
         text-align: left;
         padding-top: 60px;
+        padding-left: 95px;
         color: #000000;
-        font-weight: bold;
+        font-weight: normal;
         letter-spacing: 0.2px;
+        white-space: nowrap;
+        width: auto;
+      }
+      
+      @top-left {
+        content: "";
       }
     `;
       }
@@ -871,6 +923,12 @@ ${nonAfttpFooterColor}
 list-style: none;
 }
 
+.table-figure-wrapper {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+  display: block;
+}
+  
 .forcePageSpacer {
   break-after: page;
   page-break-after: always; 

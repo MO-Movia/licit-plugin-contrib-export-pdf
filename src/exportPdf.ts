@@ -171,6 +171,8 @@ function generateList({
       const headerEl = document.createElement('h4');
       headerEl.textContent = headerText;
       headerEl.style.marginBottom = '40px';
+      headerEl.style.fontWeight = 'bold';
+      headerEl.style.fontFamily = 'Lato, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
       headerEl.style.color = '#000000';
       listDiv.appendChild(headerEl);
     }
